@@ -7,6 +7,7 @@ import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
 import {
   Box,
   Container,
+  Divider,
   FormControl,
   InputLabel,
   MenuItem,
@@ -19,38 +20,42 @@ import {
 import { Prisma } from "@prisma/client";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-function capitalizeFirstLetter(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
+
+const sort = {
+  rating: "Rating",
+  title: "Title",
+  avg_rating: "Avg Rating",
+  timestamp: "Time",
+};
 export default function RatingsPage() {
   const session = useSession();
   if (session.status === "loading") return <>Loading</>;
   if (session.status === "unauthenticated") return <>No session</>;
   const { user } = session.data as any;
   const userId = parseInt(user?.id as string);
-  const [ratings, setRatings] = useState<RatingWithMovie[] | undefined>(
-    undefined
-  );
-  const sort = {
-    rating: "Rating",
-    title: "Title",
-    avg_rating: "Avg Rating",
-    timestamp: "Time",
-  };
-  const { setSortValue, sortValue } = useDBList(
+
+  const {
+    setSortValue,
+    sortValue,
+    values: ratings,
+  } = useDBList(
     (s: Sorting<RatingSortBy>) =>
       getRatingsForUser(userId, 0, 10, s.key as any, s.order),
-    setRatings,
     {
       key: "timestamp",
-      order: "desc",
+      order: "asc",
     }
   );
   return (
-    <Container>
-      <Box>
-        <FormControl>
+    <Container sx={{ marginTop: 5 }}>
+      <Box display="flex" flexDirection="row" sx={{ marginBottom: 5 }}>
+        <FormControl
+          sx={{
+            width: "50%",
+            // height: "60px",
+            display: "flex",
+          }}
+        >
           <InputLabel id="demo-simple-select-label">Sort</InputLabel>
           <Select
             labelId="demo-simple-select-label"
@@ -69,7 +74,12 @@ export default function RatingsPage() {
             ))}
           </Select>
         </FormControl>
-        <FormControl>
+        <FormControl
+          sx={{
+            width: "50%",
+            // height: "60px",
+          }}
+        >
           <InputLabel id="demo-simple-select-label">Order</InputLabel>
           <Select
             labelId="demo-simple-select-label"
@@ -83,13 +93,30 @@ export default function RatingsPage() {
               });
             }}
           >
-            <MenuItem value={"asc"}>
-              Ascending
-              <ArrowUpward />
+            <MenuItem
+              value={"asc"}
+              sx={{
+                verticalAlign: "middle",
+              }}
+            >
+              low to high
+              <ArrowUpward
+                sx={{
+                  height: "100%",
+                  verticalAlign: "middle",
+                  marginLeft: 1,
+                }}
+              />
             </MenuItem>
             <MenuItem value={"desc"}>
-              Descending
-              <ArrowDownward />
+              high to low
+              <ArrowDownward
+                sx={{
+                  height: "100%",
+                  verticalAlign: "middle",
+                  marginLeft: 1,
+                }}
+              />
             </MenuItem>
           </Select>
         </FormControl>
@@ -103,52 +130,60 @@ function List({ ratings }: { ratings: RatingWithMovie[] }) {
     <>
       <Stack direction="column" spacing={1}>
         {ratings.map((rating, i) => (
-          <Box
-            key={i}
-            sx={{ display: "flex", flexDirection: "row", height: "200px" }}
-          >
-            <Box>
-              <Link
-                href={`/movie/${rating.movie.movieId}`}
-                style={{ textDecoration: "none" }}
-              >
-                <img
-                  src={rating.movie.href}
-                  style={{ width: "100%", height: "100%" }}
-                />
-              </Link>
-            </Box>
-            <Box sx={{ paddingLeft: 10 }}>
-              <Link
-                href={`/movie/${rating.movie.movieId}`}
-                style={{ textDecoration: "none" }}
-              >
-                <Typography
-                  color="white"
-                  fontSize={30}
-                  fontWeight={50}
-                  sx={{
-                    marginBottom: 1,
-                    ":hover": {
-                      textDecoration: "underline",
-                    },
-                  }}
+          <>
+            <Box
+              key={i}
+              sx={{ display: "flex", flexDirection: "row", height: "200px" }}
+            >
+              <Box>
+                <Link
+                  href={`/movie/${rating.movie.movieId}`}
+                  style={{ textDecoration: "none" }}
                 >
-                  {rating.movie.title}
+                  <img
+                    src={rating.movie.href}
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                </Link>
+              </Box>
+              <Box sx={{ paddingLeft: 10 }}>
+                <Link
+                  href={`/movie/${rating.movie.movieId}`}
+                  style={{ textDecoration: "none" }}
+                >
+                  <Typography
+                    color="white"
+                    fontSize={30}
+                    fontWeight={50}
+                    sx={{
+                      marginBottom: 1,
+                      ":hover": {
+                        textDecoration: "underline",
+                      },
+                    }}
+                  >
+                    {rating.movie.title}
+                  </Typography>
+                </Link>
+                <Typography>
+                  Avg rating:
+                  <Rating
+                    value={roundRating(rating.movie.avg_rating)}
+                    readOnly
+                  />
+                  ({rating.movie.total_ratings} users)
                 </Typography>
-              </Link>
-              <Typography>
-                Avg rating:
-                <Rating value={roundRating(rating.movie.avg_rating)} readOnly />
-                ({rating.movie.total_ratings} users)
-              </Typography>
-              <Typography>
-                Your rating:
-                <Rating value={roundRating(rating.rating)} readOnly />
-              </Typography>
-              <Typography>Made: {timeSince(rating.timestamp)} ago</Typography>
+                <Typography>
+                  Your rating:
+                  <Rating value={roundRating(rating.rating)} readOnly />
+                </Typography>
+                <Typography>
+                  Rated : {timeSince(rating.timestamp)} ago
+                </Typography>
+              </Box>
             </Box>
-          </Box>
+            <Divider variant="middle" />
+          </>
         ))}
       </Stack>
     </>

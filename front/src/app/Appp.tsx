@@ -2,7 +2,7 @@
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import getTheme from "@/components/getTheme";
-import NavBar from "@/components/Navbar2";
+import NavBar from "@/components/Navbar";
 import { Container } from "@mui/material";
 import { styled, PaletteMode } from "@mui/material/styles";
 const CContainer = styled(Container)(({ theme }) => ({
@@ -43,7 +43,12 @@ export default function Appp({ children }: any) {
       <ThemeProvider theme={SignInTheme}>
         <CssBaseline />
         <NavBar />
-        <div className="relative flex min-h-screen flex-col">
+        <div
+          className="relative flex min-h-screen flex-col"
+          style={{
+            marginTop: 100,
+          }}
+        >
           <div className="border-b">
             <div className="flex h-16 items-center px-4">
               <div className="ml-auto flex items-center space-x-4"></div>

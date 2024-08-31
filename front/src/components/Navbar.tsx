@@ -61,7 +61,7 @@ import { useSession } from "next-auth/react";
 import { logOut } from "@/lib/actions/action";
 import Link from "next/link";
 
-export default function PrimarySearchAppBar() {
+export default function NavBar() {
   const session = useSession();
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -163,7 +163,15 @@ export default function PrimarySearchAppBar() {
   );
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box
+      sx={{
+        //  flexGrow: 1,
+        position: "fixed",
+        top: 0,
+        width: "100%",
+        zIndex: 9999,
+      }}
+    >
       <AppBar position="static">
         <Toolbar>
           {/* <IconButton
@@ -193,6 +201,29 @@ export default function PrimarySearchAppBar() {
             />
           </Search>
           <Box sx={{ flexGrow: 1 }} />
+          <Box sx={{ display: { xs: "none", md: "flex" } }}>
+            {session.status === "authenticated" && (
+              <Link
+                href={"/ratings"}
+                style={{
+                  textDecoration: "none",
+                  // color: "white",
+                }}
+              >
+                <Typography
+                  color="white"
+                  sx={{
+                    fontWeight: "bold",
+                    ":hover": {
+                      textDecoration: "underline",
+                    },
+                  }}
+                >
+                  Ratings
+                </Typography>
+              </Link>
+            )}
+          </Box>
           <Box sx={{ display: { xs: "none", md: "flex" } }}>
             {session.status === "authenticated" && (
               <FormControl variant="outlined" sx={{ minWidth: 180 }}>
