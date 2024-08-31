@@ -1,6 +1,7 @@
 "use client";
 import { getRatingsForUser } from "@/lib/actions/action";
-import { RatingWithMovie } from "@/lib/db/movie";
+import { RatingSortBy, RatingWithMovie } from "@/lib/db/movie";
+import { Sorting, useDBList } from "@/lib/useDbList";
 import { roundRating, timeSince } from "@/lib/utils";
 import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
 import {
@@ -15,6 +16,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { Prisma } from "@prisma/client";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -30,25 +32,21 @@ export default function RatingsPage() {
   const [ratings, setRatings] = useState<RatingWithMovie[] | undefined>(
     undefined
   );
-  const [sortValue, setSortValue] = useState(1);
-  const [sortOrderValue, setSortOrderValue] = useState(2);
   const sort = {
     rating: "Rating",
     title: "Title",
     avg_rating: "Avg Rating",
     timestamp: "Time",
   };
-  useEffect(() => {
-    (async function () {
-      const o = sortOrderValue == 1 ? "asc" : "desc";
-      const s = Object.keys(sort)[sortValue] as any;
-      const r = await getRatingsForUser(userId, 0, 10, s, o);
-      if (!!r) {
-        console.log("****", o, s);
-        setRatings(r);
-      }
-    })();
-  }, [sortValue, userId, sortOrderValue]);
+  const { setSortValue, sortValue } = useDBList(
+    (s: Sorting<RatingSortBy>) =>
+      getRatingsForUser(userId, 0, 10, s.key as any, s.order),
+    setRatings,
+    {
+      key: "timestamp",
+      order: "desc",
+    }
+  );
   return (
     <Container>
       <Box>
@@ -57,16 +55,17 @@ export default function RatingsPage() {
           <Select
             labelId="demo-simple-select-label"
             id="demo-simple-select"
-            value={sortValue}
+            value={sortValue.key}
             label="Sort by"
             onChange={(e, a) => {
-              setSortValue(e.target.value as number);
+              setSortValue({
+                ...sortValue,
+                key: e.target.value as RatingSortBy,
+              });
             }}
           >
             {Object.keys(sort).map((st) => (
-              <MenuItem value={Object.keys(sort).indexOf(st)}>
-                {(sort as any)[st]}
-              </MenuItem>
+              <MenuItem value={st}>{(sort as any)[st]}</MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -75,17 +74,20 @@ export default function RatingsPage() {
           <Select
             labelId="demo-simple-select-label"
             id="demo-simple-select"
-            value={sortOrderValue}
+            value={sortValue.order}
             label="Sort by"
             onChange={(e, a) => {
-              setSortOrderValue(e.target.value as number);
+              setSortValue({
+                ...sortValue,
+                order: e.target.value as Prisma.SortOrder,
+              });
             }}
           >
-            <MenuItem value={1}>
+            <MenuItem value={"asc"}>
               Ascending
               <ArrowUpward />
             </MenuItem>
-            <MenuItem value={2}>
+            <MenuItem value={"desc"}>
               Descending
               <ArrowDownward />
             </MenuItem>
