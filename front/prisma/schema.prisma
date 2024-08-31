@@ -47,13 +47,13 @@ model MovieModel {
 }
 
 model UserMovieRating {
-  id     Int        @id @default(autoincrement())
-  movie  MovieModel @relation(fields: [movieModelId], references: [movieId])
-  user   UserModel  @relation(fields: [userModelId], references: [id])
-  rating Float
-
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @default(now()) @updatedAt
+  id        Int        @id @default(autoincrement())
+  movie     MovieModel @relation(fields: [movieModelId], references: [movieId])
+  user      UserModel  @relation(fields: [userModelId], references: [id])
+  rating    Float
+  timestamp DateTime
+  createdAt DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime   @default(now()) @updatedAt
 
   movieModelId Int
   userModelId  Int

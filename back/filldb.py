@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from collections import defaultdict
 import numpy as np
+from datetime import datetime
 
 
 def encode(df, cols, reset=False):
@@ -45,7 +46,9 @@ def read_df(
         "imdbId").count().reset_index().rename(
         columns={"userId": "total_ratings", "imdbId": "imdbId"},
     )
+
     ratings = ratings.merge(total_ratings, on="imdbId").reset_index(drop=True)
+    ratings.timestamp = ratings.timestamp.map(datetime.fromtimestamp)
     return ratings
 
 
@@ -77,6 +80,7 @@ def rating_to_dict(row):
         'rating': rating.rating,
         'movieModelId': rating.movieId+1,
         'userModelId': rating.userId+1,
+        'timestamp': rating.timestamp
     }
 
 
@@ -88,7 +92,8 @@ async def main() -> None:
         ["movieId", "rating", "title", "genres", "imdbId", "href", "avg_rating", "total_ratings"]]
     users = df.drop_duplicates(subset=["userId"])[
         ["userId"]].sort_values("userId")
-    ratings = df[["userId", "movieId", "rating"]].sort_values("userId")
+    ratings = df[["userId", "movieId", "rating",
+                  "timestamp"]].sort_values("userId")
     print("Filling db")
     total_users = await prisma.usermodel.create_many(
         data=list(map(user_to_dict, users.iterrows())),

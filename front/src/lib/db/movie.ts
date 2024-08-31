@@ -18,6 +18,7 @@ const moviesDb = {
           movieModelId: movieId,
           userModelId: userId,
           rating: rating,
+          timestamp: new Date(),
         },
       });
     } else {
@@ -93,7 +94,7 @@ const moviesDb = {
   ): Promise<RatingWithMovie[]> {
     let orderBy = undefined;
     switch (sortby) {
-      case "temistamp":
+      case "timestamp":
       case "rating":
         orderBy = {
           [sortby]: order,
@@ -139,5 +140,5 @@ const moviesDb = {
 export type RatingWithMovie = MovieRating & {
   movie: Movie;
 };
-export type RatingSortBy = "rating" | "temistamp" | "title" | "avg_rating";
+export type RatingSortBy = "rating" | "timestamp" | "title" | "avg_rating";
 export default moviesDb;

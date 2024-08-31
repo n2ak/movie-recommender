@@ -1,7 +1,7 @@
 "use client";
 import { getRatingsForUser } from "@/lib/actions/action";
 import { RatingWithMovie } from "@/lib/db/movie";
-import { roundRating } from "@/lib/utils";
+import { roundRating, timeSince } from "@/lib/utils";
 import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
 import {
   Box,
@@ -32,18 +32,19 @@ export default function RatingsPage() {
   );
   const [sortValue, setSortValue] = useState(1);
   const [sortOrderValue, setSortOrderValue] = useState(2);
-  const sort = ["rating", "title", "avg_rating"];
+  const sort = {
+    rating: "Rating",
+    title: "Title",
+    avg_rating: "Avg Rating",
+    timestamp: "Time",
+  };
   useEffect(() => {
     (async function () {
-      const r = await getRatingsForUser(
-        userId,
-        0,
-        10,
-        sort[sortValue - 1] as any,
-        sortOrderValue == 1 ? "asc" : "desc"
-      );
+      const o = sortOrderValue == 1 ? "asc" : "desc";
+      const s = Object.keys(sort)[sortValue] as any;
+      const r = await getRatingsForUser(userId, 0, 10, s, o);
       if (!!r) {
-        console.log("****", r);
+        console.log("****", o, s);
         setRatings(r);
       }
     })();
@@ -62,8 +63,10 @@ export default function RatingsPage() {
               setSortValue(e.target.value as number);
             }}
           >
-            {sort.map((st, i) => (
-              <MenuItem value={i + 1}>{capitalizeFirstLetter(st)}</MenuItem>
+            {Object.keys(sort).map((st) => (
+              <MenuItem value={Object.keys(sort).indexOf(st)}>
+                {(sort as any)[st]}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -141,6 +144,7 @@ function List({ ratings }: { ratings: RatingWithMovie[] }) {
                 Your rating:
                 <Rating value={roundRating(rating.rating)} readOnly />
               </Typography>
+              <Typography>Made: {timeSince(rating.timestamp)} ago</Typography>
             </Box>
           </Box>
         ))}
@@ -148,6 +152,7 @@ function List({ ratings }: { ratings: RatingWithMovie[] }) {
     </>
   );
 }
+
 function Skeleton_({ nbox }: { nbox: number }) {
   return (
     <Container>
