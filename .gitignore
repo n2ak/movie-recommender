@@ -1,2 +1,8 @@
 *.zip
+vlms
+.env
+migrations
+result.png
 dataset
+models
+__pycache__
