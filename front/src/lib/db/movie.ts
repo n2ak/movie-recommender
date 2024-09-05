@@ -2,6 +2,7 @@ import "server-only";
 import { prismaClient } from "./connect";
 import { Movie, MovieForUser, MovieRating } from "../definitions";
 import { Prisma } from "@prisma/client";
+import { MovieGenre } from ".";
 
 const moviesDb = {
   rateMovie: async function (userId: number, movieId: number, rating: number) {
@@ -53,6 +54,16 @@ const moviesDb = {
       },
     });
     return ratings;
+  },
+  getGenresMovies: async function (genres: MovieGenre[]) {
+    const movies = await prismaClient.movieModel.findMany({
+      where: {
+        genres: {
+          hasSome: genres,
+        },
+      },
+    });
+    return movies;
   },
   getMovieForUser: async function (
     userId: number,

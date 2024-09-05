@@ -3,7 +3,10 @@ import { signIn, signOut } from "@/auth";
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import z from "zod";
-
+import moviesDb, { RatingSortBy } from "@/lib/db/movie";
+import Backend, { Model } from "../backend_api";
+import { Prisma } from "@prisma/client";
+import { MovieGenre } from "../db";
 // ...
 export type LoginFormState =
   | {
@@ -42,9 +45,6 @@ export async function logOut() {
   });
   console.log("Logged out");
 }
-import moviesDb, { RatingSortBy } from "@/lib/db/movie";
-import Backend from "../backend_api";
-import { Prisma } from "@prisma/client";
 
 export async function rateMovie(
   userId: number,
@@ -60,12 +60,40 @@ export async function rateMovie(
 export async function getRecommendedMoviesForUser(
   userId: number,
   start: number,
-  count: number
+  count: number,
+  model?: Model
 ) {
-  // const movieIds = await moviesDb.getMovieRatingForUser(userId, 0, 100);
-  const resp = await Backend.getMoviesRecom(userId, start, count);
-  const movies = moviesDb.getMovies(resp.ids);
-  return movies;
+  // TODO: get unwatched/unrated movie ids.
+  const resp = await Backend.getMoviesRecom(userId, start, count, model);
+  return moviesFromIds(resp.result[0].movieIds, resp.result[0].pred_ratings);
+}
+async function moviesFromIds(movieIds: number[], pred_ratings: number[]) {
+  const movies = await moviesDb.getMovies(movieIds);
+  return {
+    movies,
+    predictions: pred_ratings,
+  };
+}
+export async function getRecommendedGenreMovies(
+  userId: number,
+  start: number,
+  count: number,
+  genres: MovieGenre[],
+  model?: Model
+) {
+  // TODO: get unwatched/unrated movie ids.
+  const movieIds = (await moviesDb.getGenresMovies(genres)).map(
+    (m) => m.movieId
+  );
+  const resp = await Backend.getMoviesRecomForMovies(
+    userId,
+    movieIds,
+    start,
+    count,
+    model,
+    false
+  );
+  return moviesFromIds(resp.result[0].movieIds, resp.result[0].pred_ratings);
 }
 export async function getRatingsForUser(
   userId: number,

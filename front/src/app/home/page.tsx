@@ -11,7 +11,7 @@ import {
   Skeleton,
 } from "@mui/material";
 import { Suspense } from "react";
-import { Recommended } from "./copms";
+import { Recommended, RecommendedGenre } from "./copms";
 // import { useSession } from "next-auth/react";
 // import { getServerSession } from "next-auth";
 
@@ -25,7 +25,16 @@ export default async function Home() {
       <Container>
         <Stack spacing={2}>
           <Suspense fallback={<RowSkeleton nbox={5} />}>
-            <Recommended userId={userId} />
+            <Recommended userId={userId} model="MF" />
+          </Suspense>
+          <Suspense fallback={<RowSkeleton nbox={5} />}>
+            <Recommended userId={userId} model="NCF" />
+          </Suspense>
+          <Suspense fallback={<RowSkeleton nbox={5} />}>
+            <RecommendedGenre userId={userId} genres={["Action"]} model="NCF" />
+          </Suspense>
+          <Suspense fallback={<RowSkeleton nbox={5} />}>
+            <RecommendedGenre userId={userId} genres={["Action"]} model="MF" />
           </Suspense>
           {/* <Suspense fallback={<RowSkeleton nbox={5} />}>
             <ContinueWatching userId={userId} />

@@ -9,13 +9,20 @@ import Link from "next/link";
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
 import { Box, List, Rating, Stack } from "@mui/material";
 import Tooltip from "@mui/material/Tooltip";
+import { roundRating } from "@/lib/utils";
 
 const Cardd = styled(Card)(({ theme }) => ({
   width: 300,
   color: theme.palette.success.main,
 }));
 
-export default function MovieCard({ movie }: { movie: Movie }) {
+export default function MovieCard({
+  movie,
+  pred,
+}: {
+  movie: Movie;
+  pred: number;
+}) {
   // const avg_rating = Math.round(movie.avg_rating * 2) / 2;
   const ref = useRef<HTMLSpanElement>(null);
   const [showToolTip, setShowToolTip] = useState(true);
@@ -81,7 +88,25 @@ export default function MovieCard({ movie }: { movie: Movie }) {
             >
               <Rating
                 readOnly
-                value={movie.avg_rating}
+                value={roundRating(movie.avg_rating)}
+                precision={0.5}
+              ></Rating>
+            </Typography>
+            <Typography
+              sx={{
+                width: "100%",
+                display: "inline-block",
+                textOverflow: "ellipsis",
+                overflow: "hidden !important",
+                whiteSpace: "nowrap",
+              }}
+              color="white"
+              // className="row__posterName"
+            >
+              Prediction:
+              <Rating
+                readOnly
+                value={roundRating(pred)}
                 precision={0.5}
               ></Rating>
             </Typography>
@@ -95,9 +120,11 @@ export default function MovieCard({ movie }: { movie: Movie }) {
 export function MovieRow({
   title,
   movies,
+  predictions,
 }: {
   title: string;
-  movies: Array<Movie>;
+  movies: Movie[];
+  predictions: number[];
 }) {
   return (
     <div>
@@ -124,7 +151,7 @@ export function MovieRow({
               height: 300,
             }}
           >
-            <MovieCard movie={movie} />
+            <MovieCard movie={movie} pred={predictions[i]} />
           </Box>
         ))}
       </Stack>

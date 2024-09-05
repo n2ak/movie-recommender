@@ -31,9 +31,9 @@ model UserModel {
 }
 
 model MovieModel {
-  movieId       Int    @id @default(autoincrement())
+  movieId       Int      @id @default(autoincrement())
   title         String
-  genres        String
+  genres        String[]
   imdbId        Int
   avg_rating    Float
   href          String

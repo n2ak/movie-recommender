@@ -14,7 +14,11 @@ def url(id):
     return f"https://www.imdb.com/title/tt{id:07d}/"
 
 
+possible_classes = reversed(["sc-491663c0-7 dUfBfF", "sc-491663c0-7 jmhiib"])
+
+
 def get(i, id):
+    err = -1
     try:
         if i % 100 == 0:
             print(i)
@@ -24,20 +28,27 @@ def get(i, id):
         }, timeout=10)
         if resp.status_code != 200:
             # print(resp.content.decode())
-            return (id, -1)
-        soup = BeautifulSoup(resp.content.decode(), "lxml")
-        [div] = soup.find_all("div", {
-            "class": "sc-491663c0-7 dUfBfF"
-        })
+            return (id, err)
+        soup = BeautifulSoup(resp.content.decode(), "html.parser")
+        err = -2
+        div = None
+        for c in possible_classes:
+            divs = soup.find_all("div", {
+                "class": c
+            })
+            if len(divs) == 0:
+                continue
+            div = divs[0]
+            break
+        if div is None:
+            raise ""
+        err = -3
         [img] = div.findAll("img")
+        err = -4
         return id, img["src"]
     except Exception as e:
-        return (id, -1)
-        raise e
-    return (id, -1)
-
-
-url(114709)
+        pass
+    return (id, err)
 
 
 async def get_work_done(df):
@@ -59,9 +70,22 @@ async def get_work_done(df):
 
 def main(df):
     loop = asyncio.get_event_loop()
-    future = asyncio.ensure_future(get_work_done(df))
+    tasks = get_work_done(df)
+
     print("Running")
-    loop.run_until_complete(future)
+    try:
+        future = asyncio.ensure_future(tasks)
+        loop.run_until_complete(future)
+    except KeyboardInterrupt as e:
+        print("Caught keyboard interrupt. Canceling tasks...")
+        tasks.cancel()
+        future.cancel()
+        loop.run_forever()
+        future.exception()
+        tasks.exception()
+    finally:
+        loop.close()
+
     print("Done Running")
     return future
 
@@ -73,20 +97,25 @@ def save(urls, covers_path):
     old_covers = pd.read_csv(covers_path)
     covers = pd.concat([old_covers, href]).reset_index(drop=True)
     covers.imdbId = covers.imdbId.astype(int)
-    covers = covers.drop_duplicates("imdbId")
+    covers = covers.drop_duplicates("imdbId", keep="last")
     covers.to_csv(covers_path, index=False)
     print("Done", covers.shape)
 
 
-if __name__ == "__main__":
-    covers_path = "covers.csv"
-
+def load_df(covers_path, s=10000):
     df = pd.read_csv("./dataset/ml-32m/links.csv")
     df2 = pd.read_csv(covers_path)
     df = df.merge(df2, on="imdbId", how="outer")
     df = df.sort_values("movieId").iloc[:13629+1].reset_index(drop=True)
-    df = df.loc[df.href.isna()].reset_index(drop=True)
-    df = df.iloc[:10000]
+    df = df.loc[df.href.isin(["-1", "-2", "-3"])].reset_index(drop=True)
+    print("Need", df.shape[0], "urls")
+    df = df.iloc[:s]
+    return df
+
+
+if __name__ == "__main__":
+    covers_path = "covers.csv"
+    df = load_df(covers_path, s=4000)
     if (df.shape[0] == 0):
         print("Nothing to be retrieved")
     else:

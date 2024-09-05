@@ -1,5 +1,10 @@
 import asyncio
-from prisma import Prisma
+try:
+    from prisma import Prisma
+except:
+    print("No prisma")
+    pass
+
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from collections import defaultdict
@@ -18,6 +23,7 @@ def encode(df, cols, reset=False):
 
 
 URL = "https://m.media-amazon.com/images/I/712+BCaQuzL._AC_UF894,1000_QL80_.jpg"
+URL = "https://www.svgrepo.com/show/508699/landscape-placeholder.svg"
 
 
 def read_df(
@@ -34,7 +40,7 @@ def read_df(
     ratings = encode(ratings, ["userId", "movieId"], False)
     covers = pd.read_csv("covers.csv", nrows=nrows).drop_duplicates("imdbId")
     ratings = ratings.merge(covers, on="imdbId", how="left")
-    ratings.href[ratings.href == "-1"] = np.nan
+    ratings.href[ratings.href.isin(["-1", "-2", "-3"])] = np.nan
     ratings.href = ratings.href.fillna(def_href)
     ratings = ratings.reset_index(drop=True)
     avg_rating = ratings[["imdbId", "rating"]].groupby(
@@ -65,7 +71,7 @@ def movie_to_dict(row):
     i, movie = row
     return {
         "title": movie.title,
-        "genres": movie.genres,
+        "genres": str(movie.genres).split("|"),
         "imdbId": movie.imdbId,
         "href": movie.href,
         "avg_rating": movie.avg_rating,

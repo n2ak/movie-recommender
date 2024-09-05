@@ -6,3 +6,5 @@ result.png
 dataset
 models
 __pycache__
+*.tensor
+train.csv
