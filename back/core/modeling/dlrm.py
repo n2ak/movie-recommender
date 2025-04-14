@@ -64,17 +64,19 @@ class DLRM(BaseModel[DLRMParams]):
         user,
         movieIds=None,
     ):
-        if self.ds_state is None:
-            self.ds_state = DLRMState(**self.config.extra)
-        ds_state = self.ds_state
-        assert user < ds_state.n_users
+        from ..data import MovieLens
+        from ..utils import exclude
+        movie_lens = MovieLens.get_instance()
+        assert movie_lens.n_users == self.config.n_users
+        assert user < movie_lens.n_users
         if movieIds is None:
-            movieIds = np.arange(ds_state.n_movies)
+            movieIds = np.arange(movie_lens.n_movies)
         else:
             movieIds = np.array(movieIds)
 
-        movie_data = ds_state.movies.loc[ds_state.movies.movie.isin(movieIds)]
-        users_data = ds_state.users.loc[ds_state.users.user == user]
+        movie_data = movie_lens.movies.loc[movie_lens.movies.movie.isin(
+            movieIds)]
+        users_data = movie_lens.users.loc[movie_lens.users.user == user]
         nmovies = movie_data.shape[0]
         userIds = np.array([user] * nmovies)
 
@@ -82,54 +84,14 @@ class DLRM(BaseModel[DLRMParams]):
             a = users_data[user_cols]
             a = np.repeat(a, nmovies, axis=0)
             return np.concatenate((a, movie_data[movie_cols].values), axis=1)
-        cat = dup(ds_state.user_cat_cols,
-                  ds_state.movie_cat_cols).astype(np.int32)
-        num = dup(ds_state.user_num_cols,
-                  ds_state.movie_num_cols).astype(np.float32)
+        user_cat_cols = exclude(movie_lens.user_cat_cols, "usedr")
+        cat = dup(movie_lens.user_cat_cols,
+                  movie_lens.movie_cat_cols).astype(np.int32)
+        num = dup(movie_lens.user_num_cols,
+                  movie_lens.movie_num_cols).astype(np.float32)
         return dict(
             users=userIds,
             movies=movieIds,
             num=num,
             cat=cat,
-        )
-
-
-@dataclass
-class DLRMState:
-    n_users: int
-    n_movies: int
-    user_cat_cols: list[str]
-    movie_cat_cols: list[str]
-    user_num_cols: list[str]
-    movie_num_cols: list[str]
-    movies_path: str
-    users_path: str
-
-    __movies: pd.DataFrame = None
-    __users: pd.DataFrame = None
-
-    @property
-    def movies(self):
-        if self.__movies is None:
-            from ..utils import read_csv
-            self.__movies = read_csv(self.movies_path)
-        return self.__movies
-
-    @property
-    def users(self):
-        if self.__users is None:
-            from ..utils import read_csv
-            self.__users = read_csv(self.users_path)
-        return self.__users
-
-    def to_dict(self):
-        return dict(
-            n_users=self.n_users,
-            n_movies=self.n_movies,
-            user_cat_cols=self.user_cat_cols,
-            movie_cat_cols=self.movie_cat_cols,
-            user_num_cols=self.user_num_cols,
-            movie_num_cols=self.movie_num_cols,
-            movies_path=self.movies_path,
-            users_path=self.users_path,
         )

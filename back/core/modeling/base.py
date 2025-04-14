@@ -29,7 +29,8 @@ class Config(Generic[T], BaseParams):
     model_name: str
     lr: float
     params: T
-    extra: dict
+    n_users: int
+    n_movies: int
 
     @staticmethod
     def fromdict(d: dict):
@@ -49,7 +50,8 @@ class Config(Generic[T], BaseParams):
             lr=lr,
             model_name=model_name,
             params=ParamsCls(**params),
-            extra={}
+            n_movies=d["n_movies"],
+            n_users=d["n_users"],
         )
 
 
@@ -134,7 +136,6 @@ class BaseModel(nn.Module, Generic[T]):
         filename: str,
         optimizer=None,
         last_training_result: TrainingResult = None,
-        extra=None,
     ):
         assert "models" not in filename
         from ..utils import get_models_path
@@ -145,7 +146,6 @@ class BaseModel(nn.Module, Generic[T]):
             "config": self.config.asdict(),
             "optim": optimizer.state_dict() if optimizer is not None else None,
             "last_training_result": last_training_result.asdict() if last_training_result is not None else None,
-            "extra": extra,
         }
         torch.save(state, path)
         print("Model saved.")
@@ -162,7 +162,6 @@ class BaseModel(nn.Module, Generic[T]):
             state["config"],
             load_optim=(state["optim"] is not None or (not model_only)),
         )
-        model.config.extra = state["extra"]
         model.load_state_dict(state["model"])
         if model_only:
             return model
@@ -185,6 +184,7 @@ class BaseModel(nn.Module, Generic[T]):
     def predict(self, sort=True, clamp=None, **input) -> torch.Tensor:
         self.eval()
         with torch.no_grad():
+            # TODO add batches
             res = self._predict(**input) * 5
             if clamp:
                 min, max = clamp
@@ -367,7 +367,6 @@ class BaseModel(nn.Module, Generic[T]):
 
     @staticmethod
     def fromconfig(conf: dict, load_optim=False):
-        from .dlrm import DLRMState
         config = Config.fromdict(conf)
         model = BaseModel.init_model(config)
         optimizer = None

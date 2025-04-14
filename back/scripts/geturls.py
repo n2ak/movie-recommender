@@ -94,7 +94,7 @@ def save(urls, covers_path):
     urlss = np.array(urls)
     print(urlss.shape)
     href = pd.DataFrame({"imdbId": urlss[:, 0], "href": urlss[:, 1]})
-    old_covers = pd.read_csv(covers_path)
+    old_covers = read_csv(covers_path)
     covers = pd.concat([old_covers, href]).reset_index(drop=True)
     covers.imdbId = covers.imdbId.astype(int)
     covers = covers.drop_duplicates("imdbId", keep="last")
@@ -103,8 +103,8 @@ def save(urls, covers_path):
 
 
 def load_df(covers_path, s=10000):
-    df = pd.read_csv("./dataset/ml-32m/links.csv")
-    df2 = pd.read_csv(covers_path)
+    df = read_csv("./dataset/ml-32m/links.csv")
+    df2 = read_csv(covers_path)
     df = df.merge(df2, on="imdbId", how="outer")
     df = df.sort_values("movieId").iloc[:13629+1].reset_index(drop=True)
     df = df.loc[df.href.isin(["-1", "-2", "-3"])].reset_index(drop=True)
