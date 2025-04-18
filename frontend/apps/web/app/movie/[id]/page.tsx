@@ -6,6 +6,7 @@ import { FixedRating } from "@/components/Rating";
 import { useAuthStore } from "@/hooks/useAuthStore";
 import useMovie from "@/hooks/useMovie";
 import { useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
@@ -40,6 +41,9 @@ export default function MoviePage() {
               <FixedRating v={movie.userRating[0]?.rating}></FixedRating>
             </div>
           )}
+          <div className="cursor-pointer underline">
+            <Link href={"/reviews/" + movie.id}>{movie.nreviews} reviews</Link>
+          </div>
           <Button onClick={() => setOpen((o) => !o)} className="!w-20 mx-auto">
             Rate
           </Button>

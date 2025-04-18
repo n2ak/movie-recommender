@@ -13,4 +13,5 @@
     --color-2: #7E60BF;
     --color-3: #E4B1F0;
     --color-4: #FFE1FF;
+    --shadow-all-sides: 0 0 10px rgba(0, 0, 0, .5)
 }

@@ -47,3 +47,6 @@ export function capitalizeFirstLetter(s: string) {
 export function joinCN(...args: string[]) {
   return args.join(" ");
 }
+
+export const formatNumber = (n: number) =>
+  Intl.NumberFormat("en", { notation: "compact" }).format(n);

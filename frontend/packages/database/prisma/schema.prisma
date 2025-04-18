@@ -24,13 +24,14 @@ model UserModel {
   password String
   active   Boolean @default(true)
 
-  createdAt     DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime          @default(now()) @updatedAt
-  movieRating   UserMovieRating[]
-  MovieReview   MovieReview[]
-  ReviewLike    ReviewLike[]
-  ReviewComment ReviewComment[]
-  CommentLike   CommentLike[]
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  movieRatings   UserMovieRating[]
+  movieReviews   MovieReview[]
+  reviewLikes    ReviewLike[]
+  reviewComments ReviewComment[]
+  commentLikes   CommentLike[]
 
   @@map("user")
 }
@@ -44,11 +45,12 @@ model MovieModel {
   href          String
   total_ratings Int
   year          Int
+  nreviews      Int      @default(0)
 
-  createdAt   DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime          @default(now()) @updatedAt
-  userRating  UserMovieRating[]
-  MovieReview MovieReview[]
+  createdAt  DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime          @default(now()) @updatedAt
+  userRating UserMovieRating[]
+  reviews    MovieReview[]
 
   @@map("movie")
 }
@@ -80,9 +82,9 @@ model MovieReview {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @default(now()) @updatedAt
 
-  text          String
-  ReviewLike    ReviewLike[]
-  ReviewComment ReviewComment[]
+  text     String
+  likes    ReviewLike[]
+  comments ReviewComment[]
 }
 
 model ReviewLike {
@@ -104,7 +106,7 @@ model ReviewComment {
   userModelId   Int
   createdAt     DateTime      @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime      @default(now()) @updatedAt
-  CommentLike   CommentLike[]
+  comments      CommentLike[]
 }
 
 model CommentLike {

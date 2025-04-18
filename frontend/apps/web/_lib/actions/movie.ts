@@ -78,8 +78,33 @@ export const getRatedMoviesForUser = async (
   order: "asc" | "desc"
 ) => await movieDB.getRatedMoviesForUser(userId, start, count, sortKey, order);
 
+export const getMovieReviews = async (
+  currentUserId: number,
+  movieId: number,
+  start: number,
+  count: number,
+  sortKey: any,
+  order: "asc" | "desc"
+) =>
+  await movieDB.getMovieReviews(
+    currentUserId,
+    movieId,
+    start,
+    count,
+    sortKey,
+    order
+  );
+
+export type MovieReview = Awaited<ReturnType<typeof getMovieReviews>>[0];
+
 export const getNumberOfRatings = async (userId: number) =>
   await movieDB.getNumberOfRatings(userId);
+
+export const likeMovieReview = async (userId: number, movieReviewId: number) =>
+  await movieDB.likeMovieReview(userId, movieReviewId);
+
+export const getNumberOfMovieReviews = async (movieId: number) =>
+  await movieDB.getNumberOfMovieReviews(movieId);
 
 export const getMovieForUser = async (userId: number, movieId: number) =>
   await movieDB.getMovieForUser(userId, movieId);

@@ -17,7 +17,7 @@ export function RatingsTable({ userId }: { userId: number }) {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const {
-    movies,
+    data: movies,
     setPageNumber,
     queryKey,
     pageNumber,

@@ -1,10 +1,5 @@
 import { Prisma } from "@prisma/client";
 
-export const movieSelect = Prisma.validator<Prisma.MovieModelSelect>()({
-  id: true,
-  userRating: true,
-});
-
 export const findRatings = (userId: number) => {
   return Prisma.validator<Prisma.MovieModelFindManyArgs>()({
     where: {

@@ -12,7 +12,7 @@ export default function useMovie({
 }) {
   // https://tkdodo.eu/blog/seeding-the-query-cache#pull-approach
   const queryKey = ["movie", { userId, movieId }];
-  const { data: movie } = useQuery({
+  const { data: movie, isLoading } = useQuery({
     queryKey,
     queryFn: async () => {
       const movie = await getMovieForUser(userId!, movieId);
@@ -24,5 +24,6 @@ export default function useMovie({
   return {
     movie,
     queryKey,
+    isLoading,
   };
 }

@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { getById } from "./authDb";
 import { prismaClient } from "./connect";
 import {
   findMovie,
@@ -6,6 +7,7 @@ import {
   userRatingInclude,
   UserRatingSortKey,
 } from "./selects/movie";
+import { userSelect } from "./selects/user";
 function counts(arr: string[]) {
   const count: { [index: string]: number } = {};
 
@@ -107,6 +109,16 @@ export async function getNumberOfRatings(userId: number) {
     })
   )._count;
 }
+export async function getNumberOfMovieReviews(movieId: number) {
+  return (
+    await prismaClient.movieReview.aggregate({
+      where: {
+        movieModelId: movieId,
+      },
+      _count: true,
+    })
+  )._count;
+}
 const userRatingSsortKeys: UserRatingSortKey[] = ["rating", "timestamp"];
 const movieSortKeys: MovieSortKey[] = [];
 export type RatedMoviesRatingSortKey = UserRatingSortKey | MovieSortKey;
@@ -177,6 +189,73 @@ export const likeMovieReview = async (
       userModelId: userId,
     },
   });
+};
+export const getMovieReviews = async (
+  currentUserId: number,
+  movieId: number,
+  start: number,
+  count: number,
+  sortKey: any,
+  order: "asc" | "desc"
+) => {
+  const res = await prismaClient.movieReview.findMany({
+    where: {
+      movieModelId: movieId,
+    },
+    include: {
+      user: {
+        select: {
+          ...userSelect,
+          movieRatings: {
+            where: {
+              movieModelId: movieId,
+            },
+            take: 1,
+          },
+        },
+      },
+      _count: {
+        select: {
+          likes: true,
+          comments: true,
+        },
+      },
+      likes: {
+        where: {
+          userModelId: currentUserId,
+        },
+        select: {
+          id: true,
+        },
+      },
+    },
+    skip: start,
+    take: count,
+  });
+  const userId = 10;
+  const userRating = (await getMovieForUser(1, 1108))!.userRating;
+  res.push({
+    createdAt: new Date(),
+    id: 0,
+    movieModelId: movieId,
+    text: "xd ".repeat(100),
+    updatedAt: new Date(),
+    userModelId: userId,
+    user: {
+      ...(await getById(userId))!,
+      movieRatings: userRating,
+    },
+    _count: {
+      likes: 100000,
+      comments: 13000,
+    },
+    likes: [
+      // {
+      //   id: currentUserId,
+      // },
+    ],
+  });
+  return res;
 };
 export const commentMovieReview = async (
   userId: number,
