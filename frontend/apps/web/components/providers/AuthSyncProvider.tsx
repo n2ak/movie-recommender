@@ -19,7 +19,6 @@ export default function AuthSyncProvider() {
     } else if (status === "loading") {
       setLoading(true);
     }
-    console.log("Last status", status);
   }, [status, data]);
   return null;
 }

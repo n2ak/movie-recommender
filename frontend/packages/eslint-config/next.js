@@ -1,12 +1,13 @@
 import js from "@eslint/js";
-import eslintConfigPrettier from "eslint-config-prettier";
-import tseslint from "typescript-eslint";
-import pluginReactHooks from "eslint-plugin-react-hooks";
-import pluginReact from "eslint-plugin-react";
-import globals from "globals";
 import pluginNext from "@next/eslint-plugin-next";
+import stylistic from "@stylistic/eslint-plugin";
+import eslintConfigPrettier from "eslint-config-prettier";
+import eslintPluginPrettier from "eslint-plugin-prettier";
+import pluginReact from "eslint-plugin-react";
+import pluginReactHooks from "eslint-plugin-react-hooks";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 import { config as baseConfig } from "./base.js";
-
 /**
  * A custom ESLint configuration for libraries that use Next.js.
  *
@@ -29,6 +30,8 @@ export const nextJsConfig = [
   {
     plugins: {
       "@next/next": pluginNext,
+      "@stylistic": stylistic,
+      prettier: eslintPluginPrettier,
     },
     rules: {
       ...pluginNext.configs.recommended.rules,
@@ -44,6 +47,14 @@ export const nextJsConfig = [
       ...pluginReactHooks.configs.recommended.rules,
       // React scope no longer necessary with new JSX transform.
       "react/react-in-jsx-scope": "off",
+      "@stylistic/padding-line-between-statements": [
+        "error",
+        { blankLine: "always", prev: "export", next: "export" },
+        { blankLine: "always", prev: "export", next: "function" },
+        { blankLine: "always", prev: "function", next: "export" },
+        { blankLine: "always", prev: "function", next: "block" },
+        { blankLine: "always", prev: "block", next: "function" },
+      ],
     },
   },
 ];

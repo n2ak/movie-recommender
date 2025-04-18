@@ -1,7 +1,7 @@
 // import { User } from "next-auth";
 import { create } from "zustand";
 // import type { User } from "@repo/database";
-interface User {
+export interface User {
   id: number;
   email: string;
   name: string;

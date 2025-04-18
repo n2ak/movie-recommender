@@ -1,6 +1,7 @@
 export const roundRating = (rating: number) => {
   return Math.round(rating * 2) / 2;
 };
+
 export function formatDate(d: Date) {
   let month = "" + (d.getMonth() + 1),
     day = "" + d.getDate(),
@@ -11,8 +12,9 @@ export function formatDate(d: Date) {
 
   return [day, month, year].join("-");
 }
+
 export function timeSince(d: Date) {
-  let seconds = Math.floor(((new Date() as any) - (d as any)) / 1000);
+  const seconds = Math.floor(((new Date() as any) - (d as any)) / 1000);
 
   let interval = seconds / 31536000;
 
@@ -37,6 +39,11 @@ export function timeSince(d: Date) {
   }
   return Math.floor(seconds) + " seconds";
 }
+
 export function capitalizeFirstLetter(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export function joinCN(...args: string[]) {
+  return args.join(" ");
 }

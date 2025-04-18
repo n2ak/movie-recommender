@@ -18,14 +18,19 @@ datasource db {
 }
 
 model UserModel {
-  id       Int    @id // @default(autoincrement())
+  id       Int     @id // @default(autoincrement())
   username String
-  email    String @unique
+  email    String  @unique
   password String
+  active   Boolean @default(true)
 
-  createdAt   DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime          @default(now()) @updatedAt
-  movieRating UserMovieRating[]
+  createdAt     DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime          @default(now()) @updatedAt
+  movieRating   UserMovieRating[]
+  MovieReview   MovieReview[]
+  ReviewLike    ReviewLike[]
+  ReviewComment ReviewComment[]
+  CommentLike   CommentLike[]
 
   @@map("user")
 }
@@ -40,24 +45,74 @@ model MovieModel {
   total_ratings Int
   year          Int
 
-  createdAt  DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt  DateTime          @default(now()) @updatedAt
-  userRating UserMovieRating[]
+  createdAt   DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime          @default(now()) @updatedAt
+  userRating  UserMovieRating[]
+  MovieReview MovieReview[]
 
   @@map("movie")
 }
 
 model UserMovieRating {
-  id        Int        @id @default(autoincrement())
-  movie     MovieModel @relation(fields: [movieModelId], references: [id])
-  user      UserModel  @relation(fields: [userModelId], references: [id])
-  rating    Float
+  id     Int        @id @default(autoincrement())
+  movie  MovieModel @relation(fields: [movieModelId], references: [id])
+  user   UserModel  @relation(fields: [userModelId], references: [id])
+  rating Float
+
   timestamp DateTime
-  createdAt DateTime   @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime   @default(now()) @updatedAt
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt
 
   movieModelId Int
   userModelId  Int
 
   @@map("movie_rating")
+}
+
+model MovieReview {
+  id           Int        @id @default(autoincrement())
+  movie        MovieModel @relation(fields: [movieModelId], references: [id])
+  user         UserModel  @relation(fields: [userModelId], references: [id])
+  movieModelId Int
+  userModelId  Int
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  text          String
+  ReviewLike    ReviewLike[]
+  ReviewComment ReviewComment[]
+}
+
+model ReviewLike {
+  id            Int         @id @default(autoincrement())
+  movie         MovieReview @relation(fields: [movieReviewId], references: [id])
+  user          UserModel   @relation(fields: [userModelId], references: [id])
+  movieReviewId Int
+  userModelId   Int
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime    @default(now()) @updatedAt
+}
+
+model ReviewComment {
+  id            Int           @id @default(autoincrement())
+  review        MovieReview   @relation(fields: [movieReviewId], references: [id])
+  user          UserModel     @relation(fields: [userModelId], references: [id])
+  comment       String
+  movieReviewId Int
+  userModelId   Int
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @default(now()) @updatedAt
+  CommentLike   CommentLike[]
+}
+
+model CommentLike {
+  id              Int           @id @default(autoincrement())
+  comment         ReviewComment @relation(fields: [reviewCommentId], references: [id])
+  user            UserModel     @relation(fields: [userModelId], references: [id])
+  createdAt       DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime      @default(now()) @updatedAt
+  reviewCommentId Int
+  userModelId     Int
 }

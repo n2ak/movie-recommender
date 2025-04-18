@@ -53,8 +53,8 @@ export const Backend = {
     });
   },
   request: async (
-    data: GetMoviesRecomRequest
-  ): Promise<GetMoviesRecomResponse> => {
+    data: BackendGetMoviesRecomRequest
+  ): Promise<BackendGetMoviesRecomResponse> => {
     try {
       const a = (await movies_recom(data)).data;
       return a;
@@ -77,7 +77,7 @@ export const Backend = {
   },
 };
 
-export interface GetMoviesRecomResponse {
+export interface BackendGetMoviesRecomResponse {
   time: number;
   result: {
     movieId: number;
@@ -94,7 +94,7 @@ export interface GetMoviesRecomResponse {
 
 type Relation = "or" | "and";
 
-interface GetMoviesRecomRequest {
+interface BackendGetMoviesRecomRequest {
   userId: number;
   movieIds: number[];
   genres: string[];

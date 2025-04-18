@@ -5,7 +5,12 @@ const credentialsSchema = z.object({
   password: z.string().min(6),
 });
 
-const ratingSchema = z.number().min(1).max(5);
+const ratingSchema = z
+  .number({
+    message: "Rating must be a number",
+  })
+  .min(1, "Rating must be in range [0,5]")
+  .max(5, "Rating must be in range [0,5]");
 const profileSettingsSchema = z.object({
   name: z
     .string({
@@ -21,33 +26,49 @@ export function parseCredentials(obj: any) {
 export function parseRating(obj: any) {
   return parse(obj, ratingSchema);
 }
+
 export function parseProfileSettings(obj: any) {
   return parse(obj, profileSettingsSchema);
 }
-function getErrors<I, O>(parsed: z.SafeParseReturnType<I, O>) {
+
+function getErrors<I, O>(parsed: z.SafeParseReturnType<I, O>, key?: string) {
   const sep = "\n";
   const errors: {
     [key in keyof I]?: string;
   } = {};
+  function join(p: keyof I, message: string) {
+    errors[p] = (errors[p] ? `${errors[p]}${sep}` : "") + message;
+  }
   parsed.error?.errors.forEach((err) => {
-    err.path.forEach((p: any) => {
-      if (!Object.hasOwn(errors, p)) {
-        errors[p as keyof I] = "";
-      }
-      errors[p as keyof I] =
-        (errors[p as keyof I] || "") + `${sep}${err.message}`;
-    });
+    if (err.path.length == 0 && !!key) {
+      join(key as keyof I, err.message);
+    } else {
+      err.path.forEach((p: any) => {
+        join(p, err.message);
+      });
+    }
   });
   return errors;
 }
+
 function parse<O>(obj: any, schema: z.Schema<O>) {
   const parsed = schema.safeParse(obj);
   if (!parsed.success) {
-    return {
-      errors: getErrors(parsed),
-    };
+    throw new ValidationError(undefined, getErrors(parsed, "rating"));
   }
   return {
     data: parsed.data,
   };
+}
+
+export class ValidationError extends Error {
+  constructor(
+    message: string | undefined,
+    public errors: any
+  ) {
+    if (!message) {
+      message = Object.values(errors)[0] as string;
+    }
+    super(message);
+  }
 }

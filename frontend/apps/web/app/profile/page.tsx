@@ -2,6 +2,7 @@
 
 import OverviewSection from "@/components/OvervieSection";
 import ProfileSidePanel from "@/components/ProfileSidePanel";
+import RecentLoginActivity from "@/components/RecentLoginActivity";
 import SettingsSection from "@/components/SettingsSection";
 import StatsSection from "@/components/StatsSection";
 import { useAuthStore } from "@/hooks/useAuthStore";
@@ -11,11 +12,11 @@ export default function ProfilePage({}) {
   return <Profile />;
 }
 
-type Section = "overview" | "settings" | "stats";
+type Section = "loginactivity" | "overview" | "settings" | "stats";
 export function Profile() {
   const user = useAuthStore((s) => s.user);
   const params = useSearchParams();
-  const section: Section = (params.get("section") as Section) || "overview";
+  const section = (params.get("section") as Section) || "overview";
   if (!user) {
     return null;
   }
@@ -27,13 +28,15 @@ export function Profile() {
         return <SettingsSection user={user as any} />;
       case "stats":
         return <StatsSection user={user as any} />;
+      case "loginactivity":
+        return <RecentLoginActivity />;
       default:
         return null;
     }
   }
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="flex flex-col md:flex-row max-w-6xl mx-auto">
+    <div className="h-full">
+      <div className="flex flex-col md:flex-row max-w-6xl mx-auto h-full">
         <ProfileSidePanel user={user} />
         <main className="flex-1 p-6">{getSelection()}</main>
       </div>

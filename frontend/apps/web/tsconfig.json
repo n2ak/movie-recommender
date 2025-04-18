@@ -23,7 +23,9 @@
       "@/*": ["./*"]
     },
     "declaration": false,
-    "declarationMap": false
+    "declarationMap": false,
+
+    "experimentalDecorators": true
   },
   "include": [
     "**/*.ts",

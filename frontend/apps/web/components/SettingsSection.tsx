@@ -1,11 +1,13 @@
-import { changeProfileSettingsAction } from "@/_lib/actions/action";
 import { ProfileSettingsFormState } from "@/_lib/actions/FormStates";
+import { changeProfileSettingsAction, logOut } from "@/_lib/actions/user";
+import { useAuthStore } from "@/hooks/useAuthStore";
 import { User } from "next-auth";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useActionState, useState } from "react";
 import Button from "./Button";
+import { ColStack } from "./Container";
+import DeleteAccountModal from "./DeleteAccountModal";
 import FormField from "./FormField";
-import LanguageSelect from "./LanguageSelect";
 import { useSnackBar } from "./providers/SnackBarProvider";
 
 export default function SettingsSection({ user }: { user: User }) {
@@ -23,20 +25,24 @@ export default function SettingsSection({ user }: { user: User }) {
         email: prevState.data.email,
       };
       const res = await changeProfileSettingsAction(data);
-      console.log({ res });
       setSaving(false);
-      if (!!res.message) {
+      const ret: ProfileSettingsFormState = {
+        ...res,
+        data: res.data as any,
+      };
+      if (res.message) {
         snackbar.warning("Error: " + res.message, 5000);
-      } else if (!!res.errors) {
+        ret.data = data;
+      } else if (res.errors) {
         snackbar.warning("Errors: " + JSON.stringify(res.errors), 1000);
+        ret.data = data;
       } else {
         snackbar.success("Saved.", 1000);
         await update({
           name: data.name,
         });
-        console.log("Updated?");
       }
-      return res;
+      return ret;
     },
     {
       data: {
@@ -46,11 +52,10 @@ export default function SettingsSection({ user }: { user: User }) {
     }
   );
   const [settings, setSettings] = useState(state.data);
-
   return (
     <>
       <h1 className="text-2xl font-semibold mb-4">Settings</h1>
-      <div className="bg-white p-4 rounded-lg shadow-sm">
+      <ColStack className="gap-2 not-dark:bg-white p-4 rounded-lg shadow-sm">
         <form className="flex flex-col gap-2" action={formAction}>
           <div className="grid gap-6 grid-cols-2">
             <FormField
@@ -89,28 +94,35 @@ export default function SettingsSection({ user }: { user: User }) {
             </Button>
           </div>
         </form>
-        <LanguageSelect />
-
-        {/* <div className="mt-4 space-y-2 text-sm text-gray-600">
-          <div>
-            <span className="font-medium">Location:</span> {user.location}
-          </div>
-          <div>
-            <span className="font-medium">Website:</span>{" "}
-            <a
-              href={user.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              {user.website}
-            </a>
-          </div>
-          <div>
-            <span className="font-medium">Joined:</span> {user.joined}
-          </div>
-        </div> */}
-      </div>
+        <DeleteAccount />
+      </ColStack>
     </>
+  );
+}
+
+function DeleteAccount() {
+  const [open, setOpen] = useState(false);
+  const { clearUser } = useAuthStore();
+  return (
+    <div>
+      <Button
+        onClick={() => setOpen(true)}
+        className="dark:!bg-red-700 dark:hover:!bg-red-800"
+      >
+        Delete account.
+      </Button>
+      {open && (
+        <DeleteAccountModal
+          open={open}
+          onCancel={() => setOpen(false)}
+          onDelete={() => {
+            setOpen(false);
+            logOut();
+            signOut();
+            clearUser();
+          }}
+        />
+      )}
+    </div>
   );
 }

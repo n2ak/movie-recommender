@@ -1,3 +1,4 @@
+import { joinCN } from "@/_lib/utils";
 import { Spinner } from "@radix-ui/themes";
 import { PropsWithChildren } from "react";
 
@@ -16,14 +17,19 @@ export default function Button({
   return (
     <button
       type={type}
-      //   disabled={loading}
-      className={
-        className +
-        " flex items-center justify-center text-white cursor-pointer bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-      }
-      onClick={onClick}
+      disabled={loading}
+      className={joinCN(
+        className || "",
+        "disabled:cursor-not-allowed cursor-pointer items-center text-center font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 bg-2 dark:bg-2 dark:hover:bg-1 hover:bg-1"
+      )}
+      onClick={(e) => {
+        if (onClick) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
-      <div className="">
+      <div className="text-center">
         {!loading ? <>{children}</> : <Spinner className="mx-auto" />}
       </div>
     </button>

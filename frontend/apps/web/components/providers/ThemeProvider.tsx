@@ -4,13 +4,16 @@ import { Theme } from "@radix-ui/themes";
 import { PropsWithChildren, useEffect } from "react";
 
 export default function ThemeProvider({ children }: PropsWithChildren) {
-  const darkMode = useUIStore((s) => s.isDarkMode);
+  const { isDarkMode, __loaded: loaded } = useUIStore();
   useEffect(() => {
-    if (darkMode) {
+    if (isDarkMode) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
-  }, [darkMode]);
-  return <Theme appearance={darkMode ? "dark" : "light"}>{children}</Theme>;
+  }, [isDarkMode]);
+  if (!loaded) {
+    return null;
+  }
+  return <Theme appearance={isDarkMode ? "dark" : "light"}>{children}</Theme>;
 }

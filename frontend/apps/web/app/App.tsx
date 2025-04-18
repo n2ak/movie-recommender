@@ -9,7 +9,9 @@ export default async function App({ children }: any) {
   return (
     <Providers session={session}>
       <NavBar />
-      <div className="pt-20 bg-back bg-fixed">{children}</div>
+      <div className="min-h-screen w-full pt-25 mx-auto px-2 lg:px-20 bg-gray-200 dark:bg-black">
+        {children}
+      </div>
     </Providers>
   );
 }

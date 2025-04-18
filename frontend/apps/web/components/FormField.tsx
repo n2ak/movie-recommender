@@ -1,3 +1,17 @@
+interface Props {
+  placeholder?: string;
+  value?: string;
+  className?: string;
+  onChange?: (v: string) => void;
+  type: "password" | "email" | "text";
+  error?: string;
+  name?: string;
+  label?: string;
+  disabled?: boolean;
+  addPasswordTogle?: boolean;
+  hasError?: boolean;
+}
+
 export default function FormField({
   placeholder,
   className,
@@ -8,19 +22,18 @@ export default function FormField({
   name,
   label,
   disabled,
-}: {
-  placeholder?: string;
-  value?: string;
-  className?: string;
-  onChange?: (v: string) => void;
-  type: "password" | "email" | "text";
-  error?: string;
-  name?: string;
-  label?: string;
-  disabled?: boolean;
-}) {
+  addPasswordTogle,
+  hasError,
+}: Props) {
+  const [show, setShow] = useState(false);
+  if (addPasswordTogle && type === "password") {
+    type = show ? "text" : "password";
+  }
+  if (hasError === undefined) {
+    hasError = !!error;
+  }
   return (
-    <div className="">
+    <ColStack>
       {label && (
         <label
           htmlFor={name}
@@ -29,24 +42,40 @@ export default function FormField({
           {label}
         </label>
       )}
-      <input
-        disabled={!!disabled}
-        value={value}
-        name={name}
-        onChange={(e) => {
-          if (!!onChange) onChange(e.target.value);
-        }}
-        className={
-          className +
-          ` w-full flex-4/6 border border-black/30 focus:border-blue-500 rounded-md py-1.5 px-2 ${!!error ? "!border-red-600" : ""}`
-        }
-        type={type}
-        placeholder={placeholder}
-      />
-
+      <div className="relative">
+        <div className="">
+          <input
+            disabled={!!disabled}
+            value={value}
+            name={name}
+            onChange={(e) => {
+              if (onChange) onChange(e.target.value);
+            }}
+            className={joinCN(
+              className || "",
+              "focus:outline-hidden w-full flex-4/6 border border-black/30 focus:border-blue-500 rounded-md py-1.5 px-2 bg-gray-200 dark:bg-gray-700 dark:text-white",
+              hasError ? "!border-red-600" : ""
+            )}
+            type={type}
+            placeholder={placeholder}
+          />
+        </div>
+        {addPasswordTogle && (
+          <div
+            className="absolute inset-y-0 end-0 flex items-center me-1 dark:hover:bg-gray-800 cursor-pointer my-1 px-1 rounded-sm dark:text-white"
+            onClick={() => setShow((s) => !s)}
+          >
+            {show ? <Eye /> : <EyeOff />}
+          </div>
+        )}
+      </div>
       {!!error && (
         <span className="text-red-600 font-medium text-sm">{error}</span>
       )}
-    </div>
+    </ColStack>
   );
 }
+import { joinCN } from "@/_lib/utils";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { ColStack } from "./Container";

@@ -1,60 +1,56 @@
 "use client";
-import { getMostGenresRatings } from "@/_lib/actions/action";
 import { Container, RowStack } from "@/components/Container";
-import { RatingsList } from "@/components/RatingsList";
+import { RatingsTable } from "@/components/MovieRatingsList";
 import { useAuthStore } from "@/hooks/useAuthStore";
-import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
-import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import useMostRatedGenres from "@/hooks/useMostRatedGenres";
 import { PieChart } from "@mui/x-charts/PieChart";
-import { RatingSortBy, SortOrder } from "@repo/database";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-
-const sort = {
-  timestamp: "Time",
-  rating: "Rating",
-  avg_rating: "Avg Rating",
-  title: "Title",
-};
 
 export default function RatingsPage() {
   const user = useAuthStore((s) => s.user);
-  const [sortValue, setSortValue] = useState<{
-    order: "asc" | "desc";
-    key: keyof typeof sort;
-  }>({
-    order: "asc",
-    key: "timestamp",
-  });
+  // const [sortValue, setSortValue] = useState<{
+  //   order: "asc" | "desc";
+  //   key: keyof typeof sort;
+  // }>({
+  //   order: "asc",
+  //   key: "timestamp",
+  // });
   if (!user) {
     return null;
   }
   return (
     <Container>
-      <MostRated userId={user.id} />
+      {/* <MostRatedGenres userId={user.id} /> */}
       <RowStack className="mb-5 w-full justify-between">
-        <FormControl
+        {/* <FormControl
           sx={{
             width: "45%",
             // height: "60px",
             display: "flex",
           }}
         >
-          <InputLabel id="demo-simple-select-label">Sort</InputLabel>
+          <InputLabel
+            id="demo-simple-select-label"
+            className="dark:!text-white"
+          >
+            Sort
+          </InputLabel>
           <Select
             labelId="demo-simple-select-label"
             id="demo-simple-select"
             value={sortValue.key}
             label="Sort by"
+            className="!border-white"
             onChange={(e, a) => {
               setSortValue({
                 ...sortValue,
-                key: e.target.value as RatingSortBy,
+                key: e.target.value as RatingSortKey,
               });
             }}
           >
             {Object.entries(sort).map(([k, v]) => (
-              <MenuItem value={k}>{v}</MenuItem>
+              <MenuItem key={k} value={k}>
+                {v}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -103,34 +99,16 @@ export default function RatingsPage() {
               />
             </MenuItem>
           </Select>
-        </FormControl>
+        </FormControl> */}
       </RowStack>
-      <RatingsList userId={user.id} sortValue={sortValue} />
-      {/* 
-      {!ratings || isLoading ? (
-        <RatingsListSkeleton nbox={5} />
-      ) : (
-      )}
-      */}
+      <RatingsTable userId={user.id} />
+      {/* <RatingsList userId={user.id} sortValue={sortValue} /> */}
     </Container>
   );
 }
 
-function MostRated({ userId }: { userId: number }) {
-  const {
-    data: genres,
-    isLoading,
-    isError,
-  } = useQuery({
-    initialData: [],
-    queryKey: [
-      "user_most_rated_genres",
-      {
-        userId,
-      },
-    ],
-    queryFn: () => getMostGenresRatings(userId),
-  });
+function MostRatedGenres({ userId }: { userId: number }) {
+  const genres = useMostRatedGenres(userId);
   const k = 5;
   const genres_truncated = genres.slice(0, k);
   if (genres.length > k) {

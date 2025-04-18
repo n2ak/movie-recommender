@@ -2,6 +2,7 @@ export type ProfileSettingsFormState = FormState<{
   name: string;
   email: string;
 }>;
+
 export type LoginFormState = FormState<{
   username: string;
   password: string;

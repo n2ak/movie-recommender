@@ -20,6 +20,15 @@ export type MovieGenre =
   | "War"
   | "Western";
 export type SortOrder = Prisma.SortOrder;
-export type { Movie, MovieForUser, User } from "./definitions";
-export { moviesDb, type RatingWithMovie } from "./movie";
-export type RatingSortBy = "rating" | "timestamp" | "title" | "avg_rating";
+export * as userDB from "./authDb";
+export * as movieDB from "./movieDb";
+// export type RatingSortKey = "rating" | "timestamp" | "title" | "avg_rating";
+export type { RatedMoviesRatingSortKey as RatingSortKey } from "./movieDb";
+
+export const {
+  PrismaClientInitializationError,
+  PrismaClientRustPanicError,
+  PrismaClientValidationError,
+  PrismaClientKnownRequestError,
+  PrismaClientUnknownRequestError,
+} = Prisma;

@@ -39,22 +39,24 @@ export default function ProfileSidePanel({ user }: any) {
     },
   ];
   return (
-    <aside className="w-full md:w-1/4 bg-white p-6 border-r">
-      <div className="flex flex-col items-center md:items-start space-y-4">
-        <img
-          src={fakeUser.avatar}
-          alt={user.name}
-          className="w-24 h-24 rounded-full object-cover"
-        />
-        <div className="text-center md:text-left">
-          <h2 className="text-xl font-semibold">{user.name}</h2>
-          <p className="text-sm text-gray-500">@{user.name}</p>
+    <aside className="w-full md:w-1/4 py-6 px-3 dark:bg-gray-900">
+      <div className="flex flex-col space-y-4 w-full">
+        <div className="">
+          <img
+            src={fakeUser.avatar}
+            alt={user.name}
+            className="w-24 h-24 rounded-full object-cover mx-auto"
+          />
         </div>
-        <nav className="mt-6 space-y-2 w-full">
+        <div className="pl-3">
+          <h2 className="text-xl font-bold">{user.name}</h2>
+          <p className="text-sm text-gray-500">{user.email}</p>
+        </div>
+        <nav className="mt-3 flex flex-col gap-2 w-full">
           {sections.map((s) => (
             <span
               key={s.name}
-              className="block cursor-pointer text-gray-700 hover:text-blue-600"
+              className="block cursor-pointer font-medium dark:text-gray-300 dark:hover:bg-gray-600 rounded-sm pl-2 py-0.5"
               onClick={() =>
                 router.push(
                   pathname +
