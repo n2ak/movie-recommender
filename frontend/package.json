@@ -9,7 +9,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "db:migrate": "cd packages/database && npx prisma migrate dev --name init",
-    "db:generate": "cd packages/database && npx prisma generate"
+    "db:generate": "cd packages/database && npx prisma generate",
+    "dockerize": "docker build -f apps/web/Dockerfile -t webapp ."
   },
   "devDependencies": {
     "prettier": "^3.5.3",
