@@ -9,10 +9,19 @@ class Instance:
     @classmethod
     def get_instance(cls):
         if cls.instance is None:
-            cls.instance = cls()
-            cls.instance.init()
+            instance = cls()
+            instance.init()
             print(cls.__name__, "has been initialized")
+            cls.instance = instance
         return cls.instance
+
+    def init(self):
+        raise NotImplementedError()
+
+
+def display(a):
+    from IPython.display import display
+    display(a)
 
 
 def seed_all(seed):
@@ -37,6 +46,7 @@ def read_csv(p, **kwargs) -> pd.DataFrame:
 
 def to_csv(df: pd.DataFrame, p: str, **kwargs):
     df.to_csv(get_dataset_path()/p, index=False, **kwargs)
+    print("Saved to", p)
 
 
 def _get_base_path():

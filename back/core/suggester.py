@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import KNeighborsTransformer
+from core.data import MovieLens
+
+from core.utils import display
 
 
 class Suggester:
@@ -14,41 +17,35 @@ class Suggester:
         self.user_knn = KNeighborsTransformer(n_neighbors=n_neighbors_user)
         self.is_fit = False
 
-    def fit(self, movies: pd.DataFrame, users: pd.DataFrame, ratings: pd.DataFrame):
-        self.movieIds = movies.movie
-        self.userIds = users.user
-        self.movies = movies = movies.drop(columns="movie").astype(float)
-        self.users = users = users.drop(columns="user").astype(float)
-        self.movie_knn.fit(movies.values)
-        self.user_knn.fit(users.values)
+    def fit(self, movielens: MovieLens):
+        movies = movielens.movies.copy()
+        users = movielens.users.copy()
+        ratings = movielens._ratings.copy()
+
+        self.movies = movies
+        self.users = users
+        self.movie_knn.fit(movies.drop("movieId", axis=1).values)
+        self.user_knn.fit(users.drop("userId", axis=1).values)
 
         self.is_fit = True
         self.ratings = ratings
 
-    def contains_genres(self, genres, relation, df=None):
-        if df is None:
-            df = self.ratings
-        assert isinstance(genres, (list, tuple))
-        a = df.movie_genres.str.contains(genres[0])
-        for g in genres[1:]:
-            if relation == "and":
-                a &= df.genres.str.contains(g)
-            elif relation == "or":
-                a |= df.genres.str.contains(g)
-            else:
-                raise Exception(f"Invalid relation '{relation}'")
-        return a
+    def movies_with_genres(self, genres, relation, inids=None):
+        movies = self.movies
+        if inids is not None:
+            movies = movies.loc[movies.movieId.isin(inids)]
+        relation = {"or": np.any, "and": np.all}[relation]
+        cond = relation(movies[[f"movie_{g}" for g in genres]], axis=1)
+        return movies.loc[cond].movieId.tolist()
 
     def suggest(
         self,
         user_id,
         nmovies,
-        n_neighbor_users=10,
+        n_neighbor_users=100,
         n_neighbor_movies=100,
-        n=10,
         genres: list[str] = [],
         add_closest_users=True,
-        deterministic=False,
         relation=None,
     ):
         """
@@ -56,75 +53,89 @@ class Suggester:
         """
         assert self.is_fit
         # top movies that the user has already rated
-        top_movies = top_movies_for_user = self.get_users_top_movies(
-            [user_id],
-            deterministic=deterministic, n=n, genres=genres,
+        aleady_watched = self.get_users_top_movies(
+            [user_id], genres=genres,
             relation=relation,
         )
-        if len(top_movies_for_user):
+        # print("aleady_watched", len(aleady_watched))
+        if len(aleady_watched):
             # get closest movies to user movies
             closest_movies_for_user = self.get_closest_movies(
-                top_movies_for_user,
+                aleady_watched,
                 n_neighbor_movies,
                 genres=genres,
                 relation=relation,
             )
             # get similar users
-            if len(top_movies) and add_closest_users:
+            # print("closest_movies_for_user", len(closest_movies_for_user))
+            if add_closest_users:
                 closest_users = self.get_closest_users(
                     [user_id], n_neighbor_users)
+                # print("closest_users", closest_users)
                 if len(closest_users):
                     # top movies for colsest users
                     top_movies_for_similar_users = self.get_users_top_movies(
-                        self.userIds.iloc[closest_users].tolist(),
-                        deterministic=deterministic, n=n,
+                        closest_users,
                         genres=genres,
                         relation=relation,
                     )
-                    # get only the intersection between top movies of similar users and the user himself
-                    intersection = np.intersect1d(
-                        top_movies_for_similar_users,
-                        closest_movies_for_user,
+                    intersection = np.concatenate(
+                        [top_movies_for_similar_users,
+                         closest_movies_for_user,]
                     )
-                    if intersection.size > 0:
-                        top_movies = intersection
+                    return np.unique(intersection)[:nmovies]
             else:
-                top_movies = top_movies_for_user
+                # Don't add silmilar users' movies
+                # so just return closes movies to user
+                pass
+            return np.unique(closest_movies_for_user)[:nmovies]
         else:
             # user hasn't rated any movies
             print("No ratings cant suggest")
+            movie_ids = None
             if len(genres):
-                # TODO self.movies doesnt contain "genres"
-                movies = self.ratings.drop_duplicates("movie")
-                top_movies = movies.loc[self.contains_genres(
-                    genres, relation, df=movies)
-                ].movie
-            else:
-                top_movies = self.movieIds.unique()
-        return top_movies[:nmovies]
+                movie_ids = self.movies_with_genres(genres, relation)
+            # sort movies based on avg_rating
+            movie_ids = self.sort_movies(movie_ids=movie_ids)
+            return np.unique(movie_ids)[:nmovies]
 
-    def get_users_top_movies(self, userIds: list[int], n=3, deterministic=False, genres=[], relation=None):
+    def suggest_similar_movies(self, userId: int, movieIds: list[int], count: int):
+        """
+        Suggest movies similar to the given movieIds for the user.
+        """
+        assert self.is_fit
+        # Get closest movies to the provided movieIds
+        similar_movie_ids = self.get_closest_movies(
+            movieIds, k=self.movies.shape[0])
+        # Remove movies already rated by the user
+        user_rated = set(self.ratings[self.ratings.userId == userId].movieId)
+        filtered = [mid for mid in np.unique(
+            similar_movie_ids) if mid not in user_rated and mid not in movieIds]
+        assert np.intersect1d(filtered, movieIds).size == 0
+        return np.array(filtered[:count])
+
+    def sort_movies(self, movie_ids=None):
+        movies = self.movies
+        if movie_ids is not None:
+            movies = movies.loc[movies.movieId.isin(movie_ids)]
+        movies = movies.sort_values(["movie_avg_rating"], ascending=False)
+        return movies.movieId.tolist()
+
+    def get_users_top_movies(self, userIds: list[int], genres=[], relation=None):
         ratings = self.ratings
-        movie_ids = set()
-        genres_condition = True
+        condition = ratings.userId.isin(userIds)
         if len(genres) > 0:
-            assert relation in ["or", "and"]
-            genres_condition = self.contains_genres(genres, relation)
-        for uid in userIds:
-            # TODO maybe no need for the loop
-            condition = genres_condition & (ratings.user == uid)
-            user_movie_ids = ratings.loc[condition].sort_values(
-                "rating", ascending=False).iloc[:n*5].movie.values
-            if len(user_movie_ids):
-                if not deterministic:
-                    movie_ids.update(np.random.choice(
-                        user_movie_ids, n).tolist())
-                else:
-                    movie_ids.update(user_movie_ids[:n])
-        return list(movie_ids)
+            moviesIds = self.movies_with_genres(genres, relation)
+            condition &= ratings.movieId.isin(moviesIds)
+        ratings = ratings.loc[condition]
+        if len(ratings) == 0:
+            return []
+        ratings = ratings.sort_values("rating", ascending=False)
+        return np.unique(ratings.movieId)
 
-    def get_closest_users(self, user_ids, k):
-        users_data = self.users.loc[self.userIds.isin(user_ids)].values
+    def get_closest_users(self, user_ids, k) -> np.ndarray:
+        users_data = self.users.loc[self.users.userId.isin(
+            user_ids)].drop("userId", axis=1).values
         if users_data.shape[0] == 0:
             return []
         return self.user_knn.kneighbors(
@@ -133,8 +144,9 @@ class Suggester:
             return_distance=False,
         )[0]
 
-    def get_closest_movies(self, movie_ids, k, genres, relation):
-        movies_data = self.movies.loc[self.movieIds.isin(movie_ids)].values
+    def get_closest_movies(self, movie_ids, k, genres=[], relation=None):
+        movies_data = self.movies.loc[self.movies.movieId.isin(
+            movie_ids)].drop("movieId", axis=1).values
         if movies_data.shape[0] == 0:
             return []
         movie_ids = self.movie_knn.kneighbors(
@@ -142,27 +154,15 @@ class Suggester:
             n_neighbors=k, return_distance=False,
         )[0]
         if len(genres):
-            condition = self.contains_genres(genres, relation)
-            movie_ids = self.ratings.loc[
-                self.ratings.movie.isin(movie_ids) & condition].movie
+            movie_ids = self.movies_with_genres(
+                genres, relation, inids=movie_ids)
+        # display(self.movies.loc[self.movieIds.isin(movie_ids)])
         return movie_ids
 
 
 def load_suggester():
     from .data import MovieLens
-
     movie_lens = MovieLens.get_instance()
-
-    movie_cols = movie_lens.movie_cat_cols + movie_lens.movie_num_cols
-    user_cols = movie_lens.user_cat_cols + movie_lens.user_num_cols
-    movies = movie_lens.movies[movie_cols]
-    users = movie_lens.users[user_cols]
-    ratings = movie_lens.ratings
-
     suggester = Suggester()
-    suggester.fit(
-        movies,
-        users,
-        ratings
-    )
+    suggester.fit(movie_lens)
     return suggester

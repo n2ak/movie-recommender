@@ -1,190 +1,119 @@
 from .utils import read_csv, exclude, Instance
-from sklearn.preprocessing import LabelEncoder
-import pandas as pd
 import numpy as np
-import re
+import pandas as pd
 
 
-year_exp = re.compile("^.+\((\d+)\)$")
+def preprocess(ratings: pd.DataFrame, max_rating, bin_movie_total_ratings=3):
+    # TODO move the renaming to JS
+    ratings.rename(columns={"total_ratings": "movie_total_ratings",
+                            "avg_rating": "movie_avg_rating"}, inplace=True)
+
+    from itertools import chain
+    ratings.genres = ratings.genres.str.split(",")
+    all_genres = sorted(list(set(chain.from_iterable(ratings.genres))))
+
+    # User avg rating
+    user_avg_rating = ratings.groupby("userId").rating.mean().rename(
+        "user_avg_rating").reset_index()
+    ratings = ratings.merge(user_avg_rating, on="userId", how="left")
+    # process date
+    ratings.movie_date = pd.to_datetime(ratings.movie_date, format="%d/%m/%Y")
+    ratings["movie_year"] = pd.Categorical(ratings.movie_date.dt.year).codes
+
+    # Genres to 0,1s
+    def process_genres(a):
+        ret = [0] * len(all_genres)
+        for g in a:
+            ret[all_genres.index(f"movie_{g}")] = 1
+        return ret
+    all_genres = [f"movie_{g}" for g in all_genres]
+    ratings[all_genres] = pd.DataFrame(
+        ratings.genres.map(process_genres).tolist())
+    # User avg rating per genre
+    for g in all_genres:
+        a = ratings[["userId", "rating", g]]
+        a = a.loc[a[g] == 1]
+        name = f"user_{g}_avg_rating"
+        a = a.groupby("userId").rating.mean().rename(name).reset_index()
+        ratings = ratings.merge(a, on="userId", how="left")
+        ratings[name] = ratings[name].fillna(0)
+    # movie_total_ratings => bins
+    if bin_movie_total_ratings is not None:
+        ratings["movie_total_ratings"] = pd.cut(
+            ratings.movie_total_ratings, bin_movie_total_ratings).cat.codes
+    ratings["movie_avg_rating"] = ratings.movie_avg_rating.values.round()
+    user_genre_avg_rating_cols = [f"user_{g}_avg_rating" for g in all_genres]
+    num_cols = user_genre_avg_rating_cols + \
+        ["movie_avg_rating", "user_avg_rating"]
+    label = "rating"
+    cat_cols = ["userId", "movieId", "movie_year",
+                "movie_total_ratings"] + all_genres
+
+    ratings = ratings[[label] + cat_cols + num_cols]
+    ratings["rating"] = ratings.rating/max_rating
+
+    ratings[cat_cols] = ratings[cat_cols].astype(np.int32)
+    ratings[num_cols] = ratings[num_cols].astype(np.float32)
+    ratings[label] = ratings[label].astype(np.float32)
+
+    return ratings
 
 
-def get_year(title):
-    matches = year_exp.match(title.strip())
-    if matches is None:
-        return np.nan
-    groups = matches.groups()
-    assert len(groups) == 1
-    return int(groups[0])
+def encode_ids(df):
+    from sklearn.preprocessing import LabelEncoder
 
-
-def preprocess_year(df: pd.DataFrame, bins, encode_year=True):
-    year = df.movie_title.map(get_year)
-    if not encode_year:
-        edges = np.linspace(year.min(), year.max(), bins+1).astype(int)
-        labels = [f'({edges[i]}, {edges[i+1]}]' for i in range(bins)]
-    else:
-        labels = False
-    df["movie_year"] = year.fillna(year.min())
-    df["movie_year_bin"] = pd.cut(
-        df.movie_year, bins=bins, labels=labels)
-    if df["movie_year_bin"].min() == 1:
-        df["movie_year_bin"] = df["movie_year_bin"]-1
-    return df
-
-
-def preprocess_movies(movies: pd.DataFrame, ratings: pd.DataFrame, add_avg_rating, encode_year, keep_title, split_genres, keep_genres):
-    """
-    Adds movies' avg rating & splits genres
-    """
-    num_cols = []
-    if add_avg_rating:
-        movie_avg_rating = ratings.groupby("movie").mean().rating.reset_index()
-        movie_avg_rating.rename(
-            columns={"rating": "movie_avg_rating"}, inplace=True)
-        movie_avg_rating = movies.merge(
-            movie_avg_rating, on="movie", how="left")
-        movie_avg_rating["movie_avg_rating"] = movie_avg_rating.movie_avg_rating.fillna(
-            0)
-        num_cols.append("movie_avg_rating")
-    else:
-        movie_avg_rating = movies
-    movie_avg_rating, all_genres = preprocess_genres(
-        movie_avg_rating, split_genres, keep_genres)
-    # movie_avg_rating = preprocess_year(movie_avg_rating, encode_year=encode_year)
-    if not keep_title:
-        movie_avg_rating.drop(columns=["title"], inplace=True)
-    movie_avg_rating.drop_duplicates("movie", inplace=True)
-    return movie_avg_rating, all_genres
-
-
-def preprocess_users(users: pd.DataFrame, columns: list[str]):
-    """
-    Adds users' avg rating per genre
-    """
-    def name_column(c: str):
-        return f"user_{c.replace('movie_','')}_rating"
-    num_cols = [name_column(c) for c in columns]
-    for genre, nc in zip(columns, num_cols):
-        avg_genres_rating = users.loc[users[genre] == True][[
-            "user", "rating"]].groupby("user").mean().reset_index()
-        avg_genres_rating.rename(columns={"rating": nc}, inplace=True)
-        users = users.merge(avg_genres_rating, on="user", how="left")
-    users[num_cols] = users[num_cols].fillna(0)
-    users.drop(columns + ["movie", "rating"], axis=1, inplace=True)
-    return users
-
-
-def preprocess(movies, ratings: pd.DataFrame, add_user_avg_rating=True, add_movie_avg_rating=True, encode_year=True, keep_title=False, keep_genres=False, split_genres=True):
-    movies, all_genres = preprocess_movies(
-        movies,
-        ratings,
-        add_movie_avg_rating,
-        encode_year,
-        keep_title,
-        split_genres,
-        keep_genres,
-    )
-    if add_user_avg_rating:
-        users = ratings[["user", "movie", "rating"]].merge(
-            movies[["movie"] + all_genres], how='left', on="movie")
-        users = preprocess_users(users, all_genres)
-    else:
-        users = ratings[["user"]].reset_index(drop=True)
-    assert users.isna().values.mean() == 0
-    assert movies.isna().values.mean() == 0
-    users.drop_duplicates("user", inplace=True)
-    users = users.reset_index(drop=True)
-    return movies, users
-
-
-def encode_label(df, add_one=False):
-    a = 0 if not add_one else 1
-    df.movie = LabelEncoder().fit_transform(df.movie)+a
-    df.user = LabelEncoder().fit_transform(df.user)+a
-
-
-def normalize(df: pd.DataFrame, cols: list[str]):
-    df[cols] = df[cols] / 5
-    return df
-
-
-def preprocess_genres(movies: pd.DataFrame, split_genres, keep_genres):
-    genres = []
-    all_genres = set()
-    # main_genres = []
-    for i in movies.movie_genres.str.split("|"):
-        for k in i:
-            if k != '(no genres listed)':
-                all_genres.add("movie_" + k)
-    for i in movies.movie_genres.str.split("|"):
-        # if split_genres:
-        #     main_genres.append(i[0])
-        genres.append([])
-        for k in all_genres:
-            genres[-1].append(k in i)
-    all_genres = list(all_genres)
-    genres = pd.DataFrame(data=genres, columns=all_genres)
-    movies = pd.concat([movies, genres], axis=1).reset_index(drop=True)
-    # if split_genres:
-    # movies["main_genre"] = (main_genres)
-    if not keep_genres:
-        movies.drop(["genres"], axis=1, inplace=True)
-    if split_genres:
-        movies["genres"] = movies.genres.str.split("|")
-    return movies, all_genres
-
-
-def _load_ds(nrows_ratings=10_000, nmovies_ratings=10_000):
-    name_map = dict(
-        userId="user",
-        movieId="movie",
-    )
-    from .utils import read_csv
-    ratings = read_csv(
-        "ml-32m/ratings.csv",
-        nrows=nrows_ratings,
-    ).rename(name_map, axis=1)
-    movies = read_csv(
-        "ml-32m/movies.csv",
-        nrows=nmovies_ratings,
-    ).rename(name_map, axis=1)
-
-    ratings.drop("timestamp", axis=1, inplace=True)
-    return movies, ratings
+    def encode(name):
+        encoder = LabelEncoder().fit(df[name])
+        df[name] = encoder.transform(df[name])
+        return encoder
+    return encode("userId"), encode("movieId")
 
 
 class MovieLens(Instance):
-    def load_ds(self):
-        def get_cols(df: pd.DataFrame, prefix):
-            return list(filter(lambda a: a.startswith(prefix), df.columns.to_list()))
-
-        ratings = read_csv("ratings_full.csv")
-        movie_cols = get_cols(ratings, "movie")
-        user_cols = get_cols(ratings, "user")
-
-        movies = ratings[movie_cols].drop_duplicates("movie")
-        users = ratings[user_cols].drop_duplicates("user")
-        return ratings, movies, users, movie_cols, user_cols
-
     def init(self):
-        ratings, movies, users, movie_cols, user_cols = self.load_ds()
-        movie_num_cols = ["movie_avg_rating"]
-        movie_cat_cols = exclude(movie_cols, "movie_imdbId", "movie_href",
-                                 "movie_year", "movie_title", "movie_genres", *movie_num_cols)
-        user_cat_cols = ["user"]
-        user_num_cols = exclude(
-            user_cols, "user_imdbId", "user_href", "user_year", "user_title", *user_cat_cols)
+        ratings = read_csv("ratings_processed.csv")
+        self.user_encoder, self.movie_encoder = encode_ids(ratings)
+        movie_cols = [c for c in ratings.columns.to_list()
+                      if c.startswith("movie")]
+        user_cols = [c for c in ratings.columns.to_list()
+                     if c.startswith("user")]
+        self.cat_cols, self.num_cols = get_cols(ratings)
+        self.movies = ratings[movie_cols].drop_duplicates("movieId")
+        self.users = ratings[user_cols].drop_duplicates("userId")
+        self._ratings = ratings
 
-        self.ratings = ratings
-        self.movies = movies
-        self.users = users
+    def realids_to_ids(self, encoder, ids):
+        return encoder.transform(ids).tolist()
 
-        self.movie_cat_cols = movie_cat_cols
-        self.movie_num_cols = movie_num_cols
-        self.user_num_cols = user_num_cols
-        self.user_cat_cols = user_cat_cols
+    def ids_to_realids(self, encoder, ids):
+        return encoder.inverse_transform(ids).tolist()
 
-    @property
-    def n_users(self): return self.users.user.nunique()+1
-    @property
-    def n_movies(self): return self.movies.movie.nunique()+1
+    def map_ids(self, userIds, movieIds, reverse=False):
+        try:
+            if reverse:
+                userIds = self.ids_to_realids(self.user_encoder, userIds)
+                movieIds = self.ids_to_realids(
+                    self.movie_encoder, movieIds)
+            else:
+                userIds = self.realids_to_ids(self.user_encoder, userIds)
+                movieIds = self.realids_to_ids(
+                    self.movie_encoder, movieIds)
+        except:
+            raise BackendError("Incorrect ids")
+        return userIds, movieIds
+
+
+def get_cols(ratings: pd.DataFrame):
+    cat_cols = ratings.iloc[:1].select_dtypes("int").columns.to_list()
+    num_cols = ratings.iloc[:1].select_dtypes("float").columns.to_list()
+    if "rating" in num_cols:
+        num_cols.remove("rating")
+    ratings[cat_cols] = ratings[cat_cols].astype("int32")
+    ratings[num_cols] = ratings[num_cols].astype("float32")
+    return cat_cols, num_cols
+
+
+class BackendError(RuntimeError):
+    def __init__(self, msg) -> None:
+        super().__init__()
+        self.msg = msg

@@ -1,92 +1,68 @@
-import json
-import pytest
+from fastapi.testclient import TestClient
+from api import app, Response, SimilarMoviesRequest
+client = TestClient(app)
+MAX_RATING = 10
 
 
-@pytest.fixture
-def app():
-    from api import app
-    app.config.update({
-        "TESTING": True,
-    })
-    yield app
+def recomend_movies(data):
+    return client.post('/movies-recom', json=data)
 
 
-@pytest.fixture
-def client(app):
-    return app.test_client()
+def recomend_similar_movies(data):
+    return client.post('/recom-similar-movies', json=data)
 
 
-@pytest.fixture
-def runner(app):
-    return app.test_cli_runner()
+def check_response(func, data):
+    resp_json = func(data)
+    assert resp_json.status_code == 200, resp_json.status_code
+    result = Response(**resp_json.json())
+    assert result.status_code == 200, result.error
+    assert result.userId == data["userId"]
+
+    for res in result.result:
+        assert 0 <= res["predicted_rating"] <= MAX_RATING
 
 
-MODELS = [
-    "DLRM",
-    # "NCF",
-]
-
-
-def test_api(client):
-    for model_name in MODELS:
-        for relation in ["or", "and"]:
-            data = {
-                "userId": 1,
-                "movieIds": [1, 2],
-                "model": model_name,
-                "genres": [],
-                "start": 0,
-                "count": None,
-                "relation": relation
-            }
-            _test(data, client)
-
-
-def test_genres(client):
-    for model_name in MODELS:
-        for relation in ["or", "and"]:
-            data = {
-                "userId": 1,
-                "movieIds": [],
-                "model": model_name,
-                "genres": ["Fantasy"],
-                "start": 0,
-                "count": None,
-                "relation": relation
-            }
-            _test(data, client)
-
-
-def test_api_no_movieIds(client):
-    for model_name in MODELS:
+def test_api():
+    for relation in ["or", "and"]:
         data = {
             "userId": 1,
-            "movieIds": [],
-            "model": model_name,
             "genres": [],
             "start": 0,
             "count": None,
-            "relation": "or"
+            "relation": relation
         }
-        _test(data, client)
+        check_response(recomend_movies, data)
 
 
-# def test_user_norating(client):
-#     for model_name in MODELS:
-#         data = {
-#             "userId": 0,
-#             "movieIds": [1, 2],
-#             "model": model_name,
-#         }
-#         _test(data, client)
+def test_genres():
+    for relation in ["or", "and"]:
+        data = {
+            "userId": 1,
+            "genres": ["Action"],
+            "start": 0,
+            "count": None,
+            "relation": relation
+        }
+        check_response(recomend_movies, data)
 
 
-def _test(data, client):
-    response = client.post('/movies-recom', json=data)
-    result = json.loads(response.get_data().decode())
-    assert response.status_code == 200, result["errors"]
-    for r in result["result"]:
-        assert r["userId"] == data["userId"]
-        if "movieIds" in data and len(data["movieIds"]):
-            assert r["movieId"] in data["movieIds"]
-        assert 0 <= r["predicted_rating"] <= 5
+def test_api_no_movieIds():
+    data = {
+        "userId": 1,
+        "genres": ["Action", "Drama"],
+        "start": 0,
+        "count": None,
+        "relation": "or"
+    }
+    check_response(recomend_movies, data)
+
+
+def test_recomm_similar_movies():
+    data = {
+        "userId": 1,
+        "start": 0,
+        "count": None,
+        "movieIds": [1],
+    }
+    check_response(recomend_similar_movies, data)
