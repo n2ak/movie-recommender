@@ -9,7 +9,7 @@ export default function Select({
   defaultValue: string;
   label: string;
   onValueChange: (s: string) => void;
-  values: string[];
+  values: readonly string[];
 }) {
   return (
     <S.Root defaultValue={defaultValue} onValueChange={onValueChange}>

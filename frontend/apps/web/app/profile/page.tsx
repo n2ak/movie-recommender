@@ -28,7 +28,7 @@ function Profile() {
       case "settings":
         return <SettingsSection user={user} />;
       case "stats":
-        return <StatsSection user={user} />;
+        return <StatsSection />;
       case "loginactivity":
         return <RecentLoginActivity />;
       default:

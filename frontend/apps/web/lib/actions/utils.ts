@@ -17,8 +17,10 @@ export async function getUserId() {
   }
   return parseInt(session.user.id);
 }
+
 async function handleErrors<T>(promise: Promise<T>): Promise<{
   data?: T;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   message?: any;
 }> {
   try {
@@ -37,13 +39,14 @@ async function handleErrors<T>(promise: Promise<T>): Promise<{
     return ret;
   }
 }
+
 export function timedAction<T extends object, B, I = Omit<T, "userId">>(
   key: string,
   func: (a: T & { userId: number }) => Promise<B>
 ) {
   return async function (input: I) {
     const userId = await getUserId();
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const inputs = { ...input, userId } as any;
     if (!TIMING) return await handleErrors(func(inputs));
 

@@ -1,3 +1,3 @@
-export default async function FeedbackPage({}) {
+export default async function FeedbackPage() {
   return <>Feedback</>;
 }

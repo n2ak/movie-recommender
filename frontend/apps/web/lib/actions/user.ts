@@ -1,9 +1,7 @@
 "use server";
-import { signIn, signOut } from "@/auth";
+import { signOut } from "@/auth";
 import { userDB } from "@repo/database";
-import { AuthError } from "next-auth";
 import { parseProfileSettings } from "../validation";
-import { LoginFormState } from "./FormStates";
 import { cachedQuery } from "./redisClient";
 import { timedAction } from "./utils";
 
@@ -19,34 +17,6 @@ export const changeProfileSettingsAction = timedAction(
   }
 );
 
-export async function authenticate(
-  prevState: LoginFormState,
-  formData: FormData
-): Promise<LoginFormState> {
-  try {
-    await signIn("credentials", formData);
-    return prevState;
-  } catch (error) {
-    if (error instanceof AuthError) {
-      switch ((error as any).type) {
-        case "CredentialsSignin":
-          return {
-            data: prevState.data,
-            message: "Invalid credentials.",
-          };
-        default:
-          return {
-            data: prevState.data,
-            message: "Something went wrong.",
-          };
-      }
-    }
-    throw error;
-  }
-  // redirect("/");
-  // return {};
-}
-
 export async function logOut() {
   await signOut({
     redirectTo: "/auth/login",
@@ -58,6 +28,7 @@ const getUserInfo = timedAction(
   cachedQuery(userDB.getUserInfo, ({ userId }) => `userInfo:${userId}`)
 );
 export { getUserInfo };
+
 export const deleteAccount = timedAction(
   "deleteAccount",
   async ({ password, userId }: { password: string; userId: number }) => {

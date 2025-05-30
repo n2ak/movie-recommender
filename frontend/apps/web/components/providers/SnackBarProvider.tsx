@@ -9,11 +9,6 @@ interface SnackBarContextInterface {
   info: toastFunc;
   warning: toastFunc;
   error: toastFunc;
-  handlePromise: <T>(
-    p: Promise<T>,
-    onSucc: string | undefined,
-    onErr?: string | undefined
-  ) => Promise<T | null>;
 }
 const defaultDuration = 2000;
 const snackBarContext = createContext<SnackBarContextInterface | undefined>(
@@ -55,21 +50,6 @@ export function SnackBarProvider({ children }: PropsWithChildren) {
         info: (m, d) => toast("info", m, d),
         warning: (m, d) => toast("warning", m, d),
         error: (m, d) => toast("error", m, d),
-        handlePromise: async function handleRequestToast<T>(
-          promise: Promise<T>,
-          onSucc: string | undefined,
-          onErr: string | undefined = undefined
-        ) {
-          try {
-            const t = await promise;
-            if (onSucc !== undefined) this.success(onSucc, defaultDuration);
-            return t;
-          } catch (e) {
-            if (onErr !== undefined) this.error(onErr, defaultDuration);
-            return null;
-          }
-        },
-        // setDuration,
       }}
     >
       {children}

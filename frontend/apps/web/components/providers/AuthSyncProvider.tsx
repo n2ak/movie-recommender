@@ -5,13 +5,14 @@ import { useEffect } from "react";
 import { useAuthStore } from "../../hooks/useAuthStore";
 
 export default function AuthSyncProvider() {
-  const { setUser, clearUser, setLoading, user } = useAuthStore();
+  const { setUser, clearUser, setLoading } = useAuthStore();
   const { data, status } = useSession();
   useEffect(() => {
     if (status === "authenticated") {
       const userId = parseInt(data.user!.id as string);
       (async () => {
         const userInfo = await getUserInfo(userId);
+        console.log("New user info", userInfo);
         if (userInfo.data) {
           setUser(userInfo.data);
           setLoading(false);
@@ -23,7 +24,7 @@ export default function AuthSyncProvider() {
     } else if (status === "loading") {
       setLoading(true);
     }
-  }, [status]);
+  }, [status, clearUser, setLoading, setUser, data?.user]);
 
   return null;
 }

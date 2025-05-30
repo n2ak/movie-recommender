@@ -6,6 +6,7 @@ import { Table } from "@radix-ui/themes";
 import { RatingSortKey } from "@repo/database";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import Pagination from "../../components/Pagination";
@@ -42,7 +43,7 @@ export function RatingsTable({ userId }: { userId: number }) {
       <Table.Root>
         <TableHeader
           setSortOrder={setSortOrder}
-          setSortKey={setSortKey as any}
+          setSortKey={setSortKey as (s: string) => void}
           sortOrder={sortOrder}
           sortKey={sortKey}
         />
@@ -140,7 +141,8 @@ function TableRow({
           href={`/movie/${movie.id}`}
           className="flex flex-row items-center gap-3"
         >
-          <img
+          <Image
+            alt={movie.title}
             src={movie.href}
             className="hover:scale-105 duration-100 max-h-15"
           />

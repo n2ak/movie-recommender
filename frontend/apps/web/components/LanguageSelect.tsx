@@ -13,8 +13,8 @@ export default function LanguageSelect() {
     <Select
       defaultValue={language}
       label={dict.language}
-      onValueChange={setLanguage as any}
-      values={languages as any}
+      onValueChange={setLanguage as (s: string) => void}
+      values={languages}
     />
   );
   // return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { MovieWithPredictedRating } from "@/lib/actions/movie";
+import Image from "next/image";
 import Link from "next/link";
 import { ColStack } from "./Container";
 import { FixedRating } from "./Rating";
@@ -10,9 +11,6 @@ export default function MovieCard({
 }: {
   movie: MovieWithPredictedRating;
 }) {
-  // const ref = useRef<HTMLSpanElement>(null);
-  // const [showToolTip, setShowToolTip] = useState(true);
-
   return (
     <Link
       href={`/movie/${movie.id}`}
@@ -21,7 +19,11 @@ export default function MovieCard({
       }}
     >
       <div className="group relative h-full w-full shadow-xl hover:scale-[110%] duration-[.2s] hover:z-10">
-        <img className="rounded-lg h-full" src={movie.href} alt={movie.title} />
+        <Image
+          className="rounded-lg h-full"
+          src={movie.href}
+          alt={movie.title}
+        />
         <ColStack className="absolute rounded-b-lg bottom-0 left-0 w-full pl-[10px] truncate backdrop-blur-xs bg-black/[1%] hidden group-hover:block">
           <div className="w-full  shadow-2xl inline-block text-ellipsis overflow-hidden whitespace-nowrap text-left">
             <span className="font-bold text-white">{movie.title}</span>
@@ -47,7 +49,7 @@ export function MovieRow({
   title,
   movies,
 }: {
-  title?: any;
+  title?: string | React.ReactNode;
   movies: MovieWithPredictedRating[];
 }) {
   return (

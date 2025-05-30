@@ -2,11 +2,12 @@ import { useOnClickOutside } from "@/hooks/useClickedOutside";
 import { useDictionary } from "@/hooks/useLanguageStore";
 import useMovieSearch from "@/hooks/useMovieSearch";
 import { debounce } from "lodash";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { ColStack } from "./Container";
 
-export default function Search({ userId }: { userId: number }) {
+export default function Search() {
   const dict = useDictionary();
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
@@ -116,7 +117,11 @@ const SearchItem = ({
         }}
         className="flex gap-3 min-h-10 h-14 justify-start"
       >
-        <img src={href} className="max-h-20 col-span-1 w-10 flex-none" />
+        <Image
+          alt={title}
+          src={href}
+          className="max-h-20 col-span-1 w-10 flex-none"
+        />
         <div className="w-32 my-auto flex-10/12 overflow-ellipsis">
           <div className="flex flex-col gap-1 ">
             <h1 className="font-normal text-sm group-hover:underline">

@@ -10,6 +10,7 @@ import {
 import { formatNumber } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { Edit } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -22,11 +23,11 @@ export function MoviePage({
 }) {
   const qClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  let { movie, queryKey } = useMovie({
+  const { movie, queryKey } = useMovie({
     movieId: initialMovie.id,
     initialMovie,
   });
-  movie = movie!;
+  if (!movie) return null;
 
   const total_ratings = formatNumber(movie.total_ratings);
   const total_reviews = formatNumber(movie._count.reviews);
@@ -34,7 +35,7 @@ export function MoviePage({
     <div className="p-6 max-w-4xl mx-auto font-sans">
       {/* Movie Info */}
       <div className="flex flex-col md:flex-row gap-6">
-        <img
+        <Image
           src={movie.href}
           alt={movie.title}
           className="w-64 rounded-lg shadow-lg"

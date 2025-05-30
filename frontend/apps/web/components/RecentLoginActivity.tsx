@@ -1,3 +1,3 @@
 export default function RecentLoginActivity() {
-  return <>"RecentLoginActivity"</>;
+  return <>RecentLoginActivity</>;
 }

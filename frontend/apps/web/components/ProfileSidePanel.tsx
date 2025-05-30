@@ -1,7 +1,9 @@
 import { Settings as SettingsIcon } from "@mui/icons-material";
+import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function ProfileSidePanel({ user }: any) {
   const fakeUser = {
     name: "Jane Doe",
@@ -42,7 +44,7 @@ export default function ProfileSidePanel({ user }: any) {
     <aside className="w-full md:w-1/4 py-6 px-3 dark:bg-gray-900">
       <div className="flex flex-col space-y-4 w-full">
         <div className="">
-          <img
+          <Image
             src={fakeUser.avatar}
             alt={user.name}
             className="w-24 h-24 rounded-full object-cover mx-auto"

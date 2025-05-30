@@ -7,23 +7,16 @@ import {
 } from "@/lib/actions/movie";
 import type { MovieGenre } from "@repo/database";
 
-export async function Recommended({ userId }: { userId: number }) {
+export async function Recommended() {
   return (
     <Recommendation
-      userId={userId}
       title={"Movies we thing you would like:"}
       func={() => getRecommendedMoviesForUser({ count: 10 })}
     />
   );
 }
 
-export async function RecommendedGenre({
-  userId,
-  genre,
-}: {
-  userId: number;
-  genre: MovieGenre;
-}) {
+export async function RecommendedGenre({ genre }: { genre: MovieGenre }) {
   return (
     <Recommendation
       title={
@@ -32,18 +25,17 @@ export async function RecommendedGenre({
         </span>
       }
       func={() => getRecommendedGenreMovies({ genre })}
-      userId={userId}
     />
   );
 }
 
-export async function RecommendedGenres({ userId }: { userId: number }) {
-  const genres = (await getMostWatchedGenres(userId)).data!.map(([g, _]) => g);
+export async function RecommendedGenres() {
+  const genres = (await getMostWatchedGenres({})).data!.map(([g]) => g);
   return (
     <>
       {genres.map((g) => (
         <div key={g}>
-          <RecommendedGenre userId={userId} genre={g as MovieGenre} />
+          <RecommendedGenre genre={g as MovieGenre} />
         </div>
       ))}
     </>
@@ -51,12 +43,10 @@ export async function RecommendedGenres({ userId }: { userId: number }) {
 }
 
 async function Recommendation({
-  userId,
   title,
   func,
 }: {
-  userId: number;
-  title: any;
+  title: string | React.ReactNode;
   func: () => ReturnType<typeof getRecommendedMoviesForUser>;
 }) {
   const movies = (await func()).data!;

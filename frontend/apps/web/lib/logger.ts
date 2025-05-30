@@ -12,7 +12,7 @@ const logger = pino(
     level: "debug",
     messageKey: "dad",
     formatters: {
-      level: (level, n) => ({ level }),
+      level: (level) => ({ level }),
     },
   },
   process.env.NODE_ENV === "production" ? undefined : stream

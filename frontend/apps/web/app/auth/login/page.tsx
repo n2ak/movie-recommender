@@ -11,7 +11,7 @@ import { signIn } from "next-auth/react";
 
 export default function SignIn() {
   const dict = useDictionary();
-  const { user, loading } = useAuthStore();
+  const { loading } = useAuthStore();
   const [loginData, setLoginData] = React.useState<{
     username: string;
     password: string;

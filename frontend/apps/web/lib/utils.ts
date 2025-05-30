@@ -16,16 +16,16 @@ export function timeSince(d: Date) {
     return `${interval} ${s}${interval === 1 ? "" : "s"}`;
   }
   let interval = seconds / 31536000;
-  if (interval > 1) return Math.floor(interval) + " year";
+  if (interval > 1) return format(interval, "year");
   interval = seconds / 2592000;
-  if (interval > 1) return Math.floor(interval) + " month";
+  if (interval > 1) return format(interval, "month");
   interval = seconds / 86400;
-  if (interval > 1) return Math.floor(interval) + " day";
+  if (interval > 1) return format(interval, "day");
   interval = seconds / 3600;
-  if (interval > 1) return Math.floor(interval) + " hour";
+  if (interval > 1) return format(interval, "hour");
   interval = seconds / 60;
-  if (interval > 1) return Math.floor(interval) + " minute";
-  return Math.floor(seconds) + " second";
+  if (interval > 1) return format(interval, "minute");
+  return format(interval, "second");
 }
 
 export function capitalizeFirstLetter(s: string) {

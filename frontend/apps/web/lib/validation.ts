@@ -20,19 +20,19 @@ const profileSettingsSchema = z.object({
   name: z.string().min(4, "Username should be atleast 4 chars."),
 });
 
-export function parseCredentials(obj: any) {
+export function parseCredentials<T>(obj: T) {
   return parse(obj, credentialsSchema);
 }
 
-export function parseRating(obj: any) {
+export function parseRating<T>(obj: T) {
   return parse(obj, ratingSchema);
 }
 
-export function parseProfileSettings(obj: any) {
+export function parseProfileSettings<T>(obj: T) {
   return parse(obj, profileSettingsSchema);
 }
 
-function parse<O>(obj: any, schema: z.Schema<O>) {
+function parse<T, O>(obj: T, schema: z.Schema<O>) {
   const parsed = schema.safeParse(obj);
   if (!parsed.success) {
     throw new ValidationError(undefined, parsed.error.flatten().fieldErrors);
@@ -43,7 +43,7 @@ function parse<O>(obj: any, schema: z.Schema<O>) {
 export class ValidationError extends Error {
   constructor(
     message: string | undefined,
-    public errors: any
+    public errors: object
   ) {
     if (!message) {
       message = Object.values(errors)[0] as string;

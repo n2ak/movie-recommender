@@ -25,10 +25,6 @@ export default function SettingsSection({ user }: { user: UserInfo }) {
       };
       const res = await changeProfileSettingsAction(data);
       setSaving(false);
-      const ret: ProfileSettingsFormState = {
-        ...res,
-        data: res.data as any,
-      };
       if (res.message) {
         snackbar.warning("Error: " + res.message, 5000);
       } else {
@@ -37,7 +33,12 @@ export default function SettingsSection({ user }: { user: UserInfo }) {
           name: data.username,
         });
       }
-      return ret;
+      return {
+        data: {
+          email: data.email,
+          name: data.username,
+        },
+      };
     },
     {
       data: {

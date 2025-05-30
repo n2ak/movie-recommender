@@ -35,14 +35,17 @@ export default function EditMovieRatingAndReviewModal({
         title: review.data.title,
         text: review.data.text,
       });
-  }, [!!movie, review]);
+  }, [movie, review, movie?.userRating]);
+
   const snackBar = useSnackBar();
+
   const [addReview, setAddReview] = useState(false);
   if (!movie) {
     return null;
   }
+
   const canToggleAdd = !review;
-  console.log({ movie, canToggleAdd, addReview });
+
   return (
     <div className="z-10">
       <Dialog.Root open={true}>

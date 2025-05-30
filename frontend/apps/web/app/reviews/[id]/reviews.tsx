@@ -75,6 +75,7 @@ export default function MovieReviews({
     </div>
   );
 }
+
 function Review({
   movieId,
   review: r,

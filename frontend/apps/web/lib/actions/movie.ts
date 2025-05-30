@@ -9,6 +9,7 @@ import { getUserId, timedAction } from "./utils";
 export type MovieWithPredictedRating = MovieWithUserRating & {
   predictedRating: number;
 };
+
 async function handleBackendResponse(
   response: Backend.BackendResponse,
   userId: number
@@ -59,6 +60,7 @@ export const getRecommendedGenreMovies = timedAction(
       userId
     )
 );
+
 export const getSimilarMovies = timedAction(
   "getRecommendedGenreMovies",
   async ({ movieIds, count }: { movieIds: number[]; count: number }) => {
@@ -74,6 +76,7 @@ export const getRatedMoviesForUser = timedAction(
   "getRatedMoviesForUser",
   movieDB.getRatedMoviesForUser
 );
+
 export const getMovieReviews = timedAction(
   "getMovieReviews",
   reviewsDB.getMovieReviews
@@ -116,6 +119,7 @@ export const getMovieReview = timedAction(
   "getMovieReview",
   reviewsDB.getMovieReview
 );
+
 export const getMovieReviewById = timedAction(
   "getMovieReviewById",
   reviewsDB.getMovieReviewById
@@ -125,12 +129,15 @@ export const searchMovies = timedAction("searchMovies", movieDB.searchMovies);
 
 export const reviewMovie = timedAction("reviewMovie", reviewsDB.reviewMovie); //TODO clear key
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UnwrapReturn<T extends (...args: any) => any> = NonNullable<
   Awaited<ReturnType<T>>["data"]
 >;
 
 export { getMovieForUser };
+
 export type MovieWithUserRating = UnwrapReturn<typeof getMovieForUser>;
+
 export type MovieReview = NonNullable<
   Awaited<ReturnType<typeof getMovieReview>>["data"]
 >;
