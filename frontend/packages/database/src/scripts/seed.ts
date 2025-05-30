@@ -23,6 +23,7 @@ function getMovie({
   desc,
   ratingCount,
   movie_date,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }: any): Prisma.MovieModelCreateWithoutReviewsInput {
   genre = JSON.parse(genre);
   desc = convert(desc);
@@ -41,6 +42,7 @@ function getMovie({
 }
 function getUser({
   author,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }: any): Prisma.UserModelCreateWithoutMovieReviewsInput {
   return {
     username: author,
@@ -49,6 +51,7 @@ function getUser({
   };
 }
 function getReview(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   row: any,
   movies: { id: number; imdbId: string }[],
   users: { id: number; username: string }[]
@@ -65,6 +68,7 @@ function getReview(
   };
 }
 function getMovieRating(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   row: any,
   movies: { id: number; imdbId: string }[],
   users: { id: number; username: string }[]

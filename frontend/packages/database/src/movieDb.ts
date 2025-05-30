@@ -80,7 +80,7 @@ export async function getRatedMoviesForUser(params: {
   order: Prisma.SortOrder;
 }) {
   const orderBy = {
-    ...(userRatingSsortKeys.includes(params.sortby as any)
+    ...(userRatingSsortKeys.includes(params.sortby as UserRatingSortKey)
       ? {
           [params.sortby]: params.order,
         }
@@ -114,5 +114,4 @@ export async function getRatedMoviesForUser(params: {
 }
 
 const userRatingSsortKeys: UserRatingSortKey[] = ["rating", "timestamp"];
-const movieSortKeys: MovieSortKey[] = [];
 export type RatedMoviesRatingSortKey = UserRatingSortKey | MovieSortKey;

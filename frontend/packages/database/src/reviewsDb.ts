@@ -111,7 +111,7 @@ export const reactToMovieReview = async (params: {
       },
     },
   });
-  let data: Prisma.MovieReviewUpdateInput = {};
+  const data: Prisma.MovieReviewUpdateInput = {};
   if (reaction) {
     if (reaction.type === params.type) {
       // should remove like/dislike
@@ -161,7 +161,7 @@ export const getMovieReviews = async (params: {
   movieId: number;
   start: number;
   count: number;
-  sortKey: any; // TODO
+  // sortKey: string; // TODO
   order: "asc" | "desc";
 }) => {
   const res = await prismaClient.movieReview.findMany({
