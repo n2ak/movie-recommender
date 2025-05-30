@@ -1,6 +1,6 @@
-import { User } from "next-auth";
+import { UserInfo } from "@/hooks/useAuthStore";
 
-export default function StatsSection({ user }: { user: User }) {
+export default function StatsSection({ user }: { user: UserInfo }) {
   return (
     <>
       <h1 className="text-2xl font-semibold mb-4">Settings</h1>

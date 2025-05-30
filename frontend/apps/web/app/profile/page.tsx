@@ -26,9 +26,9 @@ function Profile() {
       case "overview":
         return <OverviewSection user={user} />;
       case "settings":
-        return <SettingsSection user={user as any} />;
+        return <SettingsSection user={user} />;
       case "stats":
-        return <StatsSection user={user as any} />;
+        return <StatsSection user={user} />;
       case "loginactivity":
         return <RecentLoginActivity />;
       default:

@@ -1,7 +1,6 @@
-import { useAuthStore } from "@/hooks/useAuthStore";
+import { useAuthStore, UserInfo } from "@/hooks/useAuthStore";
 import { ProfileSettingsFormState } from "@/lib/actions/FormStates";
 import { changeProfileSettingsAction, logOut } from "@/lib/actions/user";
-import { User } from "next-auth";
 import { signOut, useSession } from "next-auth/react";
 import { useActionState, useState } from "react";
 import Button from "./Button";
@@ -10,7 +9,7 @@ import DeleteAccountModal from "./DeleteAccountModal";
 import FormField from "./FormField";
 import { useSnackBar } from "./providers/SnackBarProvider";
 
-export default function SettingsSection({ user }: { user: User }) {
+export default function SettingsSection({ user }: { user: UserInfo }) {
   const [saving, setSaving] = useState(false);
   const { update } = useSession();
   const snackbar = useSnackBar();
@@ -42,7 +41,7 @@ export default function SettingsSection({ user }: { user: User }) {
     },
     {
       data: {
-        name: user.name || "",
+        name: user.username || "",
         email: user.email || "",
       },
     }
