@@ -1,8 +1,8 @@
 "use client";
 import { useAuthStore, UserInfo } from "@/hooks/useAuthStore";
 import { useDictionary } from "@/hooks/useLanguageStore";
-import { useUIStore } from "@/hooks/useUIStore";
 import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Avatar from "./Avatar";
@@ -16,6 +16,18 @@ export default function NavBar() {
   return <OffNavbar />;
 }
 
+function SwitchModeIcon() {
+  const { theme, setTheme } = useTheme();
+  const Component = theme === "dark" ? Moon : Sun;
+  return (
+    <div className="content-center">
+      <Component
+        className="cursor-pointer border border-black p-1 w-9 h-9 rounded-sm dark:border-white"
+        onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+      />
+    </div>
+  );
+}
 function OnNavbar({ user }: { user: UserInfo }) {
   const dict = useDictionary();
   const links = [
@@ -28,13 +40,14 @@ function OnNavbar({ user }: { user: UserInfo }) {
         <Logo />
         <Search />
         <Links links={links} />
+        <SwitchModeIcon />
         <Avatar username={user.username} />
       </div>
     </nav>
   );
 }
 function OffNavbar() {
-  const { isDarkMode, toggleDarkMode } = useUIStore();
+  const { setTheme, theme } = useTheme();
 
   return (
     <nav className="fixed top-0 w-full z-50 shadow bg-white/60 backdrop-blur-sm border-gray-200 dark:bg-black/60">
@@ -42,9 +55,9 @@ function OffNavbar() {
         <Logo />
         <div
           className="cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-500 px-1 py-1 rounded-sm"
-          onClick={toggleDarkMode}
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
         >
-          {isDarkMode ? <Sun /> : <Moon />}
+          {theme === "dark" ? <Sun /> : <Moon />}
         </div>
       </div>
     </nav>

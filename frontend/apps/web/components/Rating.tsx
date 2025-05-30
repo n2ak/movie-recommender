@@ -1,9 +1,9 @@
 "use client";
-import { useUIStore } from "@/hooks/useUIStore";
 import { MAX_RATING } from "@/lib/constants";
 import { roundRating } from "@/lib/utils";
 import { Rating as BaseRating } from "@mui/material";
 import { Star } from "lucide-react";
+import { useTheme } from "next-themes";
 
 interface Type {
   v: number;
@@ -23,13 +23,14 @@ export function FixedRating(props: Omit<Type, "onChange" | "ro">) {
   );
 }
 
-export function VarRating(props: Omit<Type, "ro">) {
-  return <Base {...props} />;
-}
-
-function Base({ v, onChange, className, showValue }: Type) {
+export function VarRating({
+  v,
+  onChange,
+  className,
+  showValue,
+}: Omit<Type, "ro">) {
   v = roundRating(v);
-  const { isDarkMode: darkMode } = useUIStore();
+  const { theme } = useTheme();
   return (
     <span className="flex gap-1">
       <BaseRating
@@ -41,7 +42,7 @@ function Base({ v, onChange, className, showValue }: Type) {
         onChange={(_, v) => {
           if (!!onChange && !!v) onChange(v);
         }}
-        emptyIcon={darkMode ? <Star className="text-white/70" /> : null}
+        emptyIcon={theme === "dark" ? <Star className="text-white/70" /> : null}
         max={10}
       />
       {showValue && <span className="h-full my-auto">({v})</span>}
