@@ -6,10 +6,17 @@ import type { Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { PropsWithChildren } from "react";
 import AuthSyncProvider from "./AuthSyncProvider";
+import { ClientMetricsLogger } from "./ClientMetricLogger";
 import { SnackBarProvider } from "./SnackBarProvider";
 import ThemeProvider from "./ThemeProvider";
 
-const queryClient = new QueryClient({});
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // refetchOnWindowFocus: false,
+    },
+  },
+});
 
 export default function Providers({
   session,
@@ -22,9 +29,12 @@ export default function Providers({
         <QueryClientProvider client={queryClient}>
           <SnackBarProvider>
             <AuthSyncProvider />
+            <ClientMetricsLogger />
             {children}
           </SnackBarProvider>
-          <ReactQueryDevtoolsPanel />
+          {process.env.NODE_ENV === "development" && (
+            <ReactQueryDevtoolsPanel />
+          )}
         </QueryClientProvider>
       </ThemeProvider>
     </SessionProvider>

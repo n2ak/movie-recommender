@@ -1,6 +1,7 @@
 "use client";
-import { roundRating } from "@/_lib/utils";
 import { useUIStore } from "@/hooks/useUIStore";
+import { MAX_RATING } from "@/lib/constants";
+import { roundRating } from "@/lib/utils";
 import { Star } from "@mui/icons-material";
 import { Rating as BaseRating } from "@mui/material";
 
@@ -11,7 +12,15 @@ interface Type {
   showValue?: boolean;
 }
 export function FixedRating(props: Omit<Type, "onChange" | "ro">) {
-  return <Base {...props} onChange={undefined} />;
+  const v = Math.floor(props.v * 10) / 10;
+  return (
+    <div className="flex items-center">
+      <Star className="text-yellow-500" />
+      <span className="text-center content-center items-center center">
+        {v}/{MAX_RATING}
+      </span>
+    </div>
+  );
 }
 
 export function VarRating(props: Omit<Type, "ro">) {
@@ -33,6 +42,7 @@ function Base({ v, onChange, className, showValue }: Type) {
           if (!!onChange && !!v) onChange(v);
         }}
         emptyIcon={darkMode ? <Star className="text-white/70" /> : null}
+        max={10}
       />
       {showValue && <span className="h-full my-auto">({v})</span>}
     </span>

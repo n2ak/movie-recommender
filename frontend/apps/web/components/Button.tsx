@@ -1,4 +1,4 @@
-import { joinCN } from "@/_lib/utils";
+import { joinCN } from "@/lib/utils";
 import { Spinner } from "@radix-ui/themes";
 import { PropsWithChildren } from "react";
 

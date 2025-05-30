@@ -1,4 +1,4 @@
-import { deleteAccount } from "@/_lib/actions/user";
+import { deleteAccount } from "@/lib/actions/user";
 import { Dialog } from "@radix-ui/themes";
 import { useState } from "react";
 import Button from "./Button";
@@ -69,16 +69,13 @@ export default function DeleteAccountModal({
                 onClick={() => {
                   setDeleting(true);
                   (async function () {
-                    const res = await deleteAccount(password);
+                    const done = await deleteAccount({ password });
                     setDeleting(false);
-                    console.log("delete", res);
-                    if (!res.message && !res.errors) {
+                    if (done) {
                       if (onDelete) onDelete();
                       setProceed(false);
                     } else {
-                      if (res.errors)
-                        setPasswordError(res.errors.password || "");
-                      console.error(res.errors, res.message);
+                      // TODO
                     }
                   })();
                 }}

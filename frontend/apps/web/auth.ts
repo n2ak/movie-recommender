@@ -1,46 +1,33 @@
 import { userDB } from "@repo/database";
-
-import NextAuth, { User } from "next-auth";
+import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { parseCredentials } from "./_lib/validation";
+import { parseCredentials } from "./lib/validation";
 
-export const checkPassword = async (
-  email: string,
-  password: string
-): Promise<User | null> => {
-  try {
-    //TODO could be one request to db
-    // const passwordsMatch = await bcrypt.compare(password, user.password);
-    if (await userDB.passwordMatchByEmail(email, password)) {
-      const user = await userDB.getByEmail(email);
-      if (user)
-        return {
+const { signIn, signOut, auth, handlers } = NextAuth({
+  providers: [
+    Credentials({
+      credentials: {
+        usernameOrEmail: { label: "Username or email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(cred) {
+        console.log(cred);
+
+        const parsedCred = parseCredentials(cred);
+        const user = await userDB.passwordMatchByUserNameOrEmail(
+          parsedCred.usernameOrEmail,
+          parsedCred.password
+        );
+        if (!user) {
+          throw new Error("Invalid credentials");
+        }
+        const ret = {
           id: `${user.id}`,
           email: user.email,
           name: user.username,
         };
-    }
-  } catch (error) {
-    console.log("Failed to fetch user " + error);
-    // errorToJSON(error as any).message);
-  }
-  return null;
-};
-
-export const { signIn, signOut, auth, handlers } = NextAuth({
-  providers: [
-    Credentials({
-      credentials: {
-        username: { label: "Username" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        const { data } = parseCredentials(credentials);
-        if (data) {
-          const user = await checkPassword(data.email, data.password);
-          return user;
-        }
-        return null;
+        console.log(ret, "User logged in");
+        return ret;
       },
     }),
   ],
@@ -78,3 +65,4 @@ export const { signIn, signOut, auth, handlers } = NextAuth({
     },
   },
 });
+export { auth, handlers, signIn, signOut };

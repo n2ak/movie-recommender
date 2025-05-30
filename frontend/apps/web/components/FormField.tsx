@@ -75,7 +75,7 @@ export default function FormField({
     </ColStack>
   );
 }
-import { joinCN } from "@/_lib/utils";
+import { joinCN } from "@/lib/utils";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { ColStack } from "./Container";

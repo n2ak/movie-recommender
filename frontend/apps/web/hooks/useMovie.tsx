@@ -1,25 +1,21 @@
-import { getMovieForUser } from "@/_lib/actions/movie";
+import { getMovieForUser, MovieWithUserRating } from "@/lib/actions/movie";
 import { useQuery } from "@tanstack/react-query";
 
 export default function useMovie({
-  userId,
   movieId,
   initialMovie,
 }: {
-  userId: number | undefined;
   movieId: number;
-  initialMovie?: Awaited<ReturnType<typeof getMovieForUser>>;
+  initialMovie?: MovieWithUserRating;
 }) {
   // https://tkdodo.eu/blog/seeding-the-query-cache#pull-approach
-  const queryKey = ["movie", { userId, movieId }];
+  const queryKey = ["movie", { movieId }];
   const { data: movie, isLoading } = useQuery({
     queryKey,
-    queryFn: async () => {
-      const movie = await getMovieForUser(userId!, movieId);
-      return movie;
-    },
-    enabled: !!userId,
+    queryFn: () =>
+      getMovieForUser({ movieId }).then((r) => r.data ?? undefined),
     initialData: initialMovie,
+    refetchOnMount: !initialMovie,
   });
   return {
     movie,

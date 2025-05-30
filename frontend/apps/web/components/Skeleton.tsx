@@ -1,4 +1,4 @@
-import { joinCN } from "@/_lib/utils";
+import { joinCN } from "@/lib/utils";
 import { Skeleton as S } from "@mui/material";
 import { ColStack, RowStack } from "./Container";
 

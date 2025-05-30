@@ -15,7 +15,7 @@ export default async function Home() {
       <ColStack className="justify-center items-center">
         <div className="w-11/12">
           <Suspense fallback={<Skeleton nbox={5} />}>
-            <Recommended userId={userId} model="DLRM" />
+            <Recommended userId={userId} />
           </Suspense>
           <Suspense fallback={<Skeleton nbox={5} />}>
             <RecommendedGenres userId={userId} />
@@ -26,3 +26,5 @@ export default async function Home() {
   }
   return <>No session</>;
 }
+
+export const runtime = "nodejs";

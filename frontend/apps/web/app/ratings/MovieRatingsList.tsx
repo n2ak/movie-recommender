@@ -1,5 +1,6 @@
-import { joinCN } from "@/_lib/utils";
 import useInfiniteMovieRatings from "@/hooks/useInfiniteMovieRatings";
+import { MovieWithUserRating } from "@/lib/actions/movie";
+import { joinCN } from "@/lib/utils";
 import { Edit } from "@mui/icons-material";
 import { Table } from "@radix-ui/themes";
 import { RatingSortKey } from "@repo/database";
@@ -7,10 +8,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { MovieWithUserRating } from "../../../packages/database/src/movieDb";
-import Pagination from "./Pagination";
-import RateMovieModal from "./RateMovieModal";
-import { FixedRating } from "./Rating";
+import Pagination from "../../components/Pagination";
+import EditMovieRatingAndReviewModal from "../../components/RateMovieModal";
+import { FixedRating } from "../../components/Rating";
 
 export function RatingsTable({ userId }: { userId: number }) {
   const [sortKey, setSortKey] = useState<RatingSortKey>("title");
@@ -24,10 +24,9 @@ export function RatingsTable({ userId }: { userId: number }) {
     nPages,
     setRowsPerPage,
   } = useInfiniteMovieRatings(userId, sortKey, sortOrder);
+
   const [selectedRating, setSelectedRating] = useState<MovieWithUserRating>();
   const qClient = useQueryClient();
-  console.log(queryKey, pageNumber, typeof pageNumber);
-
   return (
     <>
       <div className="flex items-center flex-col">
@@ -61,7 +60,7 @@ export function RatingsTable({ userId }: { userId: number }) {
           })}
         </Table.Body>
       </Table.Root>
-      <RateMovieModal
+      <EditMovieRatingAndReviewModal
         movie={selectedRating}
         onClose={() => setSelectedRating(undefined)}
         onSave={() => {
@@ -111,7 +110,6 @@ function TableHeader({
                   if (!isTheOne) {
                     setSortKey(key);
                     setSortOrder(defaultOrder);
-                    console.log("dddd");
                   } else {
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                   }
@@ -138,17 +136,18 @@ function TableRow({
   return (
     <>
       <Table.Cell>
-        <div className="flex flex-row items-center gap-3">
-          <Link href={`/movie/${movie.id}`}>
-            <img
-              src={movie.href}
-              className="hover:scale-105 duration-100 max-h-15"
-            />
-          </Link>
+        <Link
+          href={`/movie/${movie.id}`}
+          className="flex flex-row items-center gap-3"
+        >
+          <img
+            src={movie.href}
+            className="hover:scale-105 duration-100 max-h-15"
+          />
           <div className="max-w-[200px] overflow-ellipsis overflow-hidden group-hover:underline">
             {movie.title}
           </div>
-        </div>
+        </Link>
       </Table.Cell>
       <Table.Cell>{userRating.timestamp.toDateString()}</Table.Cell>
       <Table.Cell className="relative">

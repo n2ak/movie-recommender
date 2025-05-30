@@ -1,9 +1,9 @@
 "use client";
-import { logOut } from "@/_lib/actions/user";
 import { useAuthStore } from "@/hooks/useAuthStore";
 import { useOnClickOutside } from "@/hooks/useClickedOutside";
 import { useDictionary } from "@/hooks/useLanguageStore";
 import { useUIStore } from "@/hooks/useUIStore";
+import { logOut } from "@/lib/actions/user";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import * as React from "react";

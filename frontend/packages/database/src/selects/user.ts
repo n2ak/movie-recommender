@@ -4,6 +4,7 @@ export const userSelect = Prisma.validator<Prisma.UserModelSelect>()({
   id: true,
   username: true,
   email: true,
+  createdAt: true,
 });
 export const findUserByEmail = (email: string) =>
   Prisma.validator<Prisma.UserModelFindFirstArgs>()({

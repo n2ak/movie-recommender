@@ -10,12 +10,16 @@
     "check-types": "turbo run check-types",
     "db:migrate": "cd packages/database && npx prisma migrate dev --name init",
     "db:generate": "cd packages/database && npx prisma generate",
-    "dockerize": "docker build -f apps/web/Dockerfile -t webapp ."
+    "dockerize": "docker build -f apps/web/Dockerfile -t webapp .",
+    "db:seed": "cd packages/database && npx prisma generate && npx prisma migrate reset --force && npx prisma migrate dev --name init && npx ts-node src/scripts/seed.ts",
+    "db:dump": "cd packages/database && npx ts-node src/scripts/dump.ts",
+    "clean": "rimraf ./node_modules && pnpm i"
   },
   "devDependencies": {
     "prettier": "^3.5.3",
-    "turbo": "^2.5.0",
-    "typescript": "5.8.2"
+    "turbo": "^2.5.3",
+    "typescript": "5.8.2",
+    "rimraf": "^6.0.1"
   },
   "packageManager": "pnpm@9.0.0",
   "engines": {

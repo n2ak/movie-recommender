@@ -1,14 +1,12 @@
 "use client";
-import { useAuthStore, User } from "@/hooks/useAuthStore";
+import { useAuthStore, UserInfo } from "@/hooks/useAuthStore";
 import { useDictionary } from "@/hooks/useLanguageStore";
 import { useUIStore } from "@/hooks/useUIStore";
-import { Avatar } from "@radix-ui/themes";
 import { Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import * as React from "react";
+import Avatar from "./Avatar";
 import { RowStack } from "./Container";
-import NavbarMenu from "./NavbarMenu";
 import Search from "./Search";
 
 export default function NavBar() {
@@ -18,39 +16,19 @@ export default function NavBar() {
   return <OffNavbar />;
 }
 
-function OnNavbar({ user }: { user: User }) {
+function OnNavbar({ user }: { user: UserInfo }) {
   const dict = useDictionary();
   const links = [
     { name: dict.home, href: "/home" },
     { name: "Ratings", href: "/ratings" },
   ];
-  const [menuOpen, setMenuOpen] = React.useState(false);
-  const ref = React.useRef<HTMLElement | null>(null);
   return (
     <nav className="fixed top-0 w-full z-50 shadow bg-white/60 backdrop-blur-sm border-gray-200 dark:bg-black/60">
       <div className="max-w-screen-xl flex justify-between mx-auto p-4 max-h-[70px]">
         <Logo />
         <Search userId={user.id} />
         <Links links={links} />
-        <div className="relative">
-          <Avatar
-            src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?&w=256&h=256&q=70&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=1&fit=crop"
-            fallback="A"
-            className="cursor-pointer "
-            size={"3"}
-            radius="full"
-            variant="soft"
-            onClick={() => setMenuOpen(!menuOpen)}
-            ref={ref}
-          />
-          <NavbarMenu
-            email={user.email}
-            username={user.name}
-            menuOpen={menuOpen}
-            setMenuOpen={setMenuOpen}
-            avatarRef={ref}
-          />
-        </div>
+        <Avatar username={user.username} />
       </div>
     </nav>
   );

@@ -8,12 +8,12 @@ import StatsSection from "@/components/StatsSection";
 import { useAuthStore } from "@/hooks/useAuthStore";
 import { useSearchParams } from "next/navigation";
 
-export default function ProfilePage({}) {
+export default function ProfilePage() {
   return <Profile />;
 }
 
 type Section = "loginactivity" | "overview" | "settings" | "stats";
-export function Profile() {
+function Profile() {
   const user = useAuthStore((s) => s.user);
   const params = useSearchParams();
   const section = (params.get("section") as Section) || "overview";
@@ -21,6 +21,7 @@ export function Profile() {
     return null;
   }
   function getSelection() {
+    if (!user) return null;
     switch (section) {
       case "overview":
         return <OverviewSection user={user} />;

@@ -24,22 +24,44 @@ export async function passwordMatch(id: number, password: string) {
   );
 }
 
-export async function passwordMatchByEmail(email: string, password: string) {
-  return !!(await prismaClient.userModel.findFirst({
-    where: { email, ...userWhere, password },
-  }));
+// getUserInfo function
+export async function getUserInfo({ userId }: { userId: number }) {
+  return await prismaClient.userModel.findFirst({
+    where: { id: userId, ...userWhere },
+    select: userSelect,
+  });
 }
 
-export async function changeProfileSettings(
-  userId: number,
-  data: {
-    name: string;
-  }
+export async function passwordMatchByUserNameOrEmail(
+  usernameOrEmail: string,
+  encryptedPassword: string
 ) {
+  // TODO:
+  return await prismaClient.userModel.findFirst({
+    where: {
+      OR: [
+        {
+          username: usernameOrEmail,
+        },
+        {
+          email: usernameOrEmail,
+        },
+      ],
+      password: encryptedPassword,
+      ...userWhere,
+    },
+    select: userSelect,
+  });
+}
+
+export async function changeProfileSettings(params: {
+  userId: number;
+  username: string;
+}) {
   return await prismaClient.userModel.update({
-    where: { id: userId, ...userWhere },
+    where: { id: params.userId, ...userWhere },
     data: {
-      username: data.name,
+      username: params.username,
     },
     select: userSelect,
   });

@@ -1,6 +1,6 @@
-import { ProfileSettingsFormState } from "@/_lib/actions/FormStates";
-import { changeProfileSettingsAction, logOut } from "@/_lib/actions/user";
 import { useAuthStore } from "@/hooks/useAuthStore";
+import { ProfileSettingsFormState } from "@/lib/actions/FormStates";
+import { changeProfileSettingsAction, logOut } from "@/lib/actions/user";
 import { User } from "next-auth";
 import { signOut, useSession } from "next-auth/react";
 import { useActionState, useState } from "react";
@@ -14,14 +14,14 @@ export default function SettingsSection({ user }: { user: User }) {
   const [saving, setSaving] = useState(false);
   const { update } = useSession();
   const snackbar = useSnackBar();
-  // const s = useAuthStore(s=>s.User);
+
   const [state, formAction] = useActionState<
     ProfileSettingsFormState,
     FormData
   >(
     async (prevState, formData) => {
       const data = {
-        name: (formData.get("name") as string) || "",
+        username: (formData.get("name") as string) || "",
         email: prevState.data.email,
       };
       const res = await changeProfileSettingsAction(data);
@@ -32,14 +32,10 @@ export default function SettingsSection({ user }: { user: User }) {
       };
       if (res.message) {
         snackbar.warning("Error: " + res.message, 5000);
-        ret.data = data;
-      } else if (res.errors) {
-        snackbar.warning("Errors: " + JSON.stringify(res.errors), 1000);
-        ret.data = data;
       } else {
         snackbar.success("Saved.", 1000);
         await update({
-          name: data.name,
+          name: data.username,
         });
       }
       return ret;

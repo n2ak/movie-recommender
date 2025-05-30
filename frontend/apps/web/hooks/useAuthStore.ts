@@ -1,16 +1,17 @@
 // import { User } from "next-auth";
 import { create } from "zustand";
 // import type { User } from "@repo/database";
-export interface User {
+export interface UserInfo {
   id: number;
   email: string;
-  name: string;
+  username: string;
+  createdAt: Date;
 }
 interface Auth {
-  user: User | null;
+  user: UserInfo | null;
   token: string | null;
   loading: boolean | null;
-  setUser: (user: User | null) => void;
+  setUser: (user: UserInfo | null) => void;
   setToken: (token: string | null) => void;
   setLoading: (user: boolean | null) => void;
   clearUser: () => void;

@@ -22,11 +22,40 @@ export const userRatingInclude = (userId: number) =>
     },
   });
 export const findMovie = (userId: number, movieId: number) => {
-  return Prisma.validator<Prisma.MovieModelFindManyArgs>()({
+  return Prisma.validator<Prisma.MovieModelFindFirstArgs>()({
     where: {
       id: movieId,
     },
-    include: userRatingInclude(userId),
+    include: {
+      ...userRatingInclude(userId),
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
+    },
+  });
+};
+export const findMoviesInIds = (
+  ids: number[],
+  userId: number,
+  take?: number,
+  skip?: number
+) => {
+  return Prisma.validator<Prisma.MovieModelFindManyArgs>()({
+    where: {
+      id: { in: ids },
+    },
+    include: {
+      ...userRatingInclude(userId),
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
+    },
+    take,
+    skip,
   });
 };
 export type MovieSortKey = keyof Prisma.MovieModelOrderByWithRelationInput;

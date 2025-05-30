@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import "server-only";
 export type MovieGenre =
   | "Action"
   | "Adventure"
@@ -22,6 +23,7 @@ export type MovieGenre =
 export type SortOrder = Prisma.SortOrder;
 export * as userDB from "./authDb";
 export * as movieDB from "./movieDb";
+export * as reviewsDB from "./reviewsDb";
 // export type RatingSortKey = "rating" | "timestamp" | "title" | "avg_rating";
 export type { RatedMoviesRatingSortKey as RatingSortKey } from "./movieDb";
 

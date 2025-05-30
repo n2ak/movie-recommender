@@ -23,7 +23,6 @@ export default function Search({ userId }: { userId: number }) {
   useOnClickOutside(wrapperRef, () => {
     setMenuOpen(false);
   });
-  // TODO combine open & input in same state
   return (
     <div className="relative w-xs md:w-md md:max-w-lg">
       {/* <label
@@ -118,13 +117,12 @@ const SearchItem = ({
         className="flex gap-3 min-h-10 h-14 justify-start"
       >
         <img src={href} className="max-h-20 col-span-1 w-10 flex-none" />
-        <div className="w-32 flex-auto my-auto flex-10/12 overflow-ellipsis">
+        <div className="w-32 my-auto flex-10/12 overflow-ellipsis">
           <div className="flex flex-col gap-1 ">
             <h1 className="font-normal text-sm group-hover:underline">
               {title}
             </h1>
             <h3 className="font-normal text-xs text-slate-500">
-              xddd
               {genres.splice(0, 3).join(",")}
             </h3>
           </div>

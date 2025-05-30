@@ -1,25 +1,18 @@
 // "use client";
+import { MovieRow } from "@/components/MovieCard";
 import {
   getMostWatchedGenres,
   getRecommendedGenreMovies,
   getRecommendedMoviesForUser,
-} from "@/_lib/actions/movie";
-import { MovieRow } from "@/components/MovieCard";
-import type { ModelType } from "@repo/backend_api";
+} from "@/lib/actions/movie";
 import type { MovieGenre } from "@repo/database";
 
-export async function Recommended({
-  userId,
-  model,
-}: {
-  userId: number;
-  model: ModelType;
-}) {
+export async function Recommended({ userId }: { userId: number }) {
   return (
     <Recommendation
       userId={userId}
       title={"Movies we thing you would like:"}
-      func={() => getRecommendedMoviesForUser(userId, model)}
+      func={() => getRecommendedMoviesForUser({ count: 10 })}
     />
   );
 }
@@ -27,11 +20,9 @@ export async function Recommended({
 export async function RecommendedGenre({
   userId,
   genre,
-  model,
 }: {
   userId: number;
   genre: MovieGenre;
-  model: ModelType;
 }) {
   return (
     <Recommendation
@@ -40,23 +31,19 @@ export async function RecommendedGenre({
           Recommended {<span className="text-red-600">{genre}</span>} movies:
         </span>
       }
-      func={() => getRecommendedGenreMovies(userId, genre, model)}
+      func={() => getRecommendedGenreMovies({ genre })}
       userId={userId}
     />
   );
 }
 
 export async function RecommendedGenres({ userId }: { userId: number }) {
-  const genres = await getMostWatchedGenres(userId);
+  const genres = (await getMostWatchedGenres(userId)).data!.map(([g, _]) => g);
   return (
     <>
       {genres.map((g) => (
         <div key={g}>
-          <RecommendedGenre
-            userId={userId}
-            genre={g as MovieGenre}
-            model="DLRM"
-          />
+          <RecommendedGenre userId={userId} genre={g as MovieGenre} />
         </div>
       ))}
     </>
@@ -72,22 +59,8 @@ async function Recommendation({
   title: any;
   func: () => ReturnType<typeof getRecommendedMoviesForUser>;
 }) {
-  const resp = await func();
-
-  if (resp.error) {
-    console.error(resp.error);
-    return <>Error getting recommendations</>;
-  }
+  const movies = (await func()).data!;
   return (
-    <>
-      {resp.result.movies!.length > 0 && (
-        <MovieRow
-          title={title}
-          movies={resp.result.movies!}
-          userId={userId}
-          predictions={resp.result.predictions!}
-        />
-      )}
-    </>
+    <>{movies!.length > 0 && <MovieRow title={title} movies={movies} />}</>
   );
 }

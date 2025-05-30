@@ -2,7 +2,7 @@
 import { Alert, AlertColor, Snackbar } from "@mui/material";
 import { createContext, PropsWithChildren, useContext, useState } from "react";
 
-type toastFunc = (msg: string, duration: number) => void;
+type toastFunc = (msg: string, duration?: number) => void;
 
 interface SnackBarContextInterface {
   success: toastFunc;
@@ -27,6 +27,7 @@ export function useSnackBar() {
   }
   return context;
 }
+
 export function SnackBarProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<{
     open: boolean;
@@ -39,9 +40,9 @@ export function SnackBarProvider({ children }: PropsWithChildren) {
     message: "",
     msgType: "info",
   });
-  const toast = (type: AlertColor, m: string, d: number) => {
+  const toast = (type: AlertColor, m: string, d?: number) => {
     setState({
-      duration: d,
+      duration: d || defaultDuration,
       msgType: type,
       message: m,
       open: true,
@@ -82,6 +83,7 @@ export function SnackBarProvider({ children }: PropsWithChildren) {
           });
         }}
         message={state.message}
+        className="z-20"
       >
         <Alert severity={state.msgType} className="text-sm font-medium">
           {state.message}
