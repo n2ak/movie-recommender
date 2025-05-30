@@ -1,5 +1,5 @@
 "use client";
-import { MovieRow } from "@/components/MovieCard";
+import { MovieCarousel } from "@/components/MovieCarousel";
 import EditMovieRatingAndReviewModal from "@/components/RateMovieModal";
 import { FixedRating } from "@/components/Rating";
 import useMovie from "@/hooks/useMovie";
@@ -77,7 +77,7 @@ export function MoviePage({
 
       <div className="mt-12">
         <h2 className="text-2xl font-semibold mb-4">Simmilar Movies</h2>
-        <MovieRow movies={similarMovies} />
+        <MovieCarousel movies={similarMovies} />
       </div>
     </div>
   );

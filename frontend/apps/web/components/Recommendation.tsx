@@ -1,5 +1,5 @@
 // "use client";
-import { MovieRow } from "@/components/MovieCard";
+import { MovieCarousel } from "@/components/MovieCarousel";
 import {
   getMostWatchedGenres,
   getRecommendedGenreMovies,
@@ -51,6 +51,6 @@ async function Recommendation({
 }) {
   const movies = (await func()).data!;
   return (
-    <>{movies!.length > 0 && <MovieRow title={title} movies={movies} />}</>
+    <>{movies!.length > 0 && <MovieCarousel title={title} movies={movies} />}</>
   );
 }
