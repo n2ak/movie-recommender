@@ -3,11 +3,11 @@ import { ProfileSettingsFormState } from "@/lib/actions/FormStates";
 import { changeProfileSettingsAction, logOut } from "@/lib/actions/user";
 import { signOut, useSession } from "next-auth/react";
 import { useActionState, useState } from "react";
-import Button from "./Button";
 import { ColStack } from "./Container";
 import DeleteAccountModal from "./DeleteAccountModal";
 import FormField from "./FormField";
 import { useSnackBar } from "./providers/SnackBarProvider";
+import { Button } from "./ui/button";
 
 export default function SettingsSection({ user }: { user: UserInfo }) {
   const [saving, setSaving] = useState(false);
@@ -82,7 +82,7 @@ export default function SettingsSection({ user }: { user: UserInfo }) {
           <div>
             <Button
               className="!h-[40px] !w-[100px] float-right"
-              loading={saving}
+              disabled={saving}
               type="submit"
               onClick={() => setSaving(true)}
             >

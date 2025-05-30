@@ -8,9 +8,9 @@ import {
 } from "@/lib/actions/movie";
 import { Dialog, Flex, Text, TextField } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
-import Button from "./Button";
 import { useSnackBar } from "./providers/SnackBarProvider";
 import { VarRating } from "./Rating";
+import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 
 export default function EditMovieRatingAndReviewModal({

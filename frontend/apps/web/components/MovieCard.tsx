@@ -6,11 +6,7 @@ import Link from "next/link";
 import { ColStack } from "./Container";
 import { FixedRating } from "./Rating";
 
-export default function MovieCard({
-  movie,
-}: {
-  movie: MovieWithPredictedRating;
-}) {
+function MovieCard({ movie }: { movie: MovieWithPredictedRating }) {
   return (
     <Link
       href={`/movie/${movie.id}`}

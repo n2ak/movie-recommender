@@ -92,11 +92,6 @@ export const reactToMovieReview = timedAction(
   reviewsDB.reactToMovieReview
 );
 
-export const getNumberOfMovieReviews = timedAction(
-  "getNumberOfMovieReviews",
-  reviewsDB.getNumberOfMovieReviews
-);
-
 const getMovieForUser = timedAction(
   "getMovieForUser",
   cachedQuery(

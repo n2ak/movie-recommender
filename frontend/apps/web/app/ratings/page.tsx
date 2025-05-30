@@ -1,7 +1,8 @@
 "use client";
 import { RatingsTable } from "@/app/ratings/MovieRatingsList";
-import { Container, RowStack } from "@/components/Container";
+import { RowStack } from "@/components/Container";
 import { useAuthStore } from "@/hooks/useAuthStore";
+import { Container } from "@radix-ui/themes";
 
 export default function RatingsPage() {
   const user = useAuthStore((s) => s.user);

@@ -27,7 +27,7 @@ function OnNavbar({ user }: { user: UserInfo }) {
     <nav className="fixed top-0 w-full z-50 shadow bg-white/60 backdrop-blur-sm border-gray-200 dark:bg-black/60">
       <div className="max-w-screen-xl flex justify-between mx-auto p-4 max-h-[70px]">
         <Logo />
-        <Search userId={user.id} />
+        <Search />
         <Links links={links} />
         <Avatar username={user.username} />
       </div>

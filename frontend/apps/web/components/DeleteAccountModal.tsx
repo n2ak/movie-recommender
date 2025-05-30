@@ -1,9 +1,9 @@
 import { deleteAccount } from "@/lib/actions/user";
 import { Dialog } from "@radix-ui/themes";
 import { useState } from "react";
-import Button from "./Button";
 import { ColStack, RowStack } from "./Container";
 import FormField from "./FormField";
+import { Button } from "./ui/button";
 
 export default function DeleteAccountModal({
   open,
@@ -63,7 +63,7 @@ export default function DeleteAccountModal({
                 Cancel
               </Button>
               <Button
-                loading={deleting}
+                disabled={deleting}
                 onClick={() => {
                   setDeleting(true);
                   (async function () {

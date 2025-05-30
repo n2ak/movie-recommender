@@ -16,7 +16,7 @@ export async function Recommended() {
   );
 }
 
-export async function RecommendedGenre({ genre }: { genre: MovieGenre }) {
+async function RecommendedGenre({ genre }: { genre: MovieGenre }) {
   return (
     <Recommendation
       title={

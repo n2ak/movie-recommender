@@ -3,9 +3,9 @@ import { useAuthStore } from "@/hooks/useAuthStore";
 import Link from "next/link";
 import * as React from "react";
 // import { useFormState, useActionState } from "react-dom";
-import Button from "@/components/Button";
 import { ColStack } from "@/components/Container";
 import FormField from "@/components/FormField";
+import { Button } from "@/components/ui/button";
 import { useDictionary } from "@/hooks/useLanguageStore";
 import { signIn } from "next-auth/react";
 

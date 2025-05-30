@@ -3,17 +3,6 @@ type Props = {
   className?: string;
   ref?: Ref<HTMLDivElement>;
 } & PropsWithChildren;
-export function Container(props: Props) {
-  return Custom(props, {
-    customClass: "w-[90%] mx-auto",
-  });
-}
-
-export function Divider(props: Props) {
-  return Custom(props, {
-    customClass: "my-[2px] min-h-[1px] bg-black/30",
-  });
-}
 
 export function RowStack(props: Props) {
   return Custom(props, {

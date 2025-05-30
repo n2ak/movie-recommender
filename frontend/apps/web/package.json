@@ -8,15 +8,13 @@
     "build": "next build",
     "start": "next start",
     "start:standalone": "node .next/standalone/apps/web/server.js",
-    "lint": "next lint --max-warnings 0",
+    "lint": "next lint --max-warnings 0 && npx knip --include exports",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
-    "@hookform/resolvers": "^5.0.1",
     "@mui/material": "^6.0.0",
-    "@prisma/client": "^6.5.0",
     "@radix-ui/react-avatar": "^1.1.6",
     "@radix-ui/react-checkbox": "^1.2.3",
     "@radix-ui/react-dialog": "^1.1.10",
@@ -64,6 +62,7 @@
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.1",
     "eslint": "^9.24.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "knip": "^5.59.1"
   }
 }

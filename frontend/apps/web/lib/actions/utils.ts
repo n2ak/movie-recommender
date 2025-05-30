@@ -4,7 +4,7 @@ import { TIMING } from "../constants";
 import logger, { startTimer } from "../logger";
 import { ValidationError } from "../validation";
 
-export class CustomError extends Error {
+class CustomError extends Error {
   constructor(message: string) {
     super(message);
   }

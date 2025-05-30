@@ -28,10 +28,6 @@ export function timeSince(d: Date) {
   return format(interval, "second");
 }
 
-export function capitalizeFirstLetter(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 export function joinCN(...args: string[]) {
   return args.join(" ");
 }

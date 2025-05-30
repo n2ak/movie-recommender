@@ -33,7 +33,6 @@ export function RatingsTable({ userId }: { userId: number }) {
         <Pagination
           nPages={nPages}
           pageNumber={pageNumber}
-          setPageNumber={setPageNumber}
           setNumberOfRows={setRowsPerPage}
           values={[10, 25, 50]}
           defaultNumberOfRows={10}

@@ -3,7 +3,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { parseCredentials } from "./lib/validation";
 
-const { signIn, signOut, auth, handlers } = NextAuth({
+const { signOut, auth, handlers } = NextAuth({
   providers: [
     Credentials({
       credentials: {
@@ -65,4 +65,4 @@ const { signIn, signOut, auth, handlers } = NextAuth({
     },
   },
 });
-export { auth, handlers, signIn, signOut };
+export { auth, handlers, signOut };

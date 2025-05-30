@@ -3,10 +3,6 @@ export type ProfileSettingsFormState = FormState<{
   email: string;
 }>;
 
-export type LoginFormState = FormState<{
-  username: string;
-  password: string;
-}>;
 type FormState<T> = {
   data: T;
   errors?: { [key in keyof T]?: string };
