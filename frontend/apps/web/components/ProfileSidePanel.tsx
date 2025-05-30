@@ -1,4 +1,4 @@
-import { Settings as SettingsIcon } from "@mui/icons-material";
+import { Settings } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
@@ -33,7 +33,7 @@ export default function ProfileSidePanel({ user }: any) {
     },
     {
       name: "Settings",
-      icon: <SettingsIcon />,
+      icon: <Settings />,
     },
     {
       name: "Stats",

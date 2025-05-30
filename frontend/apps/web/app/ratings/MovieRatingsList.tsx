@@ -1,11 +1,10 @@
 import useInfiniteMovieRatings from "@/hooks/useInfiniteMovieRatings";
 import { MovieWithUserRating } from "@/lib/actions/movie";
 import { joinCN } from "@/lib/utils";
-import { Edit } from "@mui/icons-material";
 import { Table } from "@radix-ui/themes";
 import { RatingSortKey } from "@repo/database";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, EditIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -159,7 +158,7 @@ function TableRow({
           className="absolute hidden group-hover:block top-0.5 right-0.5 hover:bg-gray-400/40 p-1 rounded-sm cursor-pointer dark:hover:bg-black"
           onClick={() => setSelectedRating(movie)}
         >
-          <Edit />
+          <EditIcon />
         </div>
       </Table.Cell>
     </>

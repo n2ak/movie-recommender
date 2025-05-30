@@ -2,8 +2,8 @@
 import { useUIStore } from "@/hooks/useUIStore";
 import { MAX_RATING } from "@/lib/constants";
 import { roundRating } from "@/lib/utils";
-import { Star } from "@mui/icons-material";
 import { Rating as BaseRating } from "@mui/material";
+import { Star } from "lucide-react";
 
 interface Type {
   v: number;
