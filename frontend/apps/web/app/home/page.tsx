@@ -6,7 +6,7 @@ import { Suspense } from "react";
 export default async function Home() {
   return (
     <ColStack className="justify-center items-center">
-      <div className="w-11/12">
+      <div className="w-11/12 flex flex-col gap-2">
         <Suspense fallback={<Skeleton nbox={5} />}>
           <Recommended />
         </Suspense>

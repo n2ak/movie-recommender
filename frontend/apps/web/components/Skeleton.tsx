@@ -1,6 +1,5 @@
-import { joinCN } from "@/lib/utils";
-import { Skeleton as S } from "@mui/material";
 import { ColStack, RowStack } from "./Container";
+import { Skeleton as S } from "./ui/skeleton";
 
 export default function Skeleton({
   row,
@@ -16,14 +15,7 @@ export default function Skeleton({
       {Array(nbox)
         .fill(0)
         .map((_, i) => (
-          <S
-            key={i}
-            variant="rectangular"
-            className={joinCN(
-              row ? "!min-h-[200px]" : "!w-full",
-              "rounded-md w-full !bg-gray-700"
-            )}
-          />
+          <S key={i} className="h-[300px] w-[250px] rounded-xl" />
         ))}
     </Stack>
   );
