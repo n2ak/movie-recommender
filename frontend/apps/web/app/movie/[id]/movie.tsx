@@ -10,7 +10,6 @@ import {
 import { formatNumber } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { Edit } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -35,7 +34,7 @@ export function MoviePage({
     <div className="p-6 max-w-4xl mx-auto font-sans">
       {/* Movie Info */}
       <div className="flex flex-col md:flex-row gap-6">
-        <Image
+        <img
           src={movie.href}
           alt={movie.title}
           className="w-64 rounded-lg shadow-lg"

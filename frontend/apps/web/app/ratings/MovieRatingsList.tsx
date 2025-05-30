@@ -5,7 +5,6 @@ import { Table } from "@radix-ui/themes";
 import { RatingSortKey } from "@repo/database";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, EditIcon } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import Pagination from "../../components/Pagination";
@@ -139,7 +138,7 @@ function TableRow({
           href={`/movie/${movie.id}`}
           className="flex flex-row items-center gap-3"
         >
-          <Image
+          <img
             alt={movie.title}
             src={movie.href}
             className="hover:scale-105 duration-100 max-h-15"

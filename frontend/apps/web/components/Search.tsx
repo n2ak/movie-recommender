@@ -2,7 +2,6 @@ import { useOnClickOutside } from "@/hooks/useClickedOutside";
 import { useDictionary } from "@/hooks/useLanguageStore";
 import useMovieSearch from "@/hooks/useMovieSearch";
 import { debounce } from "lodash";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { ColStack } from "./Container";
@@ -117,7 +116,7 @@ const SearchItem = ({
         }}
         className="flex gap-3 min-h-10 h-14 justify-start"
       >
-        <Image
+        <img
           alt={title}
           src={href}
           className="max-h-20 col-span-1 w-10 flex-none"

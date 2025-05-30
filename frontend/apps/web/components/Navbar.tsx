@@ -3,7 +3,6 @@ import { useAuthStore, UserInfo } from "@/hooks/useAuthStore";
 import { useDictionary } from "@/hooks/useLanguageStore";
 import { useUIStore } from "@/hooks/useUIStore";
 import { Moon, Sun } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Avatar from "./Avatar";
@@ -85,7 +84,7 @@ function Links({ links }: { links: { name: string; href: string }[] }) {
 function Logo() {
   return (
     <Link href="/home" className="hidden sm:block relative">
-      <Image
+      <img
         src="/res/movies.png"
         className="h-15 w-15 -translate-y-3"
         alt="Flowbite Logo"

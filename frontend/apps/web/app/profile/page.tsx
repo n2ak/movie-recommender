@@ -1,10 +1,11 @@
 "use client";
 
 import OverviewSection from "@/components/OvervieSection";
-import ProfileSidePanel from "@/components/ProfileSidePanel";
+import ProfileSidebar from "@/components/ProfileSidebar";
 import RecentLoginActivity from "@/components/RecentLoginActivity";
 import SettingsSection from "@/components/SettingsSection";
 import StatsSection from "@/components/StatsSection";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/hooks/useAuthStore";
 import { useSearchParams } from "next/navigation";
 
@@ -37,10 +38,12 @@ function Profile() {
   }
   return (
     <div className="h-full">
-      <div className="flex flex-col md:flex-row max-w-6xl mx-auto h-full">
-        <ProfileSidePanel user={user} />
-        <main className="flex-1 p-6">{getSelection()}</main>
-      </div>
+      <SidebarProvider>
+        <div className="flex flex-col md:flex-row max-w-6xl mx-auto h-full">
+          <ProfileSidebar />
+          <main className="flex-1 p-6">{getSelection()}</main>
+        </div>
+      </SidebarProvider>
     </div>
   );
 }
