@@ -40,7 +40,7 @@ function Profile() {
     <div className="h-full">
       <SidebarProvider>
         <div className="flex flex-col md:flex-row max-w-6xl mx-auto h-full">
-          <ProfileSidebar />
+          <ProfileSidebar selectedSection={section} />
           <main className="flex-1 p-6">{getSelection()}</main>
         </div>
       </SidebarProvider>

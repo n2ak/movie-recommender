@@ -90,7 +90,11 @@ const items = [
   },
 ];
 
-export default function ProfileSidebar() {
+export default function ProfileSidebar({
+  selectedSection,
+}: {
+  selectedSection: Lowercase<string>;
+}) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const createQueryString = useCallback(
@@ -111,7 +115,10 @@ export default function ProfileSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={selectedSection === item.title.toLowerCase()}
+                  >
                     <Link
                       href={createQueryString(
                         "section",
