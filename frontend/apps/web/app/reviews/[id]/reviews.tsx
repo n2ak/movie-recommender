@@ -35,7 +35,7 @@ export default function MovieReviews({
     useInfiniteQuery({
       queryKey: ["movie_reviews", { movieId }],
       queryFn: ({ pageParam: start }) =>
-        getMovieReviews({ movieId, start, count, sortKey: "", order: "asc" }),
+        getMovieReviews({ movieId, start, count, order: "asc" }),
       initialPageParam: 0,
       getNextPageParam: (lastPage, pages) => {
         const hasNext = pages[pages.length - 1]?.data?.length === count;
