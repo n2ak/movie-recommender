@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnm'
+          cache: 'pnpm'
           cache-dependency-path: frontend/pnpm-lock.json
      
       - name: Install pnpm
