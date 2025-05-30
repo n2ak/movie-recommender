@@ -8,7 +8,7 @@ interface Props {
   name?: string;
   label?: string;
   disabled?: boolean;
-  addPasswordTogle?: boolean;
+  addPasswordToggle?: boolean;
   hasError?: boolean;
 }
 
@@ -22,11 +22,11 @@ export default function FormField({
   name,
   label,
   disabled,
-  addPasswordTogle,
+  addPasswordToggle,
   hasError,
 }: Props) {
   const [show, setShow] = useState(false);
-  if (addPasswordTogle && type === "password") {
+  if (addPasswordToggle && type === "password") {
     type = show ? "text" : "password";
   }
   if (hasError === undefined) {
@@ -60,7 +60,7 @@ export default function FormField({
             placeholder={placeholder}
           />
         </div>
-        {addPasswordTogle && (
+        {addPasswordToggle && (
           <div
             className="absolute inset-y-0 end-0 flex items-center me-1 dark:hover:bg-gray-800 cursor-pointer my-1 px-1 rounded-sm dark:text-white"
             onClick={() => setShow((s) => !s)}

@@ -35,7 +35,7 @@ const { signOut, auth, handlers } = NextAuth({
     signIn: "/auth/login",
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl, method } }) {
+    authorized({ auth, request: { nextUrl } }) {
       // if (nextUrl.pathname.startsWith("/api/auth/session")) return true;
       const isLoggedIn = !!auth?.user;
       const inLoginPage = nextUrl.pathname.startsWith("/auth/login");

@@ -48,7 +48,7 @@ export default function DeleteAccountModal({
                 label="Password"
                 value={password}
                 onChange={(v) => setPassword(v)}
-                addPasswordTogle
+                addPasswordToggle
               />
             </ColStack>
             <RowStack className=" gap-2 justify-end mt-5">
