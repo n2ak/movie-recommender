@@ -10,16 +10,19 @@ export default async function Page({
   const movieId = parseInt((await params).id);
   if (isNaN(movieId)) return <div>Invalid id</div>;
 
-  const movie = await getMovieForUser({ movieId });
-  if (!movie.data || movie.message) {
-    // TODO
-    return redirect("/home");
-  }
-  const similarMovies = await getSimilarMovies({
-    movieIds: [movieId],
-    count: 10,
-  });
-  if (!similarMovies.data || similarMovies.message) {
+  const [movie, similarMovies] = await Promise.all([
+    getMovieForUser({ movieId }),
+    getSimilarMovies({
+      movieIds: [movieId],
+      count: 10,
+    }),
+  ]);
+  if (
+    !movie.data ||
+    movie.message ||
+    !similarMovies.data ||
+    similarMovies.message
+  ) {
     // TODO
     return redirect("/home");
   }
