@@ -1,19 +1,17 @@
 "use client";
-import { useUIStore } from "@/hooks/useUIStore";
-import { Theme } from "@radix-ui/themes";
-import { PropsWithChildren, useEffect } from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 
-export default function ThemeProvider({ children }: PropsWithChildren) {
-  const { isDarkMode, __loaded: loaded } = useUIStore();
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
-  if (!loaded) {
-    return null;
-  }
-  return <Theme appearance={isDarkMode ? "dark" : "light"}>{children}</Theme>;
+export default function ThemeProvider({
+  children,
+}: React.ComponentProps<typeof NextThemesProvider>) {
+  return (
+    <NextThemesProvider
+      defaultTheme="system"
+      enableSystem
+      attribute="class"
+      disableTransitionOnChange
+    >
+      {children}
+    </NextThemesProvider>
+  );
 }

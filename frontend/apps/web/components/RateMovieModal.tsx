@@ -8,8 +8,8 @@ import {
 } from "@/lib/actions/movie";
 import { Dialog, Flex, Text, TextField } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
-import { useSnackBar } from "./providers/SnackBarProvider";
 import { VarRating } from "./Rating";
+import { error, success } from "./toast";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 
@@ -36,8 +36,6 @@ export default function EditMovieRatingAndReviewModal({
         text: review.data.text,
       });
   }, [movie, review, movie?.userRating]);
-
-  const snackBar = useSnackBar();
 
   const [addReview, setAddReview] = useState(false);
   if (!movie) {
@@ -136,10 +134,10 @@ export default function EditMovieRatingAndReviewModal({
                   review_provided: addReview || !canToggleAdd,
                 });
                 if (!res.message) {
-                  snackBar.success("Movie rating edited", 2000);
+                  success("Movie rating edited");
                   onSave();
                 } else {
-                  snackBar.error("Error: " + res.message, 2000);
+                  error("Error: " + res.message);
                   console.error("Error rating movie", { res });
                 }
               }}

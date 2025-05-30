@@ -6,13 +6,12 @@ import { useActionState, useState } from "react";
 import { ColStack } from "./Container";
 import DeleteAccountModal from "./DeleteAccountModal";
 import FormField from "./FormField";
-import { useSnackBar } from "./providers/SnackBarProvider";
+import { error, success } from "./toast";
 import { Button } from "./ui/button";
 
 export default function SettingsSection({ user }: { user: UserInfo }) {
   const [saving, setSaving] = useState(false);
   const { update } = useSession();
-  const snackbar = useSnackBar();
 
   const [state, formAction] = useActionState<
     ProfileSettingsFormState,
@@ -26,9 +25,9 @@ export default function SettingsSection({ user }: { user: UserInfo }) {
       const res = await changeProfileSettingsAction(data);
       setSaving(false);
       if (res.message) {
-        snackbar.warning("Error: " + res.message, 5000);
+        error("Error: " + res.message);
       } else {
-        snackbar.success("Saved.", 1000);
+        success("Saved.");
         await update({
           name: data.username,
         });
