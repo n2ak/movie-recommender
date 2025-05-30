@@ -17,7 +17,6 @@ export default function DeleteAccountModal({
   const [proceed, setProceed] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState<string>();
   return (
     <Dialog.Root open={open}>
       <Dialog.Content maxWidth="450px">
@@ -48,7 +47,6 @@ export default function DeleteAccountModal({
                 placeholder="Password"
                 label="Password"
                 value={password}
-                error={passwordError}
                 onChange={(v) => setPassword(v)}
                 addPasswordTogle
               />
