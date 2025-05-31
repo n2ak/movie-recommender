@@ -1,24 +1,24 @@
 "use client";
 
-import OverviewSection from "@/components/OvervieSection";
-import ProfileSidebar from "@/components/ProfileSidebar";
-import RecentLoginActivity from "@/components/RecentLoginActivity";
-import SettingsSection from "@/components/SettingsSection";
-import StatsSection from "@/components/StatsSection";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/hooks/useAuthStore";
 import { useSearchParams } from "next/navigation";
+import OverviewSection from "./OvervieSection";
+import ProfileSidebar from "./ProfileSidebar";
+import SettingsSection from "./SettingsSection";
+import StatsSection from "./StatsSection";
 
 export default function ProfilePage() {
   return <Profile />;
 }
 
-type Section = "loginactivity" | "overview" | "settings" | "stats";
+type Section = "overview" | "settings" | "stats";
 function Profile() {
   const user = useAuthStore((s) => s.user);
   const params = useSearchParams();
   const section = (params.get("section") as Section) || "overview";
   if (!user) {
+    // TODO
     return null;
   }
   function getSelection() {
@@ -30,8 +30,6 @@ function Profile() {
         return <SettingsSection user={user} />;
       case "stats":
         return <StatsSection />;
-      case "loginactivity":
-        return <RecentLoginActivity />;
       default:
         return null;
     }

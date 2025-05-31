@@ -4,18 +4,18 @@ import { changeProfileSettingsAction, logOut } from "@/lib/actions/user";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useActionState, useState } from "react";
-import DeleteAccountModal from "./DeleteAccountModal";
-import { error, success } from "./toast";
-import { Button } from "./ui/button";
-import { Card, CardHeader, CardTitle } from "./ui/card";
+import DeleteAccountModal from "../../components/DeleteAccountModal";
+import { error, success } from "../../components/toast";
+import { Button } from "../../components/ui/button";
+import { Card, CardHeader, CardTitle } from "../../components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "./ui/collapsible";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Separator } from "./ui/separator";
+} from "../../components/ui/collapsible";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Separator } from "../../components/ui/separator";
 
 export default function SettingsSection({ user }: { user: UserInfo }) {
   return (
