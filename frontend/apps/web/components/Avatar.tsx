@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/hooks/useAuthStore";
 import { languages, useLanguageStore } from "@/hooks/useLanguageStore";
+import { LanguagesIcon, LogOutIcon, UserIcon } from "lucide-react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { Avatar as A, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -32,6 +33,7 @@ export default function Avatar({ username }: { username: string }) {
       <DropdownMenuContent className="w-56">
         <DropdownMenuGroup>
           <DropdownMenuItem>
+            <UserIcon className="text-black dark:text-white" />
             <Link href="/profile">Profile</Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
@@ -45,6 +47,7 @@ export default function Avatar({ username }: { username: string }) {
             clearUser();
           }}
         >
+          <LogOutIcon className="text-black dark:text-white" />
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -56,7 +59,10 @@ const LanguageGroup = () => {
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger>Lanugage</DropdownMenuSubTrigger>
+        <DropdownMenuSubTrigger>
+          <LanguagesIcon className="text-black dark:text-white" />
+          Lanugage
+        </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent>
             {languages.map((l) => (

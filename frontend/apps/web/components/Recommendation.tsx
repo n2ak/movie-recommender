@@ -21,7 +21,7 @@ async function RecommendedGenre({ genre }: { genre: MovieGenre }) {
     <Recommendation
       title={
         <span>
-          Recommended {<span className="text-red-600">{genre}</span>} movies:
+          Recommended {<span className="text-primary">{genre}</span>} movies:
         </span>
       }
       func={() => getRecommendedGenreMovies({ genre })}

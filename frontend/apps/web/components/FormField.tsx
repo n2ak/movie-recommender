@@ -65,7 +65,7 @@ export default function FormField({
             className="absolute inset-y-0 end-0 flex items-center me-1 dark:hover:bg-gray-800 cursor-pointer my-1 px-1 rounded-sm dark:text-white"
             onClick={() => setShow((s) => !s)}
           >
-            {show ? <Eye /> : <EyeOff />}
+            {show ? <EyeIcon /> : <EyeOffIcon />}
           </div>
         )}
       </div>
@@ -76,6 +76,6 @@ export default function FormField({
   );
 }
 import { joinCN } from "@/lib/utils";
-import { Eye, EyeOff } from "lucide-react";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useState } from "react";
 import { ColStack } from "./Container";

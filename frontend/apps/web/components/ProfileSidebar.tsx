@@ -1,5 +1,3 @@
-import { Home, Settings } from "lucide-react";
-
 // export default function ProfileSidePanel({ user }: any) {
 //   const fakeUser = {
 //     name: "Jane Doe",
@@ -74,6 +72,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { HomeIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
@@ -82,11 +81,11 @@ import { useCallback } from "react";
 const items = [
   {
     title: "Overview",
-    icon: Home,
+    icon: HomeIcon,
   },
   {
     title: "Settings",
-    icon: Settings,
+    icon: SettingsIcon,
   },
 ];
 

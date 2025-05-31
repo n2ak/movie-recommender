@@ -18,7 +18,7 @@ export function MovieCarousel({
   return (
     <div className="">
       {title && (
-        <h2 className="font-sans text-2xl font-medium tracking-tight">
+        <h2 className="font-mono text-2xl font-medium tracking-tight">
           {title}
         </h2>
       )}

@@ -1,7 +1,7 @@
 "use client";
 import { useAuthStore, UserInfo } from "@/hooks/useAuthStore";
 import { useDictionary } from "@/hooks/useLanguageStore";
-import { Moon, Sun } from "lucide-react";
+import { MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -18,11 +18,11 @@ export default function NavBar() {
 
 function SwitchModeIcon() {
   const { theme, setTheme } = useTheme();
-  const Component = theme === "dark" ? Moon : Sun;
+  const Component = theme === "dark" ? MoonIcon : SunIcon;
   return (
     <div className="content-center">
       <Component
-        className="cursor-pointer border border-black p-1 w-9 h-9 rounded-sm dark:border-white"
+        className="cursor-pointer border text-primary border-primary p-1 w-9 h-9 rounded-sm "
         onClick={() => setTheme(theme === "light" ? "dark" : "light")}
       />
     </div>
@@ -47,25 +47,18 @@ function OnNavbar({ user }: { user: UserInfo }) {
   );
 }
 function OffNavbar() {
-  const { setTheme, theme } = useTheme();
-
   return (
     <nav className="fixed top-0 w-full z-50 shadow bg-white/60 backdrop-blur-sm border-gray-200 dark:bg-black/60">
       <div className="max-w-screen-xl flex justify-between mx-auto p-4 max-h-[70px]">
         <Logo />
-        <div
-          className="cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-500 px-1 py-1 rounded-sm"
-          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-        >
-          {theme === "dark" ? <Sun /> : <Moon />}
-        </div>
+        <SwitchModeIcon />
       </div>
     </nav>
   );
 }
 
 function Links({ links }: { links: { name: string; href: string }[] }) {
-  const patnName = usePathname();
+  const pathname = usePathname();
 
   return (
     <div
@@ -75,15 +68,15 @@ function Links({ links }: { links: { name: string; href: string }[] }) {
       <RowStack className="font-medium gap-2">
         {links.map((link) => (
           <div key={link.href} className="">
-            {link.href !== patnName ? (
+            {link.href !== pathname ? (
               <Link
-                className="hover:scale-105 py-1 hover:bg-2 hover:text-4 dark:hover:text-black dark:hover:bg-4 px-2 rounded-xs"
+                className="font-mono py-1 text-primary rounded-xs"
                 href={link.href}
               >
                 {link.name}
               </Link>
             ) : (
-              <span className="text-base py-1 text-2 bg-gray-200 dark:bg-2 dark:text-gray-200 px-2 rounded-xs">
+              <span className="font-mono py-1 px-3 text-white rounded-xs bg-primary">
                 {link.name}
               </span>
             )}

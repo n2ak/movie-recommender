@@ -9,7 +9,7 @@ import {
 } from "@/lib/actions/movie";
 import { formatNumber } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
-import { Edit } from "lucide-react";
+import { EditIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -31,7 +31,7 @@ export function MoviePage({
   const total_ratings = formatNumber(movie.total_ratings);
   const total_reviews = formatNumber(movie._count.reviews);
   return (
-    <div className="p-6 max-w-4xl mx-auto font-sans">
+    <div className="p-6 max-w-4xl mx-auto">
       {/* Movie Info */}
       <div className="flex flex-col md:flex-row gap-6">
         <img
@@ -55,7 +55,7 @@ export function MoviePage({
             <div className="font-semibold flex gap-2">
               Personal Rating:
               <FixedRating v={movie.userRating[0]?.rating}></FixedRating>
-              <Edit
+              <EditIcon
                 className="rounded-xs cursor-pointer hover:bg-black/50 hover:text-white hover:scale-105"
                 onClick={() => setOpen((o) => !o)}
               />
@@ -71,7 +71,7 @@ export function MoviePage({
             }}
             movie={!open ? undefined : movie}
           />
-          <p className="text-gray-700">{movie.desc}</p>
+          <p className="">{movie.desc}</p>
         </div>
       </div>
 

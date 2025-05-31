@@ -4,7 +4,7 @@ import { joinCN } from "@/lib/utils";
 import { Table } from "@radix-ui/themes";
 import { RatingSortKey } from "@repo/database";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, EditIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, EditIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import Pagination from "../../components/Pagination";
@@ -114,7 +114,11 @@ function TableHeader({
                 }}
               >
                 <span>{name}</span>
-                {isTheOne && sortOrder === "desc" ? <ArrowDown /> : <ArrowUp />}
+                {isTheOne && sortOrder === "desc" ? (
+                  <ArrowDownIcon />
+                ) : (
+                  <ArrowUpIcon />
+                )}
               </span>
             </Table.ColumnHeaderCell>
           );

@@ -2,7 +2,7 @@
 import { MAX_RATING } from "@/lib/constants";
 import { roundRating } from "@/lib/utils";
 import { Rating as BaseRating } from "@mui/material";
-import { Star } from "lucide-react";
+import { StarIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 
 interface Type {
@@ -15,7 +15,7 @@ export function FixedRating(props: Omit<Type, "onChange" | "ro">) {
   const v = Math.floor(props.v * 10) / 10;
   return (
     <div className="flex items-center">
-      <Star className="text-yellow-500" />
+      <StarIcon fill="yellow" strokeWidth={0} />
       <span className="text-center content-center items-center center">
         {v}/{MAX_RATING}
       </span>
@@ -42,7 +42,9 @@ export function VarRating({
         onChange={(_, v) => {
           if (!!onChange && !!v) onChange(v);
         }}
-        emptyIcon={theme === "dark" ? <Star className="text-white/70" /> : null}
+        emptyIcon={
+          theme === "dark" ? <StarIcon className="text-white/70" /> : null
+        }
         max={10}
       />
       {showValue && <span className="h-full my-auto">({v})</span>}

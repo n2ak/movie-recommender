@@ -1,5 +1,5 @@
 "use client";
-import { Check, X } from "lucide-react";
+import { CheckIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
 export function success(
@@ -7,7 +7,7 @@ export function success(
   description?: string,
   duration?: number
 ) {
-  doToast({ message, description, duration, icon: <Check /> });
+  doToast({ message, description, duration, icon: <CheckIcon /> });
 }
 
 export function error(
@@ -15,7 +15,7 @@ export function error(
   description?: string,
   duration?: number
 ) {
-  doToast({ message, description, duration, icon: <X /> });
+  doToast({ message, description, duration, icon: <XIcon /> });
 }
 
 function doToast({

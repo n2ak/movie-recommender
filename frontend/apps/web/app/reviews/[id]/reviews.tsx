@@ -18,7 +18,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { ThumbsDown, ThumbsUp } from "lucide-react";
+import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { useParams } from "next/navigation";
 
 export default function MovieReviews({
@@ -60,7 +60,7 @@ export default function MovieReviews({
           <Review review={review} movieId={movie.id} key={review.id} />
         ))}
       </div>
-      <div className="w-full border text-center mt-2">
+      <div className="w-full text-center mt-2">
         <Button
           onClick={() => fetchNextPage()}
           disabled={!hasNextPage || isFetching}
@@ -110,9 +110,9 @@ function Review({
   const nDislikes = formatNumber(review.ndislikes);
   const date = timeSince(review.createdAt);
   return (
-    <Card className="bg-white shadow-xl rounded-2xl p-6 transition-transform hover:scale-[1.01]">
+    <Card className="shadow-xl rounded-2xl p-6 transition-transform hover:scale-[1.01]">
       <CardContent>
-        <h2 className="text-2xl font-semibold text-gray-900">
+        <h2 className="text-2xl font-semibold">
           {review.title}{" "}
           <span className="text-sm text-gray-500">(posted {date} ago)</span>
         </h2>
@@ -121,7 +121,7 @@ function Review({
             <FixedRating v={userRating} />
           </div>
         )}
-        <div className="mt-4 text-gray-700 italic">
+        <div className="mt-4 italic">
           <ToggleLongParagraph text={review.text} />
         </div>
         <p className="mt-2 text-right italic text-sm text-gray-500">
@@ -136,7 +136,7 @@ function Review({
             // disabled={!userId}
           >
             {nLikes}
-            <ThumbsUp />
+            <ThumbsUpIcon />
           </Button>
           <Button
             variant={isDisLiked ? "default" : "outline"}
@@ -144,7 +144,7 @@ function Review({
             // disabled={!userId}
           >
             {nDislikes}
-            <ThumbsDown />
+            <ThumbsDownIcon />
           </Button>
         </div>
       </CardFooter>

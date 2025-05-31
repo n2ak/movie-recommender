@@ -9,7 +9,7 @@ const ToggleLongParagraph = ({ text }: { text: string }) => {
       <div className={joinCN("my-3", showP ? "" : "line-clamp-2")}>{text}</div>
       <div className="text-right">
         <span
-          className="text-xs underline cursor-pointer hover:text-blue-800"
+          className="text-xs underline cursor-pointer hover:font-bold hover:text-primary"
           onClick={() => setShowP((s) => !s)}
         >
           {showP ? "show less" : "show more"}
