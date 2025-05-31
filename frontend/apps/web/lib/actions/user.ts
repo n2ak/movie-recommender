@@ -2,8 +2,8 @@
 import { signOut } from "@/auth";
 import { userDB } from "@repo/database";
 import { parseProfileSettings } from "../validation";
-import { cachedQuery } from "./redisClient";
-import { timedAction } from "./utils";
+import { cachedQuery, cachedCounter as incCachedCounter } from "./redisClient";
+import { CustomError, timedAction } from "./utils";
 
 export const changeProfileSettingsAction = timedAction(
   "changeProfileSettingsAction",
@@ -32,6 +32,13 @@ export { getUserInfo };
 export const deleteAccount = timedAction(
   "deleteAccount",
   async ({ password, userId }: { password: string; userId: number }) => {
+    const counter = await incCachedCounter(`deleteAccountCounter:${userId}`);
+    console.log("************", { counter });
+
+    if (counter > 3) {
+      throw new CustomError("Too much requests");
+    }
+
     const passwordMatch = await userDB.passwordMatch(userId, password);
     if (!passwordMatch) return false;
     return await userDB.deleteAccount(userId);

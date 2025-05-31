@@ -82,7 +82,11 @@ export default function DeleteAccountModal({
                       if (onDelete) onDelete();
                       setProceed(false);
                     } else {
-                      setError("Invalid password.");
+                      if (deletion.message === "Too much requests") {
+                        setError("Too many attempts");
+                      } else {
+                        setError("Invalid password.");
+                      }
                     }
                   })();
                 }}
