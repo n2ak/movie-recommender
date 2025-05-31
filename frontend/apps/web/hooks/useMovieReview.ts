@@ -9,7 +9,7 @@ export default function useMovieReview(
   const queryKey = ["movie_review", { movieId }];
   const { data: review, isLoading } = useQuery({
     queryKey: queryKey,
-    queryFn: () => getMovieReview({ movieId: movieId! }),
+    queryFn: async () => (await getMovieReview({ movieId: movieId! })).data,
     enabled: !!movieId,
   });
   const qL = useQueryClient();
@@ -17,7 +17,7 @@ export default function useMovieReview(
     const res = await reviewMovie({ movieId: movieId!, title, text });
 
     if (onSettle) onSettle(res);
-    if (!!res) {
+    if (res) {
       await qL.invalidateQueries({ queryKey });
     }
   };

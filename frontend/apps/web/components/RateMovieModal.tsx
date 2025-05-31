@@ -36,19 +36,17 @@ export default function EditMovieRatingAndReviewModal({
   onSave: () => void;
   onClose: () => void;
 }) {
-  const [state, setState] = useState({
-    rating: movie?.userRating[0]?.rating || 0,
-    text: "",
-    title: "",
-  });
-
   const { review } = useMovieReview(movie?.id);
+  const [rating, setRating] = useState(0);
+  const [text, setText] = useState("");
+  const [title, setTitle] = useState("");
+
   useEffect(() => {
-    setState({
-      rating: movie?.userRating[0]?.rating || 0,
-      title: review?.data?.title || "",
-      text: review?.data?.text || "",
-    });
+    if (movie?.userRating[0]) setRating(movie.userRating[0].rating);
+    if (review) {
+      setText(review.text);
+      setTitle(review.title);
+    }
   }, [movie, review]);
 
   const [reviewToggle, setReviewToggle] = useState(false);
@@ -56,15 +54,14 @@ export default function EditMovieRatingAndReviewModal({
     return null;
   }
   let canSave = false;
-  if (state.rating !== 0) {
+  if (rating !== 0) {
     // movie has been rated before
-    const reviewIsValid = state.text !== "" && state.title !== "";
-    const reviewIsEmpty = state.text === "" && state.title === "";
-    const ratingHasChanged = movie.userRating[0]?.rating !== state.rating;
-    if (review?.data) {
+    const reviewIsValid = text !== "" && title !== "";
+    const reviewIsEmpty = text === "" && title === "";
+    const ratingHasChanged = movie.userRating[0]?.rating !== rating;
+    if (review) {
       // movie has been reviewd before
-      const reviewHasChanged =
-        review.data.text !== state.text || review.data.title !== state.title;
+      const reviewHasChanged = review.text !== text || review.title !== title;
       canSave = (ratingHasChanged || reviewHasChanged) && reviewIsValid;
     } else {
       // no review before
@@ -89,16 +86,7 @@ export default function EditMovieRatingAndReviewModal({
             </DialogHeader>
             <div className="grid gap-3">
               <Label htmlFor="name-1">Your rating</Label>
-              <VarRating
-                v={state.rating}
-                showValue
-                onChange={(v) => {
-                  setState({
-                    ...state,
-                    rating: v,
-                  });
-                }}
-              />
+              <VarRating v={rating} showValue onChange={setRating} />
             </div>
             <Separator />
             <Collapsible
@@ -120,27 +108,17 @@ export default function EditMovieRatingAndReviewModal({
                   <div className="grid gap-3">
                     <Label htmlFor="name-1">Title</Label>
                     <Input
-                      value={state.title}
+                      value={title}
                       placeholder="Title"
-                      onChange={(v) =>
-                        setState({
-                          ...state,
-                          title: v.target.value.trim(),
-                        })
-                      }
+                      onChange={(v) => setTitle(v.target.value.trim())}
                     />
                   </div>
                   <div className="grid gap-3">
                     <Label htmlFor="username-1">Review body</Label>
                     <Textarea
                       placeholder="type here"
-                      value={state.text}
-                      onChange={(v) =>
-                        setState({
-                          ...state,
-                          text: v.target.value.trim(),
-                        })
-                      }
+                      value={text}
+                      onChange={(v) => setText(v.target.value.trim())}
                       className="max-h-[100px]"
                     />
                   </div>
@@ -158,9 +136,11 @@ export default function EditMovieRatingAndReviewModal({
                   const reviewChanged = true;
                   console.log({ reviewChanged });
                   const res = await editMovieReviewAndRating({
-                    movieId: movie?.id || 0,
-                    ...state,
+                    text,
+                    title,
+                    rating,
                     reviewChanged,
+                    movieId: movie?.id || 0,
                   });
                   if (!res.message) {
                     success("Movie rating edited");
