@@ -78,7 +78,7 @@ export default function EditMovieRatingAndReviewModal({
 
   return (
     <div className="z-10">
-      <Dialog open={true}>
+      <Dialog open={true} onOpenChange={onClose}>
         <form>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
