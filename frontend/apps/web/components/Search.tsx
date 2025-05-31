@@ -69,7 +69,7 @@ export default function Search() {
           {menuOpen && movies.length > 0 && (
             <ColStack
               ref={wrapperRef}
-              className="absolute top-[99%] bg-white w-full rounded-b-md shadow-md"
+              className="absolute top-[99%] w-full rounded-b-md shadow-md bg-white dark:bg-gray-600"
             >
               {movies.map((m) => (
                 <div key={m.id}>
@@ -108,7 +108,7 @@ const SearchItem = ({
 }) => {
   const router = useRouter();
   return (
-    <div className="py-2 px-1 hover:bg-gray-100 rounded-b-md cursor-pointer dark:text-black group">
+    <div className="py-2 px-1 rounded-b-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-500">
       <div
         onClick={() => {
           clear();
