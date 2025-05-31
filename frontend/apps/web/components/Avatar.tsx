@@ -32,10 +32,12 @@ export default function Avatar({ username }: { username: string }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <UserIcon className="text-black dark:text-white" />
-            <Link href="/profile">Profile</Link>
-          </DropdownMenuItem>
+          <Link href="/profile">
+            <DropdownMenuItem className="cursor-pointer">
+              <UserIcon className="text-black dark:text-white" />
+              Profile
+            </DropdownMenuItem>
+          </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <LanguageGroup />
@@ -67,6 +69,7 @@ const LanguageGroup = () => {
           <DropdownMenuSubContent>
             {languages.map((l) => (
               <DropdownMenuItem
+                className="cursor-pointer"
                 key={l}
                 disabled={l === language}
                 onClick={() => setLanguage(l)}
