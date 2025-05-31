@@ -17,7 +17,8 @@ export function RatingsTable({ userId }: { userId: number }) {
 
   const {
     data: movies,
-    setPageNumber,
+
+    // setPageNumber, // TODO
     queryKey,
     pageNumber,
     nPages,
