@@ -6,18 +6,17 @@ import { StarIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 
 interface Type {
-  v: number;
+  v: number | undefined;
   onChange: ((value: number) => void) | undefined;
   className?: string;
   showValue?: boolean;
 }
 export function FixedRating(props: Omit<Type, "onChange" | "ro">) {
-  const v = Math.floor(props.v * 10) / 10;
   return (
     <div className="flex items-center">
-      <StarIcon fill="yellow" strokeWidth={0} />
+      <StarIcon fill={props.v ? "yellow" : "gray"} strokeWidth={0} />
       <span className="text-center content-center items-center center">
-        {v}/{MAX_RATING}
+        {props.v ? roundRating(props.v) : "-"}/{MAX_RATING}
       </span>
     </div>
   );
@@ -29,7 +28,7 @@ export function VarRating({
   className,
   showValue,
 }: Omit<Type, "ro">) {
-  v = roundRating(v);
+  v = roundRating(v || 0);
   const { theme } = useTheme();
   return (
     <span className="flex gap-1">
@@ -40,14 +39,18 @@ export function VarRating({
         value={v}
         precision={0.5}
         onChange={(_, v) => {
-          if (!!onChange && !!v) onChange(v);
+          if (onChange && v) onChange(v);
         }}
         emptyIcon={
           theme === "dark" ? <StarIcon className="text-white/70" /> : null
         }
         max={10}
       />
-      {showValue && <span className="h-full my-auto">({v})</span>}
+      {showValue && (
+        <span className="h-full my-auto">
+          ({v}/{MAX_RATING})
+        </span>
+      )}
     </span>
   );
 }

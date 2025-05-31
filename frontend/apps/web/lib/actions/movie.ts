@@ -2,7 +2,7 @@
 
 import * as Backend from "@repo/backend_api";
 import { movieDB, MovieGenre, reviewsDB } from "@repo/database";
-import { parseRating } from "../validation";
+import { parseRating, parseReview } from "../validation";
 import { cachedQuery, clearCacheKey } from "./redisClient";
 import { getUserId, timedAction } from "./utils";
 
@@ -30,13 +30,17 @@ export const editMovieReviewAndRating = timedAction(
   "editMovieReviewAndRating",
   async (p: {
     movieId: number;
-    review_provided: boolean;
+    reviewChanged: boolean;
     userId: number;
     rating: number;
     text: string;
     title: string;
   }) => {
-    parseRating(p);
+    console.log({ reviewChanged: p.reviewChanged });
+
+    parseRating({ rating: p.rating });
+    if (p.reviewChanged) parseReview({ text: p.text, title: p.title });
+
     await reviewsDB.editMovieReviewAndRating(p);
     await clearCacheKey(`movie:${p.userId}:${p.movieId}`, "rateMovie");
   }

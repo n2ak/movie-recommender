@@ -11,10 +11,18 @@ const ratingSchema = z.object({
     .number({
       message: "Rating must be a number",
     })
-    .min(1, `Rating must be in range [0,${MAX_RATING}]`)
-    .max(MAX_RATING, `Rating must be in range [0,${MAX_RATING}]`),
-  title: z.string().min(1).max(200),
-  text: z.string().min(1).max(5000),
+    .min(0.5, `Rating must be in range [0.5,${MAX_RATING}]`)
+    .max(MAX_RATING, `Rating must be in range [0.5,${MAX_RATING}]`),
+});
+const reviewSchema = z.object({
+  title: z
+    .string()
+    .min(1, "Title should not be empty")
+    .max(200, "Title is too long"),
+  text: z
+    .string()
+    .min(1, "Review body should not be empty")
+    .max(5000, "Review body should not be empty"),
 });
 const profileSettingsSchema = z.object({
   name: z.string().min(4, "Username should be atleast 4 chars."),
@@ -26,6 +34,10 @@ export function parseCredentials<T>(obj: T) {
 
 export function parseRating<T>(obj: T) {
   return parse(obj, ratingSchema);
+}
+
+export function parseReview<T>(obj: T) {
+  return parse(obj, reviewSchema);
 }
 
 export function parseProfileSettings<T>(obj: T) {

@@ -51,16 +51,15 @@ export function MoviePage({
               ({total_reviews} reviews)
             </Link>
           </div>
-          {movie.userRating[0] && (
-            <div className="font-semibold flex gap-2">
-              Personal Rating:
-              <FixedRating v={movie.userRating[0]?.rating}></FixedRating>
-              <EditIcon
-                className="rounded-xs cursor-pointer hover:bg-black/50 hover:text-white hover:scale-105"
-                onClick={() => setOpen((o) => !o)}
-              />
-            </div>
-          )}
+          <div className="font-semibold flex gap-2">
+            {movie.userRating[0] ? "Personal Rating:" : "Unrated"}
+            <FixedRating v={movie.userRating[0]?.rating}></FixedRating>
+            <EditIcon
+              className="rounded-xs cursor-pointer hover:bg-black/50 hover:text-white hover:scale-105"
+              onClick={() => setOpen((o) => !o)}
+            />
+          </div>
+
           <EditMovieRatingAndReviewModal
             onClose={() => setOpen(false)}
             onSave={() => {

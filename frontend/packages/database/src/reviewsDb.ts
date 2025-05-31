@@ -179,11 +179,11 @@ export async function editMovieReviewAndRating({
   text,
   title,
   movieId,
-  review_provided,
+  reviewChanged,
   userId,
 }: {
   movieId: number;
-  review_provided: boolean;
+  reviewChanged: boolean;
   userId: number;
   rating: number;
   text: string;
@@ -207,6 +207,6 @@ export async function editMovieReviewAndRating({
         rating: rating,
       },
     }),
-    review_provided && reviewMovie({ userId, movieId, title, text }),
+    reviewChanged && reviewMovie({ userId, movieId, title, text }),
   ]);
 }

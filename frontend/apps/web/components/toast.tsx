@@ -32,6 +32,6 @@ function doToast({
   toast(message, {
     description: description,
     icon,
-    duration: duration || 1000,
+    duration: duration || 2000,
   });
 }
