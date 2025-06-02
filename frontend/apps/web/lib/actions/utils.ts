@@ -54,7 +54,11 @@ export function timedAction<T extends object, B, I = Omit<T, "userId">>(
     const data = await handleErrors(func(inputs));
     const duration = stopTimer();
 
-    logger.info({ key, duration: `${duration}ms` }, "Server Action");
+    // TODO: long strings in the input
+    logger.info(
+      { input, key, duration: `${duration}ms`, successfull: !data.message },
+      "Server Action"
+    );
 
     return data;
   };
