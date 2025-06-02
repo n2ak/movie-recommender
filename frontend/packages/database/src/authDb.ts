@@ -57,6 +57,7 @@ export async function passwordMatchByUserNameOrEmail(
 export async function changeProfileSettings(params: {
   userId: number;
   username: string;
+  // email:string TODO
 }) {
   return await prismaClient.userModel.update({
     where: { id: params.userId, ...userWhere },

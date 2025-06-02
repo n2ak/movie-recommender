@@ -105,11 +105,10 @@ export default function ProfileSidebar({
     [searchParams, pathname]
   );
   return (
-    <Sidebar className="mt-30" collapsible="icon">
-      {/* <SidebarGroup className="group-data-[collapsible=icon]:hidden" /> */}
+    <Sidebar className="mt-[70px]" collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Profile</SidebarGroupLabel>
+          <SidebarGroupLabel className="font-bold">Profile</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (

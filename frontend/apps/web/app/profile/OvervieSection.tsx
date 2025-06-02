@@ -3,9 +3,9 @@ import { formatDate } from "@/lib/utils";
 
 export default function OverviewSection({ user }: { user: UserInfo }) {
   return (
-    <>
+    <div className="">
       <h1 className="text-2xl font-semibold mb-4">Profile Overview</h1>
-      <div className="bg-white p-4 rounded-lg shadow-sm">
+      <div className="bg-white p-4 rounded-lg shadow-sm w-full">
         {user.username && (
           <div className="text-lg font-bold mb-2">{user.username}</div>
         )}
@@ -23,6 +23,6 @@ export default function OverviewSection({ user }: { user: UserInfo }) {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

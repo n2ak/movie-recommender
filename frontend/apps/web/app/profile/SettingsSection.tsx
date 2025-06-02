@@ -45,9 +45,11 @@ function ProfileSettingsSection({ user }: { user: UserInfo }) {
   >(
     async (prevState, formData) => {
       const data = {
-        username: (formData.get("name") as string) || "",
+        username: (formData.get("username") as string) || "",
         email: prevState.data.email,
       };
+      console.log("Saving...", data);
+
       const res = await changeProfileSettingsAction(data);
       setSaving(false);
       if (res.message) {
@@ -99,9 +101,9 @@ function ProfileSettingsSection({ user }: { user: UserInfo }) {
             name="email"
             type="email"
             placeholder="Email"
-            className="w-full"
+            className="w-full !cursor-not-allowed"
             disabled
-            value={settings.name}
+            value={settings.email}
             onChange={(e) =>
               setSettings({
                 ...settings,
@@ -112,10 +114,13 @@ function ProfileSettingsSection({ user }: { user: UserInfo }) {
         </div>
         <div>
           <Button
-            className="!h-[40px] !w-[100px] float-right"
+            className="!h-[40px] !w-[100px] float-right text-white"
             disabled={saving}
             type="submit"
-            onClick={() => setSaving(true)}
+            // onClick={() => {
+            //   setSaving(true)
+
+            // }}
           >
             Save
           </Button>

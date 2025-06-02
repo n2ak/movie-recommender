@@ -3,7 +3,11 @@ import { signOut } from "@/auth";
 import { userDB } from "@repo/database";
 import logger from "../logger";
 import { parseProfileSettings } from "../validation";
-import { cachedQuery, cachedCounter as incCachedCounter } from "./redisClient";
+import {
+  cachedQuery,
+  clearCacheKey,
+  cachedCounter as incCachedCounter,
+} from "./redisClient";
 import { CustomError, timedAction } from "./utils";
 
 export const changeProfileSettingsAction = timedAction(
@@ -11,6 +15,7 @@ export const changeProfileSettingsAction = timedAction(
   async (data: { username: string; email: string; userId: number }) => {
     parseProfileSettings(data);
     const newData = await userDB.changeProfileSettings(data);
+    await clearCacheKey(`userInfo:${data.userId}`, "ProfileSettingsChange");
     return {
       username: newData.username,
       email: data.email,
