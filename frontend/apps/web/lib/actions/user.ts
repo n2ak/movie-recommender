@@ -12,13 +12,12 @@ import { CustomError, timedAction } from "./utils";
 
 export const changeProfileSettingsAction = timedAction(
   "changeProfileSettingsAction",
-  async (data: { username: string; email: string; userId: number }) => {
+  async (data: { username: string; userId: number }) => {
     parseProfileSettings(data);
     const newData = await userDB.changeProfileSettings(data);
     await clearCacheKey(`userInfo:${data.userId}`, "ProfileSettingsChange");
     return {
       username: newData.username,
-      email: data.email,
     };
   }
 );

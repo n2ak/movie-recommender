@@ -77,7 +77,7 @@ export default function SignIn() {
                     <FormItem>
                       <FormLabel>Username</FormLabel>
                       <FormControl>
-                        <Input placeholder="shadcn" {...field} />
+                        <Input placeholder="username" {...field} />
                       </FormControl>
                       <FormDescription className="text-red-400">
                         {form.formState.errors.usernameOrEmail &&

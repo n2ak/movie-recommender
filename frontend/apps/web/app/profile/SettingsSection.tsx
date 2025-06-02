@@ -1,11 +1,21 @@
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form";
 import { useAuthStore, UserInfo } from "@/hooks/useAuthStore";
-import { ProfileSettingsFormState } from "@/lib/actions/FormStates";
 import { changeProfileSettingsAction } from "@/lib/actions/user";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
-import { error, success } from "../../components/toast";
 import { Button } from "../../components/ui/button";
 import { Card, CardHeader, CardTitle } from "../../components/ui/card";
 import {
@@ -34,98 +44,82 @@ export default function SettingsSection({ user }: { user: UserInfo }) {
     </>
   );
 }
-
+const FormSchema = z.object({
+  username: z
+    .string({
+      message: "Username should be characters",
+    })
+    .min(4, "Username is too short")
+    .max(30, "username is too long"),
+});
 function ProfileSettingsSection({ user }: { user: UserInfo }) {
   const { update } = useSession();
 
-  const [saving, setSaving] = useState(false);
-  const [state, formAction] = useActionState<
-    ProfileSettingsFormState,
-    FormData
-  >(
-    async (prevState, formData) => {
-      const data = {
-        username: (formData.get("username") as string) || "",
-        email: prevState.data.email,
-      };
-      console.log("Saving...", data);
-
-      const res = await changeProfileSettingsAction(data);
-      setSaving(false);
-      if (res.message) {
-        error("Error: " + res.message);
-      } else {
-        success("Saved.");
-        await update({
-          name: data.username,
-        });
-      }
-      return {
-        data: {
-          email: data.email,
-          name: data.username,
-        },
-      };
+  const form = useForm<z.infer<typeof FormSchema>>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      username: user.username,
     },
-    {
-      data: {
-        name: user.username || "",
-        email: user.email || "",
-      },
+  });
+  const { isPending: saving, mutateAsync: changeSettings } = useMutation({
+    mutationFn: (data: z.infer<typeof FormSchema>) =>
+      changeProfileSettingsAction(data),
+  });
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
+    const res = await changeSettings(data);
+    if (res.data && !res.message) {
+      window.location.reload();
+      await update();
     }
-  );
-  const [settings, setSettings] = useState(state.data);
+  }
   return (
     <>
       <h2>Profile Settings</h2>
-      <form className="flex flex-col gap-2 min-w-[400px]" action={formAction}>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="username">Username</Label>
-          <Input
-            name="username"
-            type="text"
-            placeholder="Username"
-            className="w-full"
-            value={settings.name}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                name: e.target.value,
-              })
-            }
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            name="email"
-            type="email"
-            placeholder="Email"
-            className="w-full !cursor-not-allowed"
-            disabled
-            value={settings.email}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                name: e.target.value,
-              })
-            }
-          />
-        </div>
-        <div>
-          <Button
-            className="!h-[40px] !w-[100px] float-right text-white"
-            disabled={saving}
-            type="submit"
-            // onClick={() => {
-            //   setSaving(true)
-
-            // }}
-          >
-            Save
-          </Button>
-        </div>
-      </form>
+      <Form {...form}>
+        <form
+          className="flex flex-col gap-2 min-w-[400px]"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <div className="flex flex-col gap-2">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input placeholder="username" {...field} />
+                  </FormControl>
+                  <FormDescription className="text-red-400">
+                    {form.formState.errors.username &&
+                      form.formState.errors.username?.message}
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              name="email"
+              type="email"
+              placeholder="Email"
+              className="w-full !cursor-not-allowed"
+              disabled
+              value={user.email}
+            />
+          </div>
+          <div>
+            <Button
+              className="!h-[40px] !w-[100px] float-right text-white disabled:bg-gray-400"
+              disabled={saving || !form.formState.isDirty}
+              type="submit"
+            >
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </>
   );
 }
