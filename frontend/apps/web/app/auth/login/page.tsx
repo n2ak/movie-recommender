@@ -114,15 +114,6 @@ export default function SignIn() {
                 </Button>
               </form>
             </Form>
-            {error && (
-              <div
-                className="flex h-8 items-end space-x-1 text-red-600 dark:text-red-400"
-                aria-live="polite"
-                aria-atomic="true"
-              >
-                Invalid credentials
-              </div>
-            )}
           </ColStack>
         </CardContent>
 
