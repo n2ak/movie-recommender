@@ -11,17 +11,16 @@ export const englishDict = {
   darkMode: "Dark mode",
   signOut: "Sign out",
 };
-type Dict = typeof englishDict;
 
-// export const frenchDict: {
-//   [key in keyof Dict]: string;
-// } = {
-//   searchAMovie: "Rechercher un film...",
-//   signIn: "Se connecter",
-//   home: "Accueil",
-//   settings: "Parametres",
-//   overview: "Aperçu",
-// darkMode: "Mode sombre",
-// signOut:"Se déconnecter",
-// save:"Enregistrer"
-// };
+// TODO: incompete
+export const frenchDict: typeof englishDict = {
+  ...englishDict,
+  searchAMovie: "Rechercher un film...",
+  signIn: "Se connecter",
+  home: "Accueil",
+  settings: "Parametres",
+  overview: "Aperçu",
+  darkMode: "Mode sombre",
+  signOut: "Se déconnecter",
+  save: "Enregistrer",
+};

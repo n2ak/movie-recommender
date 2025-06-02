@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { englishDict } from "./dicts";
+import { englishDict, frenchDict } from "./dicts";
 
 export const languages = ["English", "French"] as const;
 type Language = (typeof languages)[number];
@@ -31,8 +31,8 @@ export function useDictionary() {
   switch (language) {
     case "English":
       return englishDict;
-    // case "French":
-    //   return frenchDict;
+    case "French":
+      return frenchDict;
     default:
       return englishDict;
   }
