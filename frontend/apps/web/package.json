@@ -11,7 +11,7 @@
     "lint": "next lint --max-warnings ",
     "knip": "npx knip",
     "typecheck": "tsc --noEmit",
-    "checkspell": "npx cspell \"./**/*.{js,jsx,ts,tsx}\""
+    "spellcheck": "npx cspell \"./**/*.{js,jsx,ts,tsx}\""
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",

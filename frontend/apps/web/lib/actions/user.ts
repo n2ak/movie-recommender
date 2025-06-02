@@ -1,5 +1,4 @@
 "use server";
-import { signOut } from "@/auth";
 import { userDB } from "@repo/database";
 import logger from "../logger";
 import { parseProfileSettings } from "../validation";
@@ -21,12 +20,6 @@ export const changeProfileSettingsAction = timedAction(
     };
   }
 );
-
-export async function logOut() {
-  await signOut({
-    redirectTo: "/auth/login",
-  });
-}
 
 const getUserInfo = timedAction(
   "getUserInfo",

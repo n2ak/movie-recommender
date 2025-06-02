@@ -18,11 +18,11 @@ export default function Select({
         <S.SelectValue placeholder={placeholder} />
       </S.SelectTrigger>
       <S.SelectContent>
-        {values.map(({ gLabel, gValues }, gidx) => (
-          <S.SelectGroup key={gidx}>
+        {values.map(({ gLabel, gValues }, gIdx) => (
+          <S.SelectGroup key={gIdx}>
             {gLabel && <S.SelectLabel>{gLabel}</S.SelectLabel>}
-            {gValues.map((value, vidx) => (
-              <S.SelectItem value={value} key={vidx}>
+            {gValues.map((value, vIdx) => (
+              <S.SelectItem value={value} key={vIdx}>
                 {value}
               </S.SelectItem>
             ))}

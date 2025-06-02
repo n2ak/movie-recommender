@@ -20,8 +20,8 @@ export default function Pagination({
 }) {
   const hasPrevious = pageNumber > 0;
   const hasNext = pageNumber < nPages - 1;
-  const nLinksToshow = 5; // better to be odd
-  const n = Math.floor((nLinksToshow - 1) / 2);
+  const nLinksToShow = 5; // better to be odd
+  const n = Math.floor((nLinksToShow - 1) / 2);
   return (
     <RowStack>
       <Select
