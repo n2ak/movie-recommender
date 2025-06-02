@@ -6,13 +6,13 @@ export const englishDict = {
   overview: "Overview",
   save: "Save",
   language: "Language",
-  moviesWeThingYouWouldLike: "Movies we thing you would like:",
+  moviesWeThingYouWouldLike: "Movies we think you would like:",
   recommendedMovies: (v: string) => `Recommended '${v}' movies:`,
   darkMode: "Dark mode",
   signOut: "Sign out",
 };
 
-// TODO: incompete
+// TODO: incomplete
 export const frenchDict: typeof englishDict = {
   ...englishDict,
   searchAMovie: "Rechercher un film...",

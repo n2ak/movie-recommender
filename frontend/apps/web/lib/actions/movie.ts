@@ -109,11 +109,6 @@ export const getMostWatchedGenres = timedAction(
   movieDB.getMostWatchedGenres
 );
 
-// export const getMostGenresRatings = ttimed(
-//   "getMostGenresRatings",
-//   reviewsDB.getMostGenresRatings
-// );
-
 export const getMovieReview = timedAction(
   "getMovieReview",
   reviewsDB.getMovieReview

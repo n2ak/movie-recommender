@@ -25,7 +25,7 @@ const reviewSchema = z.object({
     .max(5000, "Review body should not be empty"),
 });
 const profileSettingsSchema = z.object({
-  username: z.string().min(4, "Username should be atleast 4 chars."),
+  username: z.string().min(4, "Username should be at least 4 chars."),
 });
 
 export function parseCredentials<T>(obj: T) {

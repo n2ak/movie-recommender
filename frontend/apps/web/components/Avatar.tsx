@@ -63,7 +63,7 @@ const LanguageGroup = () => {
       <DropdownMenuSub>
         <DropdownMenuSubTrigger>
           <LanguagesIcon className="text-black dark:text-white" />
-          Lanugage
+          Language
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent>

@@ -10,7 +10,7 @@ import type { MovieGenre } from "@repo/database";
 export async function Recommended() {
   return (
     <Recommendation
-      title={"Movies we thing you would like:"}
+      title={"Movies we think you would like:"}
       func={() => getRecommendedMoviesForUser({ count: 10 })}
     />
   );

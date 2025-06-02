@@ -34,7 +34,7 @@ export default function DeleteAccountModal({
 
         <DialogHeader>
           <div className="font-medium text-sm">
-            This acttion is <span className="!text-red-500">Destructive</span>{" "}
+            This action is <span className="!text-red-500">Destructive</span>{" "}
             and
             <span className="!text-red-500"> Irreversible!</span>
             <br />

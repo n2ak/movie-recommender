@@ -33,7 +33,7 @@ const getUserInfo = timedAction(
   cachedQuery(userDB.getUserInfo, ({ userId }) => `userInfo:${userId}`)
 );
 export { getUserInfo };
-const MAX_ACCOUNT_DELETION_ATTEMPS = 3;
+const MAX_ACCOUNT_DELETION_ATTEMPTS = 3;
 export const deleteAccount = timedAction(
   "deleteAccount",
   async ({ password, userId }: { password: string; userId: number }) => {
@@ -46,9 +46,9 @@ export const deleteAccount = timedAction(
       ttl
     );
 
-    if (counter > MAX_ACCOUNT_DELETION_ATTEMPS) {
+    if (counter > MAX_ACCOUNT_DELETION_ATTEMPTS) {
       logger.error(
-        { counter, userId, max_attemps: MAX_ACCOUNT_DELETION_ATTEMPS },
+        { counter, userId, max_attemps: MAX_ACCOUNT_DELETION_ATTEMPTS },
         "Too many attempts to delete account"
       );
       throw new CustomError("Too much requests");

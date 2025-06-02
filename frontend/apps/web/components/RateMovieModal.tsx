@@ -60,7 +60,7 @@ export default function EditMovieRatingAndReviewModal({
     const reviewIsEmpty = text === "" && title === "";
     const ratingHasChanged = movie.userRating[0]?.rating !== rating;
     if (review) {
-      // movie has been reviewd before
+      // movie has been reviewed before
       const reviewHasChanged = review.text !== text || review.title !== title;
       canSave = (ratingHasChanged || reviewHasChanged) && reviewIsValid;
     } else {

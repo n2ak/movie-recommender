@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../../components/ui/card";
-import OverviewSection from "./OvervieSection";
+import OverviewSection from "./OverviewSection";
 import ProfileSidebar from "./ProfileSidebar";
 import SettingsSection from "./SettingsSection";
 import StatsSection from "./StatsSection";
@@ -44,16 +44,16 @@ function Profile() {
         return null;
     }
   }
-  const selecttion = getSelection();
+  const selection = getSelection();
   return (
     <div className="h-full">
       <SidebarProvider>
         <div className="flex flex-col md:flex-row max-w-6xl h-full w-full">
           <ProfileSidebar selectedSection={section} />
           <main className="w-full">
-            {selecttion && (
-              <MainSection title={selecttion.title}>
-                {selecttion.section}
+            {selection && (
+              <MainSection title={selection.title}>
+                {selection.section}
               </MainSection>
             )}
           </main>
