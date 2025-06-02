@@ -5,15 +5,16 @@ const stream = pretty({
   levelFirst: true,
   colorize: true,
   ignore: "time,hostname,pid",
+  timestampKey: "timestamp",
 });
 
 const logger = pino(
   {
     level: "debug",
-    messageKey: "dad",
     formatters: {
       level: (level) => ({ level }),
     },
+    timestamp: true,
   },
   process.env.NODE_ENV === "production" ? undefined : stream
 );
