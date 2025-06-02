@@ -43,14 +43,8 @@ declare const globalThis: {
 const redisClient = globalThis.redisClient ?? create();
 if (process.env.NODE_ENV !== "production") globalThis.redisClient = redisClient;
 
-export async function cachedCounter(key: string) {
-  const cache = await redisClient.get(key);
-
-  let counter = 0;
-  if (cache) {
-    counter = parseInt(cache);
-  }
-  counter++;
-  await redisClient.set(key, `${counter}`);
-  return counter;
+export async function cachedCounter(key: string, ttl?: number) {
+  const cache = await redisClient.incr(key);
+  await redisClient.expire(key, ttl ?? 60 * 60);
+  return cache;
 }

@@ -1,6 +1,6 @@
 import { useAuthStore, UserInfo } from "@/hooks/useAuthStore";
 import { ProfileSettingsFormState } from "@/lib/actions/FormStates";
-import { changeProfileSettingsAction, logOut } from "@/lib/actions/user";
+import { changeProfileSettingsAction } from "@/lib/actions/user";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useActionState, useState } from "react";
@@ -158,11 +158,11 @@ function DeleteAccountButton() {
       <DeleteAccountModal
         open={open}
         onCancel={() => setOpen(false)}
-        onDelete={() => {
-          setOpen(false);
-          logOut();
-          signOut();
+        onDelete={async () => {
           clearUser();
+          await signOut();
+          setOpen(false);
+          // await logOut();
         }}
       />
     </div>

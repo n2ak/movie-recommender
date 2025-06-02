@@ -1,6 +1,7 @@
 "use server";
 import { signOut } from "@/auth";
 import { userDB } from "@repo/database";
+import logger from "../logger";
 import { parseProfileSettings } from "../validation";
 import { cachedQuery, cachedCounter as incCachedCounter } from "./redisClient";
 import { CustomError, timedAction } from "./utils";
@@ -28,14 +29,24 @@ const getUserInfo = timedAction(
   cachedQuery(userDB.getUserInfo, ({ userId }) => `userInfo:${userId}`)
 );
 export { getUserInfo };
-
+const MAX_ACCOUNT_DELETION_ATTEMPS = 3;
 export const deleteAccount = timedAction(
   "deleteAccount",
   async ({ password, userId }: { password: string; userId: number }) => {
-    const counter = await incCachedCounter(`deleteAccountCounter:${userId}`);
-    console.log("************", { counter });
+    let ttl: number | undefined = 3;
+    if (process.env.NODE_ENV !== "production") {
+      ttl = undefined;
+    }
+    const counter = await incCachedCounter(
+      `deleteAccountCounter:${userId}`,
+      ttl
+    );
 
-    if (counter > 3) {
+    if (counter > MAX_ACCOUNT_DELETION_ATTEMPS) {
+      logger.error(
+        { counter, userId, max_attemps: MAX_ACCOUNT_DELETION_ATTEMPS },
+        "Too many attempts to delete account"
+      );
       throw new CustomError("Too much requests");
     }
 
