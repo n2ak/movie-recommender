@@ -8,10 +8,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import useSearchParamsBuilder from "@/hooks/useSearchParamsBuilder";
 import { HomeIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
 
 // Menu items.
 const items = [
@@ -30,16 +29,7 @@ export default function ProfileSidebar({
 }: {
   selectedSection: Lowercase<string>;
 }) {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set(name, value);
-      return pathname + "?" + params.toString();
-    },
-    [searchParams, pathname]
-  );
+  const createQueryString = useSearchParamsBuilder();
   return (
     <Sidebar className="mt-[70px]" collapsible="icon">
       <SidebarContent>

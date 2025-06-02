@@ -5,6 +5,8 @@ import { usePaging } from "./usePaging";
 
 export default function useInfiniteMovieRatings(
   userId: number,
+  pageNumber: number,
+  count: number,
   sortKey: RatingSortKey,
   sortOrder: SortOrder
 ) {
@@ -19,6 +21,8 @@ export default function useInfiniteMovieRatings(
         })
       ).data!,
     nRecordsFn: async () => (await getNumberOfRatings(userId)).data || 0,
+    pageNumber,
+    rowsPerPage: count,
     queryKey: "movies_ratings",
     nRecordsQKey: ["movies_nratings", userId],
     keys: { userId, sortKey, sortOrder },

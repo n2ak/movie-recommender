@@ -1,4 +1,5 @@
 import useInfiniteMovieRatings from "@/hooks/useInfiniteMovieRatings";
+import useSearchParamsBuilder from "@/hooks/useSearchParamsBuilder";
 import { MovieWithUserRating } from "@/lib/actions/movie";
 import { joinCN } from "@/lib/utils";
 import { Table } from "@radix-ui/themes";
@@ -6,36 +7,45 @@ import { RatingSortKey } from "@repo/database";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDownIcon, ArrowUpIcon, EditIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Pagination from "../../components/Pagination";
 import EditMovieRatingAndReviewModal from "../../components/RateMovieModal";
 import { FixedRating } from "../../components/Rating";
 
-export function RatingsTable({ userId }: { userId: number }) {
+export function RatingsTable({
+  pageNumber,
+  count,
+  userId,
+}: {
+  userId: number;
+  pageNumber: number;
+  count: number;
+}) {
   const [sortKey, setSortKey] = useState<RatingSortKey>("title");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const {
     data: movies,
-
-    // setPageNumber, // TODO
     queryKey,
-    pageNumber,
     nPages,
-    setRowsPerPage,
-  } = useInfiniteMovieRatings(userId, sortKey, sortOrder);
+  } = useInfiniteMovieRatings(userId, pageNumber, count, sortKey, sortOrder);
 
   const [selectedRating, setSelectedRating] = useState<MovieWithUserRating>();
   const qClient = useQueryClient();
+  const router = useRouter();
+  const updateQueryString = useSearchParamsBuilder();
+
   return (
     <>
       <div className="flex items-center flex-col">
         <Pagination
           nPages={nPages}
           pageNumber={pageNumber}
-          setNumberOfRows={setRowsPerPage}
+          setNumberOfRows={(v) => router.push(updateQueryString("count", v))}
           values={[10, 25, 50]}
           defaultNumberOfRows={10}
+          linkBuilder={(p) => updateQueryString("page", p)}
         />
       </div>
       <Table.Root>

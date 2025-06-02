@@ -9,13 +9,19 @@ export default function Pagination({
   pageNumber,
   setNumberOfRows,
   defaultNumberOfRows,
+  linkBuilder,
 }: {
   nPages: number;
   values: number[];
   pageNumber: number;
   setNumberOfRows: (n: number) => void;
   defaultNumberOfRows: number;
+  linkBuilder: (page: number) => string;
 }) {
+  const hasPrevious = pageNumber > 0;
+  const hasNext = pageNumber < nPages - 1;
+  const nLinksToshow = 5; // better to be odd
+  const n = Math.floor((nLinksToshow - 1) / 2);
   return (
     <RowStack>
       <Select
@@ -27,20 +33,41 @@ export default function Pagination({
       <Paging.Pagination>
         <Paging.PaginationContent>
           <Paging.PaginationItem>
-            <Paging.PaginationPrevious href="#" />
+            <Paging.PaginationPrevious
+              className={
+                !hasPrevious ? "pointer-events-none opacity-50" : undefined
+              }
+              aria-disabled={!hasPrevious}
+              href={linkBuilder(pageNumber - 1)}
+            />
           </Paging.PaginationItem>
-          {new Array(nPages).fill(0).map((_, index) => (
-            <Paging.PaginationItem key={index}>
-              <Paging.PaginationLink href="#" isActive={index === pageNumber}>
-                {index + 1}
-              </Paging.PaginationLink>
+          {new Array(nPages).fill(0).map((_, index) => {
+            // TODO could be done better
+            if (index < pageNumber - n || index > pageNumber + n) return;
+            return (
+              <Paging.PaginationItem key={index}>
+                <Paging.PaginationLink
+                  href={linkBuilder(index)}
+                  isActive={index === pageNumber}
+                >
+                  {index + 1}
+                </Paging.PaginationLink>
+              </Paging.PaginationItem>
+            );
+          })}
+          {pageNumber < nPages - (n + 1) && (
+            <Paging.PaginationItem>
+              <Paging.PaginationEllipsis />
             </Paging.PaginationItem>
-          ))}
+          )}
           <Paging.PaginationItem>
-            <Paging.PaginationEllipsis />
-          </Paging.PaginationItem>
-          <Paging.PaginationItem>
-            <Paging.PaginationNext href="#" />
+            <Paging.PaginationNext
+              className={
+                !hasNext ? "pointer-events-none opacity-50" : undefined
+              }
+              aria-disabled={!hasNext}
+              href={linkBuilder(pageNumber + 1)}
+            />
           </Paging.PaginationItem>
         </Paging.PaginationContent>
       </Paging.Pagination>

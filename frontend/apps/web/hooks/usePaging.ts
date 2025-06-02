@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 
 export function usePaging<T>({
-  rowsPerPage: rPP,
-  pageNumber: pN,
+  rowsPerPage,
+  pageNumber,
   keys,
   queryKey: qKey,
   fetchPage,
@@ -11,8 +10,8 @@ export function usePaging<T>({
   nRecordsQKey,
 }: {
   nRecordsQKey: any[];
-  rowsPerPage?: number;
-  pageNumber?: number;
+  rowsPerPage: number;
+  pageNumber: number;
   queryKey: string;
   keys: { [_: string]: any };
   fetchPage: (start: number, count: number) => Promise<T[]>;
@@ -24,8 +23,6 @@ export function usePaging<T>({
     initialData: 0,
   });
 
-  const [pageNumber, setPageNumber] = useState<number>(pN || 1);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(rPP || 10);
   const queryKey = [
     qKey,
     {
@@ -37,14 +34,12 @@ export function usePaging<T>({
   const { data } = useQuery({
     queryKey: queryKey,
     initialData: [],
-    queryFn: () => fetchPage((pageNumber - 1) * rowsPerPage, rowsPerPage),
+    queryFn: () => fetchPage(pageNumber * rowsPerPage, rowsPerPage),
   });
   return {
     data,
     pageNumber,
     rowsPerPage,
-    setPageNumber,
-    setRowsPerPage,
     queryKey,
     nPages: Math.floor(nRecords / rowsPerPage) + 1, // it starts from zero
   };
