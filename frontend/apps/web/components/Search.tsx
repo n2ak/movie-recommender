@@ -55,8 +55,8 @@ export default function Search() {
             value={input}
             id="default-search"
             onChange={(e) => {
+              setInput(e.target.value);
               const q = e.target.value.trim().toLowerCase();
-              setInput(q);
               setMenuOpen(true);
               debouncedSearch(q);
             }}
