@@ -17,7 +17,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import DeleteAccountModal from "../../components/DeleteAccountModal";
 import { Button } from "../../components/ui/button";
-import { Card, CardHeader, CardTitle } from "../../components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -30,17 +29,9 @@ import { Separator } from "../../components/ui/separator";
 export default function SettingsSection({ user }: { user: UserInfo }) {
   return (
     <>
-      <Card className="gap-2 dark:bg-secondary-foreground p-4 rounded-lg shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl font-semibold mb-4">
-            Settings
-          </CardTitle>
-        </CardHeader>
-        <Separator />
-        <ProfileSettingsSection user={user} />
-        <Separator />
-        <DeleteAccountSection />
-      </Card>
+      <ProfileSettingsSection user={user} />
+      <Separator />
+      <DeleteAccountSection />
     </>
   );
 }
