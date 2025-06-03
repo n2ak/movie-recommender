@@ -1,11 +1,7 @@
 from typing import TypeVar, Callable, Any
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
-if True:
-    import sys
-    sys.path.append(".")
-    from core.data import BackendError
-    from recommender import Request, Response, Recommender, SimilarMoviesRequest
+from core.data import BackendError
+from recommender import Request, Response, Recommender, SimilarMoviesRequest
 
 
 app = FastAPI()
