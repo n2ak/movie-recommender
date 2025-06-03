@@ -1,7 +1,7 @@
 "use server";
 
 import * as Backend from "@repo/backend_api";
-import { movieDB, MovieGenre, reviewsDB } from "@repo/database";
+import { movieDB, reviewsDB, type MovieGenre } from "@repo/database";
 import { parseRating, parseReview } from "../validation";
 import { cachedQuery, clearCacheKey } from "./redisClient";
 import { getUserId, timedAction } from "./utils";

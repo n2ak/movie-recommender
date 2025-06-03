@@ -1,4 +1,4 @@
-import { UserInfo } from "@/hooks/useAuthStore";
+import type { UserInfo } from "@/hooks/useAuthStore";
 import { formatDate } from "@/lib/utils";
 
 export default function OverviewSection({ user }: { user: UserInfo }) {

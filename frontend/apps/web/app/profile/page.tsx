@@ -3,7 +3,7 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/hooks/useAuthStore";
 import { useSearchParams } from "next/navigation";
-import { PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 import {
   Card,
   CardContent,

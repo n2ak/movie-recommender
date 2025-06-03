@@ -6,7 +6,8 @@ import {
   FormItem,
   FormLabel,
 } from "@/components/ui/form";
-import { useAuthStore, UserInfo } from "@/hooks/useAuthStore";
+import type { UserInfo } from "@/hooks/useAuthStore";
+import { useAuthStore } from "@/hooks/useAuthStore";
 import { changeProfileSettingsAction } from "@/lib/actions/user";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";

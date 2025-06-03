@@ -1,4 +1,4 @@
-import { PropsWithChildren, Ref } from "react";
+import type { PropsWithChildren, Ref } from "react";
 type Props = {
   className?: string;
   ref?: Ref<HTMLDivElement>;

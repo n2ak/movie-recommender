@@ -4,11 +4,10 @@ import ToggleLongParagraph from "@/components/ToggleLongParagraph";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useAuthStore } from "@/hooks/useAuthStore";
+import type { MovieReview, MovieWithUserRating } from "@/lib/actions/movie";
 import {
   getMovieReviewById,
   getMovieReviews,
-  MovieReview,
-  MovieWithUserRating,
   reactToMovieReview,
 } from "@/lib/actions/movie";
 import { formatNumber, timeSince } from "@/lib/utils";

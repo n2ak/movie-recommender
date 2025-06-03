@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "start:standalone": "node .next/standalone/apps/web/server.js",
-    "lint": "next lint --max-warnings ",
+    "lint": "next lint --max-warnings 0",
     "knip": "npx knip",
     "typecheck": "tsc --noEmit",
     "spellcheck": "npx cspell \"./**/*.{js,jsx,ts,tsx}\""

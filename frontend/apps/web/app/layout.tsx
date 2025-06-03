@@ -1,4 +1,4 @@
-import { PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 import App from "./App";
 
 export default async function RootLayout({ children }: PropsWithChildren) {

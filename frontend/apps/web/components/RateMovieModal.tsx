@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import useMovieReview from "@/hooks/useMovieReview";
 import {
   editMovieReviewAndRating,
-  MovieWithUserRating,
+  type MovieWithUserRating,
 } from "@/lib/actions/movie";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { useEffect, useState } from "react";

@@ -3,7 +3,7 @@ import { MovieCarousel } from "@/components/MovieCarousel";
 import EditMovieRatingAndReviewModal from "@/components/RateMovieModal";
 import { FixedRating } from "@/components/Rating";
 import useMovie from "@/hooks/useMovie";
-import {
+import type {
   MovieWithPredictedRating,
   MovieWithUserRating,
 } from "@/lib/actions/movie";

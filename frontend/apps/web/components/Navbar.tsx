@@ -1,5 +1,5 @@
 "use client";
-import { useAuthStore, UserInfo } from "@/hooks/useAuthStore";
+import { useAuthStore, type UserInfo } from "@/hooks/useAuthStore";
 import { useDictionary } from "@/hooks/useLanguageStore";
 import { MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";

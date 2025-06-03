@@ -1,6 +1,6 @@
 "use client";
 
-import { MovieWithPredictedRating } from "@/lib/actions/movie";
+import type { MovieWithPredictedRating } from "@/lib/actions/movie";
 import Link from "next/link";
 import { ColStack } from "./Container";
 import { FixedRating } from "./Rating";

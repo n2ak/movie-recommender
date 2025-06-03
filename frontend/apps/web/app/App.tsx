@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import NavBar from "@/components/Navbar";
 import Providers from "@/components/providers/Providers";
 import "@radix-ui/themes/styles.css";
-import { PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 import "../globals.css";
 
 export default async function App({ children }: PropsWithChildren) {

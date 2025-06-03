@@ -1,9 +1,9 @@
 import useInfiniteMovieRatings from "@/hooks/useInfiniteMovieRatings";
 import useSearchParamsBuilder from "@/hooks/useSearchParamsBuilder";
-import { MovieWithUserRating } from "@/lib/actions/movie";
+import type { MovieWithUserRating } from "@/lib/actions/movie";
 import { joinCN } from "@/lib/utils";
 import { Table } from "@radix-ui/themes";
-import { RatingSortKey } from "@repo/database";
+import type { RatingSortKey } from "@repo/database";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDownIcon, ArrowUpIcon, EditIcon } from "lucide-react";
 import Link from "next/link";
