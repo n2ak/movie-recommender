@@ -40,7 +40,7 @@ async function handleErrors<T>(promise: Promise<T>): Promise<{
   }
 }
 
-export function timedAction<T extends object, B, I = Omit<T, "userId">>(
+export function action<T extends object, B, I = Omit<T, "userId">>(
   key: string,
   func: (a: T & { userId: number }) => Promise<B>
 ) {
@@ -56,7 +56,13 @@ export function timedAction<T extends object, B, I = Omit<T, "userId">>(
 
     // TODO: long strings in the input
     logger.info(
-      { input, key, duration: `${duration}ms`, successful: !data.message },
+      {
+        input,
+        key,
+        duration: `${duration}ms`,
+        successful: !data.message,
+        result: data,
+      },
       "Server Action"
     );
 

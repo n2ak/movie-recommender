@@ -7,9 +7,9 @@ import {
   clearCacheKey,
   cachedCounter as incCachedCounter,
 } from "./redisClient";
-import { CustomError, timedAction } from "./utils";
+import { CustomError, action } from "./utils";
 
-export const changeProfileSettingsAction = timedAction(
+export const changeProfileSettingsAction = action(
   "changeProfileSettingsAction",
   async (data: { username: string; userId: number }) => {
     parseProfileSettings(data);
@@ -21,13 +21,13 @@ export const changeProfileSettingsAction = timedAction(
   }
 );
 
-const getUserInfo = timedAction(
+const getUserInfo = action(
   "getUserInfo",
   cachedQuery(userDB.getUserInfo, ({ userId }) => `userInfo:${userId}`)
 );
 export { getUserInfo };
 const MAX_ACCOUNT_DELETION_ATTEMPTS = 3;
-export const deleteAccount = timedAction(
+export const deleteAccount = action(
   "deleteAccount",
   async ({ password, userId }: { password: string; userId: number }) => {
     let ttl: number | undefined = 3;

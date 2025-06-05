@@ -4,7 +4,7 @@ import * as Backend from "@repo/backend_api";
 import { movieDB, reviewsDB, type MovieGenre } from "@repo/database";
 import { parseRating, parseReview } from "../validation";
 import { cachedQuery, clearCacheKey } from "./redisClient";
-import { getUserId, timedAction } from "./utils";
+import { action, getUserId } from "./utils";
 
 export type MovieWithPredictedRating = MovieWithUserRating & {
   predictedRating: number;
@@ -26,7 +26,7 @@ async function handleBackendResponse(
   return moviesWithPred;
 }
 
-export const editMovieReviewAndRating = timedAction(
+export const editMovieReviewAndRating = action(
   "editMovieReviewAndRating",
   async (p: {
     movieId: number;
@@ -36,8 +36,6 @@ export const editMovieReviewAndRating = timedAction(
     text: string;
     title: string;
   }) => {
-    console.log({ reviewChanged: p.reviewChanged });
-
     parseRating({ rating: p.rating });
     if (p.reviewChanged) parseReview({ text: p.text, title: p.title });
 
@@ -46,7 +44,7 @@ export const editMovieReviewAndRating = timedAction(
   }
 );
 
-export const getRecommendedMoviesForUser = timedAction(
+export const getRecommendedMoviesForUser = action(
   "getRecommendedMoviesForUser",
 
   async ({ count, userId }: { count: number; userId: number }) =>
@@ -56,7 +54,7 @@ export const getRecommendedMoviesForUser = timedAction(
     )
 );
 
-export const getRecommendedGenreMovies = timedAction(
+export const getRecommendedGenreMovies = action(
   "getRecommendedGenreMovies",
   async ({ genre, userId }: { genre: MovieGenre; userId: number }) =>
     handleBackendResponse(
@@ -65,7 +63,7 @@ export const getRecommendedGenreMovies = timedAction(
     )
 );
 
-export const getSimilarMovies = timedAction(
+export const getSimilarMovies = action(
   "getRecommendedGenreMovies",
   async ({ movieIds, count }: { movieIds: number[]; count: number }) => {
     const userId = await getUserId();
@@ -76,27 +74,27 @@ export const getSimilarMovies = timedAction(
   }
 );
 
-export const getRatedMoviesForUser = timedAction(
+export const getRatedMoviesForUser = action(
   "getRatedMoviesForUser",
   movieDB.getRatedMoviesForUser
 );
 
-export const getMovieReviews = timedAction(
+export const getMovieReviews = action(
   "getMovieReviews",
   reviewsDB.getMovieReviews
 );
 
-export const getNumberOfRatings = timedAction(
+export const getNumberOfRatings = action(
   "getNumberOfRatings",
   movieDB.getNumberOfRatings
 );
 
-export const reactToMovieReview = timedAction(
+export const reactToMovieReview = action(
   "reactToMovieReview",
   reviewsDB.reactToMovieReview
 );
 
-const getMovieForUser = timedAction(
+const getMovieForUser = action(
   "getMovieForUser",
   cachedQuery(
     movieDB.getMovieForUser,
@@ -104,24 +102,24 @@ const getMovieForUser = timedAction(
   )
 );
 
-export const getMostWatchedGenres = timedAction(
+export const getMostWatchedGenres = action(
   "getMostWatchedGenres",
   movieDB.getMostWatchedGenres
 );
 
-export const getMovieReview = timedAction(
+export const getMovieReview = action(
   "getMovieReview",
   reviewsDB.getMovieReview
 );
 
-export const getMovieReviewById = timedAction(
+export const getMovieReviewById = action(
   "getMovieReviewById",
   reviewsDB.getMovieReviewById
 );
 
-export const searchMovies = timedAction("searchMovies", movieDB.searchMovies);
+export const searchMovies = action("searchMovies", movieDB.searchMovies);
 
-export const reviewMovie = timedAction("reviewMovie", reviewsDB.reviewMovie); //TODO clear key
+export const reviewMovie = action("reviewMovie", reviewsDB.reviewMovie); //TODO clear key
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UnwrapReturn<T extends (...args: any) => any> = NonNullable<
