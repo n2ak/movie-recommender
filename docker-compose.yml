@@ -44,6 +44,7 @@ services:
       # pass time to live env
 
   # webapp:
+  #   container_name: webapp
   #   build:
   #     context: ./frontend
   #     dockerfile: apps/web/Dockerfile
@@ -56,10 +57,15 @@ services:
   #   networks:
   #     - net
   #   environment:
-  #     NEXTAUTH_URL: http://localhost:3000
-  #     AUTH_TRUST_HOST: true
+  #     AUTH_SECRET: "lv5macbVjLrol6GRhpHvpt/lNIPKKtEeIVIfKYKG1D8: "
   #     DATABASE_URL: "postgresql://admin:password@db:5432/mydb?schema=public"
+  #     BACKEND_URL: "http://host.docker.internal:8000"
+  #     NEXTAUTH_URL: "http://localhost:3000/"
+  #     AUTH_TRUST_HOST: true
 
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: password
 networks:
   net:
     driver: bridge
