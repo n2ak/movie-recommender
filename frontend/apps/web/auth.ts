@@ -3,7 +3,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { parseCredentials } from "./lib/validation";
 
-const { signOut, auth, handlers } = NextAuth({
+const { auth, handlers } = NextAuth({
   providers: [
     Credentials({
       credentials: {

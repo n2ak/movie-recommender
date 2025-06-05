@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import { CACHING, TTL } from "../constants";
+import { CACHING, DEFAULT_TTL } from "../constants";
 import logger from "../logger";
 
 const create = () => {
@@ -15,7 +15,8 @@ const create = () => {
 
 export function cachedQuery<I, O>(
   fetch: (i: I) => Promise<O>,
-  getKey: (i: I) => string
+  getKey: (i: I) => string,
+  ttl?: number
 ): (i: I) => Promise<O> {
   return async function (a: I) {
     if (!CACHING) return await fetch(a);
@@ -27,7 +28,8 @@ export function cachedQuery<I, O>(
     }
     const data = await fetch(a);
     logger.debug({ key }, "*****Cache miss");
-    if (data) redisClient.set(key, JSON.stringify(data), "EX", TTL);
+    if (data)
+      redisClient.set(key, JSON.stringify(data), "EX", ttl || DEFAULT_TTL);
     return data;
   };
 }
@@ -45,6 +47,6 @@ if (process.env.NODE_ENV !== "production") globalThis.redisClient = redisClient;
 
 export async function cachedCounter(key: string, ttl?: number) {
   const cache = await redisClient.incr(key);
-  await redisClient.expire(key, ttl ?? 60 * 60);
+  await redisClient.expire(key, ttl || DEFAULT_TTL);
   return cache;
 }
