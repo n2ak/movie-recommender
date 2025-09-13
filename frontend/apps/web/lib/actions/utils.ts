@@ -40,7 +40,7 @@ async function handleErrors<T>(promise: Promise<T>): Promise<{
   }
 }
 
-export function action<T extends object, B, I = Omit<T, "userId">>(
+export function action<T extends object, B, I = Omit<T, "user_id">>(
   key: string,
   func: (a: T & { userId: number }) => Promise<B>
 ) {

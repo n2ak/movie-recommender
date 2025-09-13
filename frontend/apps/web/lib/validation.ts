@@ -3,7 +3,7 @@ import { MAX_RATING } from "./constants";
 
 const credentialsSchema = z.object({
   usernameOrEmail: z.union([z.string().email(), z.string()]),
-  password: z.string().min(6),
+  password: z.string().min(5),
 });
 
 const ratingSchema = z.object({

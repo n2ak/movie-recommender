@@ -22,13 +22,13 @@ import { z } from "zod";
 
 const FormSchema = z.object({
   usernameOrEmail: z.union([
-    z.string().min(2, {
-      message: "Username must be at least 6 characters.",
+    z.string().min(5, {
+      message: "Username must be at least 5 characters.",
     }),
     z.string().email(),
   ]),
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters.",
+  password: z.string().min(5, {
+    message: "Password must be at least 5 characters.",
   }),
 });
 
@@ -39,8 +39,8 @@ export default function SignIn() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      usernameOrEmail: "hitchcockthelegend",
-      password: "hitchcockthelegend",
+      usernameOrEmail: "user0@email.com",
+      password: "user0@email.com",
     },
   });
   async function onSubmit(data: z.infer<typeof FormSchema>) {

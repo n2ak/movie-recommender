@@ -58,7 +58,7 @@ export const getRecommendedGenreMovies = action(
   "getRecommendedGenreMovies",
   async ({ genre, userId }: { genre: MovieGenre; userId: number }) =>
     handleBackendResponse(
-      await Backend.getGenreRecom(userId, [genre], null),
+      await Backend.getMoviesRecom({ userId, count: 10, genres: [genre] }),
       userId
     )
 );

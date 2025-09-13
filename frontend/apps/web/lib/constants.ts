@@ -1,4 +1,4 @@
-export const MAX_RATING = 10;
+export {MAX_RATING} from"@repo/database" ;
 
 export const CACHING = true;
 

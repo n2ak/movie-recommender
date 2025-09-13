@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
+import type { BackendRequest, BackendResponse, Prediction } from "./types";
 
 const apiClient = axios.create({
   baseURL: process.env.BACKEND_URL || "http://127.0.0.1:8000",
@@ -45,30 +46,16 @@ const handleErrors = async <P>(
   }
 };
 
-type Relation = "or" | "and";
-type Prediction = {
-  movieId: number;
-  userId: number;
-  predicted_rating: number;
-};
-export type BackendResponse<P = Prediction> = {
-  time: number;
-  result: P[];
-  status_code: number | string;
-  error:
-    | {
-        [index: string]: string;
-      }
-    | undefined;
-};
 
-export const recommendMovies = async (data: {
-  userId: number;
-  genres: string[];
-  start: number;
-  relation: Relation;
-  count: number | null;
-}) => {
+
+export const recommendMovies = async ({
+  userId, count, genres, model, start, temp
+}: BackendRequest) => {
+  const data: Required<BackendRequest> = {
+    userId, count, genres: genres || [],
+    model: model || "xgb_cuda", start: start || 0,
+    temp: temp || 0
+  };
   const result = await handleErrors<Prediction>(
     apiClient.post("/movies-recom", data)
   );

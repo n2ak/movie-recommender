@@ -11,19 +11,21 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@prisma/client": "6.6.0"
+    "@prisma/client": "6.6.0",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "typescript": "5.8.2",
-    "@types/node": "22.10.0",
-    "prisma": "6.6.0",
-    "papaparse": "^5.5.3",
-    "@types/papaparse": "^5.3.16",
-    "ts-node": "^10.9.2",
-    "html-to-text": "9.0.5",
     "@types/html-to-text": "9.0.4",
-    "csv-writer": "1.6.0"
+    "@types/node": "22.10.0",
+    "@types/papaparse": "^5.3.16",
+    "csv-writer": "1.6.0",
+    "html-to-text": "9.0.5",
+    "lorem-ipsum": "^2.0.8",
+    "papaparse": "^5.5.3",
+    "prisma": "6.6.0",
+    "ts-node": "^10.9.2",
+    "typescript": "5.8.2"
   }
 }

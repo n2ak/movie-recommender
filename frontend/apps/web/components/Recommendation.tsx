@@ -6,6 +6,8 @@ import {
   getRecommendedMoviesForUser,
 } from "@/lib/actions/movie";
 import type { MovieGenre } from "@repo/database";
+import { Suspense } from "react";
+import Skeleton from "./Skeleton";
 
 export async function Recommended() {
   return (
@@ -35,7 +37,9 @@ export async function RecommendedGenres() {
     <>
       {genres.map((g) => (
         <div key={g}>
-          <RecommendedGenre genre={g as MovieGenre} />
+          <Suspense fallback={<Skeleton nBoxes={5} />}>
+            <RecommendedGenre genre={g as MovieGenre} />
+          </Suspense>
         </div>
       ))}
     </>

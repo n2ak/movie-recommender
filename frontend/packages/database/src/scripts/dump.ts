@@ -1,10 +1,23 @@
 import { PrismaClient } from "@prisma/client";
 import { createObjectCsvWriter } from "csv-writer";
 
-const prisma = new PrismaClient();
-const output_file = "../../../back/dataset/db.csv";
+type RatingType = {
+  movieId: number,
+  movie_genres: string[],
+  movie_year: number,
+  title: string,
+  movie_avg_rating: number,
+  movie_total_rating: number,
+  imdbId: number,
+  userId: number,
+  rating: number,
+  time: Date,
+};
 
-async function main() {
+const prisma = new PrismaClient();
+const output_file = "../../../back/dataset/db/db.csv";
+
+async function getData() {
   const reviews = await prisma.userMovieRating.findMany({
     select: {
       user: {
@@ -12,40 +25,45 @@ async function main() {
           id: true,
         },
       },
-      movie: {
-        select: {
-          id: true,
-          genres: true,
-          avg_rating: true,
-          total_ratings: true,
-          createdAt: true,
-        },
-      },
+      movie: true,
       rating: true,
+      timestamp: true
     },
   });
-  function toRow({
+  const rows = reviews.map(({
     rating,
+    timestamp: time,
     movie: {
+      total_ratings: movie_total_rating,
+      genres: movie_genres,
+      avg_rating: movie_avg_rating,
       id: movieId,
-      genres,
-      avg_rating,
-      total_ratings,
-      createdAt: movie_date,
+      imdbId,
+      title,
+      year: movie_year
     },
-    user: { id: userId },
-  }: (typeof reviews)[0]) {
-    return {
-      rating,
-      movieId,
-      genres,
-      avg_rating,
-      total_ratings,
-      movie_date: movie_date.toLocaleDateString(),
-      userId,
-    };
-  }
-  const rows = reviews.map(toRow);
+    user: {
+      id: userId
+    },
+
+  }): RatingType => ({
+    imdbId,
+    movie_avg_rating,
+    movie_genres,
+    movie_total_rating,
+    movie_year,
+    movieId,
+    title,
+    rating,
+    userId,
+    time
+  }));
+  return rows
+}
+
+async function main() {
+  console.log("Getting data from db...");
+  const rows = await getData();
   const writer = createObjectCsvWriter({
     path: output_file,
     header: Object.keys(rows[0]!).map((k) => ({
@@ -53,6 +71,7 @@ async function main() {
       title: k,
     })),
   });
+  console.log("Writing to file...");
   await writer.writeRecords(rows);
   console.log("Output:", output_file);
 }
@@ -62,6 +81,4 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .finally(async () => await prisma.$disconnect());

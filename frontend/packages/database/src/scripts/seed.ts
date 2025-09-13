@@ -1,128 +1,166 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import fs from "fs";
-import { convert } from "html-to-text";
+import { LoremIpsum } from "lorem-ipsum";
 import Papa from "papaparse";
 
-const prisma = new PrismaClient();
-const input_file = "../../../back/scraping/output/merged.csv";
+type MovieCSVType = {
+  movieId: number, movie_genres: string, movie_year: number, title: string,
+  movie_avg_rating: number, movie_total_rating: number, imdbId: number
+};
+type UserCSVType = {
+  userId: number, username: string
+};
+type RatingCSVType = {
+  userId: number, movieId: number, rating: number, time: Date
+};
 
-function parse_csv(path: string) {
+const DUMMY_HREF = "blank";
+const CHUNK_SIZE = 100_000;
+
+const USERS_FILE = "../../../back/dataset/db/users.csv";
+const MOVIES_FILE = "../../../back/dataset/db/movies.csv";
+const RATINGS_FILE = "../../../back/dataset/db/ratings.csv";
+
+const prisma = new PrismaClient();
+type FirstParameterType<T extends (...args: any) => any> = Parameters<T>[0];
+type TX = FirstParameterType<FirstParameterType<typeof prisma.$transaction>>;
+
+const Lorem = new LoremIpsum({
+  sentencesPerParagraph: {
+    max: 8,
+    min: 4
+  },
+  wordsPerSentence: {
+    max: 16,
+    min: 4
+  }
+});
+
+function random(max: number) {
+  return Math.round(Math.random() * max);
+}
+
+function randomString(min: number, max: number) {
+  if (min > max) throw Error("Min should be less or equal to max")
+
+  const range = Math.round(Math.random() * (max - min));
+  const count = min + range;
+  return Lorem.generateWords(count);
+}
+
+function parse_csv<T>(path: string) {
   const file = fs.readFileSync(path, "utf8");
-  return Papa.parse(file, {
+  return Papa.parse<T>(file, {
     header: true,
     skipEmptyLines: true,
+    dynamicTyping: true,
     // preview: 3,
   });
 }
-function getMovie({
-  genre,
-  image,
-  avgRating,
-  imdbid,
-  name,
-  desc,
-  ratingCount,
-  movie_date,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}: any): Prisma.MovieModelCreateWithoutReviewsInput {
-  genre = JSON.parse(genre);
-  desc = convert(desc);
 
-  return {
-    imdbId: imdbid,
-    href: image,
-    avg_rating: Number(avgRating),
-    genres: genre,
-    title: name,
-    total_ratings: Number(ratingCount),
-    year: 1000,
-    desc,
-    createdAt: new Date(movie_date),
-  };
+async function chunked<T>(data: T[], fn: (t: { data: T[], skipDuplicates: boolean }) => Promise<{ count: number }>) {
+  const sum = (numbers: number[]) => numbers.reduce((acc, curr) => acc + curr, 0);
+
+  const chunkedArray: T[][] = [];
+  for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+    chunkedArray.push(data.slice(i, i + CHUNK_SIZE));
+  }
+  const promises = await Promise.all(chunkedArray.map(d => fn({
+    data: d,
+    skipDuplicates: true,
+  })));
+  return sum(promises.map(p => p.count));
 }
-function getUser({
-  author,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}: any): Prisma.UserModelCreateWithoutMovieReviewsInput {
-  return {
-    username: author,
-    email: `${author}@email.com`,
-    password: author,
-  };
+
+async function createUsers(tx: TX, data: UserCSVType[]) {
+  const n = await chunked(
+    data.map(({ userId, username, }): Prisma.UserModelCreateWithoutMovieReviewsInput => ({
+      id: userId,
+      username,
+      email: `${username}@email.com`,
+      password: username,
+    })),
+    tx.userModel.createMany
+  );
+  console.log(`Created ${n} users.`);
 }
-function getReview(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  row: any,
-  movies: { id: number; imdbId: string }[],
-  users: { id: number; username: string }[]
-): Prisma.MovieReviewCreateManyInput {
-  const { body, title, dislikes, likes, imdbid, author } = row;
-  const text = convert(body);
-  return {
-    title,
-    text,
-    ndislikes: Number(dislikes),
-    nlikes: Number(likes),
-    movieModelId: movies.find((m) => m.imdbId === imdbid)!.id,
-    userModelId: users.find((u) => u.username === author)!.id,
-  };
+
+async function createMovies(tx: TX, data: MovieCSVType[]) {
+  const n = await chunked(
+    data.map(({
+      movie_genres,
+      movie_avg_rating: avgRating,
+      imdbId: imdbId,
+      title: name,
+      movie_total_rating: ratingCount,
+      movie_year,
+      movieId,
+    }): Prisma.MovieModelCreateWithoutReviewsInput => ({
+      id: movieId,
+      imdbId,
+      href: DUMMY_HREF,
+      avg_rating: avgRating,
+      genres: movie_genres.split("|"),
+      title: String(name),
+      total_ratings: Number(ratingCount),
+      year: movie_year,
+      desc: randomString(200, 300),
+      createdAt: new Date(movie_year),
+    })),
+    tx.movieModel.createMany
+  );
+  console.log(`Created ${n} movies.`);
 }
-function getMovieRating(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  row: any,
-  movies: { id: number; imdbId: string }[],
-  users: { id: number; username: string }[]
-): Prisma.UserMovieRatingCreateManyInput {
-  const { imdbid, author, rating, date } = row;
-  return {
-    movieModelId: movies.find((m) => m.imdbId === imdbid)!.id,
-    userModelId: users.find((u) => u.username === author)!.id,
-    rating: Number(rating),
-    timestamp: new Date(date),
-  };
+
+async function createReviews(tx: TX, data: RatingCSVType[]) {
+  const n = await chunked(
+    data.map(({ movieId, userId }): Prisma.MovieReviewCreateManyInput => ({
+      title: randomString(10, 50),
+      text: randomString(100, 300),
+      ndislikes: random(100),
+      nlikes: random(100),
+      movieModelId: movieId,
+      userModelId: userId,
+    })),
+    tx.movieReview.createMany
+  );
+  console.log(`Created ${n} reviews.`);
 }
+
+async function createdRatings(tx: TX, data: RatingCSVType[]) {
+  const n = await chunked(
+    data.map((
+      { movieId, userId, rating, time }
+    ): Prisma.UserMovieRatingCreateManyInput => ({
+      movieModelId: movieId,
+      userModelId: userId,
+      rating: rating,
+      timestamp: new Date(time),
+    })),
+    tx.userMovieRating.createMany
+  );
+  console.log(`Created ${n} ratings.`);
+}
+
 async function main() {
-  const reviews_csv = parse_csv(input_file);
-
-  console.log("Keys", reviews_csv.meta.fields);
+  console.log("Parsing csv files...");
+  const users_csv = parse_csv<UserCSVType>(USERS_FILE);
+  const movies_csv = parse_csv<MovieCSVType>(MOVIES_FILE);
+  const ratings_csv = parse_csv<RatingCSVType>(RATINGS_FILE);
 
   await prisma.$transaction(
     async (tx) => {
-      // console.log("Resetting db...");
-      // await tx.userModel.deleteMany();
-      // await tx.movieModel.deleteMany();
-      // console.log("Done");
-      await tx.userModel.createMany({
-        data: reviews_csv.data.map(getUser),
-        skipDuplicates: true,
-      });
-      await tx.movieModel.createMany({
-        data: reviews_csv.data.map(getMovie),
-        skipDuplicates: true,
-      });
-      const movies = await tx.movieModel.findMany();
-      const users = await tx.userModel.findMany();
       console.log("Pushing to db...");
-      const nreviews = (
-        await tx.movieReview.createMany({
-          data: reviews_csv.data.map((r) => getReview(r, movies, users)),
-          skipDuplicates: true,
-        })
-      ).count;
-      const nratings = (
-        await tx.userMovieRating.createMany({
-          data: reviews_csv.data.map((r) => getMovieRating(r, movies, users)),
-          skipDuplicates: true,
-        })
-      ).count;
-      console.log("Created", nreviews, "reviews.");
-      console.log("Created", nratings, "ratings.");
-      console.log("Done.");
+      await createUsers(tx, users_csv.data);
+      await createMovies(tx, movies_csv.data);
+      await createdRatings(tx, ratings_csv.data);
+      await createReviews(tx, ratings_csv.data);
     },
     {
-      timeout: 20 * 1000,
+      timeout: 60 * 1000,
     }
   );
+  console.log("Done.");
 }
 
 main()

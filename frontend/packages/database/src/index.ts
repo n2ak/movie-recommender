@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import "server-only";
+// import "server-only";
 export type MovieGenre =
   | "Action"
   | "Adventure"
@@ -34,3 +34,4 @@ export const {
   PrismaClientKnownRequestError,
   PrismaClientUnknownRequestError,
 } = Prisma;
+export const MAX_RATING = 5;

@@ -44,7 +44,7 @@ export function VarRating({
         emptyIcon={
           theme === "dark" ? <StarIcon className="text-white/70" /> : null
         }
-        max={10}
+        max={MAX_RATING}
       />
       {showValue && (
         <span className="h-full my-auto">

@@ -12,7 +12,7 @@ datasource db {
 }
 
 model UserModel {
-  id       Int     @id @default(autoincrement())
+  id       Int     @id @unique
   username String
   email    String  @unique
   password String
@@ -29,10 +29,10 @@ model UserModel {
 }
 
 model MovieModel {
-  id            Int      @id @default(autoincrement())
+  id            Int      @id @unique
+  imdbId        Int      @unique
   title         String
   genres        String[]
-  imdbId        String   @unique
   avg_rating    Float
   href          String
   total_ratings Int

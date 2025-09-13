@@ -61,6 +61,16 @@ export async function getMovies(movieIds: number[], userId: number) {
     findMoviesInIds(movieIds, userId)
   );
 }
+export async function getMoviesGenres(movieIds: number[]) {
+  return await prismaClient.movieModel.findMany({
+    where: {
+      id: { in: movieIds }
+    },
+    select: { genres: true }
+  });
+}
+
+
 export async function getNumberOfRatings(params: { userId: number }) {
   return (
     await prismaClient.userMovieRating.aggregate({
@@ -82,13 +92,13 @@ export async function getRatedMoviesForUser(params: {
   const orderBy = {
     ...(userRatingSsortKeys.includes(params.sortby as UserRatingSortKey)
       ? {
-          [params.sortby]: params.order,
-        }
+        [params.sortby]: params.order,
+      }
       : {
-          movie: {
-            [params.sortby]: params.order,
-          },
-        }),
+        movie: {
+          [params.sortby]: params.order,
+        },
+      }),
   };
   const res = await prismaClient.userMovieRating.findMany({
     where: {
