@@ -43,29 +43,46 @@ services:
       REDIS_PASSWORD: password
       # pass time to live env
 
-  # webapp:
+  webapp:
+    profiles: ["web"]
+    container_name: webapp
+    build:
+      context: ./frontend
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    networks:
+      - net
+    environment:
+      AUTH_SECRET: "lv5macbVjLrol6GRhpHvpt/lNIPKKtEeIVIfKYKG1D8: "
+      DATABASE_URL: "postgresql://admin:password@db:5432/mydb?schema=public"
+      BACKEND_URL: "http://host.docker.internal:8000"
+      NEXTAUTH_URL: "http://localhost:3000/"
+      AUTH_TRUST_HOST: true
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: password
+
+  # backend:
+  #   profiles: ["backend"]
   #   container_name: webapp
   #   build:
-  #     context: ./frontend
-  #     dockerfile: apps/web/Dockerfile
+  #     context: ./back
+  #     dockerfile: Dockerfile
   #   ports:
-  #     - "3000:3000"
+  #     - "8000:8000"
   #   depends_on:
   #     db:
   #       condition: service_healthy
   #       restart: true
   #   networks:
   #     - net
-  #   environment:
-  #     AUTH_SECRET: "lv5macbVjLrol6GRhpHvpt/lNIPKKtEeIVIfKYKG1D8: "
-  #     DATABASE_URL: "postgresql://admin:password@db:5432/mydb?schema=public"
-  #     BACKEND_URL: "http://host.docker.internal:8000"
-  #     NEXTAUTH_URL: "http://localhost:3000/"
-  #     AUTH_TRUST_HOST: true
 
-  #     REDIS_HOST: redis
-  #     REDIS_PORT: 6379
-  #     REDIS_PASSWORD: password
 networks:
   net:
     driver: bridge
