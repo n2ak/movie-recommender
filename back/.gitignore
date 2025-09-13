@@ -1,2 +1,11 @@
 scraping/data
 scraping/output
+mlruns
+wandb
+logs
+plugins
+config
+mlartifacts
+lightning_logs
+lightning_runs
+*.pickle

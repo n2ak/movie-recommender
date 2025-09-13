@@ -1,0 +1,7 @@
+numpy
+pandas
+seaborn
+xgboost
+matplotlib
+scikit_learn
+mlflow
