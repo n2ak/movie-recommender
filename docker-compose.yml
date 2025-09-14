@@ -31,6 +31,7 @@ services:
       - 8080:8080
     networks:
       - net
+      
   redis:
     container_name: redis
     image: redis:alpine
@@ -68,20 +69,42 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: password
 
-  # backend:
-  #   profiles: ["backend"]
-  #   container_name: webapp
-  #   build:
-  #     context: ./back
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "8000:8000"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #       restart: true
-  #   networks:
-  #     - net
+  backend:
+    profiles: ["backend_api"]
+    container_name: backend_api
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    environment:
+      MLFLOW_TRACKING_URI: "http://host.docker.internal:8081"
+    restart: unless-stopped
+
+  mlflow:
+    container_name: mlflow-server
+    image: ghcr.io/mlflow/mlflow:v3.3.2
+    ports:
+      - "8081:8081"
+    command: mlflow server --host 0.0.0.0 --port 8081
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:${MLFLOW_PORT}/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./vlms/mlruns:/mlruns
 
 networks:
   net:

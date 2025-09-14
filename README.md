@@ -1,7 +1,3 @@
-# Dataset
-
-[movielens](https://grouplens.org/datasets/movielens/)
-
 ### Seed
 
 ```bash
@@ -14,6 +10,18 @@
 cd backend
 ./build_docker.sh
 ```
+### to run
+
+```bash
+docker compose --profile backend_api up -d
+cd frontend && pnpm run dev
+
+# OR
+
+docker compose --profile backend_api --profile web up -d
+
+```
+
 ### to test backend api
 
 ```bash
@@ -28,3 +36,4 @@ MLFLOW_TRACKING_URI=... python api.py
 cd ../frontend
 pnpm run test:api
 ```
+
