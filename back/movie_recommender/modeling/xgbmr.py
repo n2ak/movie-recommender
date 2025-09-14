@@ -22,33 +22,6 @@ class XGBMR(MovieRecommender[NDArray]):
         ) | kwargs
         self.params = params
 
-    # @staticmethod
-    # def preprocess(train: pd.DataFrame, test: pd.DataFrame):
-    #     movie_mean_rating = train.groupby("movie_id").agg(
-    #         movie_mean_rating=("rating", "mean"),
-    #         movie_total_rating=("rating", "count"),
-    #     )
-    #     user_mean_rating = train.groupby("user_id").agg(
-    #         user_mean_rating=("rating", "mean"),
-    #         user_total_rating=("rating", "count"),
-    #     )
-    #     # genres_mean_rating = train.groupby("movie_genres").agg(
-    #     #     movie_genres_mean_rating=("rating", "mean"),
-    #     #     movie_total_mean_rating=("rating", "count"),
-    #     # )
-
-    #     def helper(df: pd.DataFrame):
-    #         df = (df
-    #               .merge(movie_mean_rating, on="movie_id")
-    #               .merge(user_mean_rating, on="user_id")
-    #               #   .merge(genres_mean_rating, on="movie_genres")
-    #               )
-    #         X = df  # .drop(columns=["movie_genres"])
-    #         # X = pd.get_dummies(X, columns=["movie_year"])
-    #         return X.set_index(["user_id", "movie_id"]).sort_index()
-
-    #     return helper(train), helper(test)
-
     def predict(self, X, max_rating):
         # print("XGB batch length:", X.shape)
         pred = self.model.predict(xgb.DMatrix(X))
