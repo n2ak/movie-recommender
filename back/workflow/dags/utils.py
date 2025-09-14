@@ -42,15 +42,15 @@ class Env_():
 
     def dump(self):
         print("*********************ENV***********************")
-        print("exp_name: %s", self.exp_name)
-        print("MAX_RATING: %s", self.MAX_RATING)
-        print("NUM_BOOST_ROUND: %s", self.NUM_BOOST_ROUND)
-        print("VERBOSE_EVAL: %s", self.VERBOSE_EVAL)
-        print("OPTIMIZE: %s", self.OPTIMIZE)
-        print("TRAIN_SIZE: %s", self.TRAIN_SIZE)
-        print("EPOCH: %s", self.EPOCH)
-        print("DB_URL: %s", self.DB_URL)
-        print("MLFLOW_TRACKING_URI: %s", self.MLFLOW_TRACKING_URI)
+        print("exp_name:", self.exp_name)
+        print("MAX_RATING:", self.MAX_RATING)
+        print("NUM_BOOST_ROUND:", self.NUM_BOOST_ROUND)
+        print("VERBOSE_EVAL:", self.VERBOSE_EVAL)
+        print("OPTIMIZE:", self.OPTIMIZE)
+        print("TRAIN_SIZE:", self.TRAIN_SIZE)
+        print("EPOCH:", self.EPOCH)
+        print("DB_URL:", self.DB_URL)
+        print("MLFLOW_TRACKING_URI:", self.MLFLOW_TRACKING_URI)
         print("***********************************************")
 
 
