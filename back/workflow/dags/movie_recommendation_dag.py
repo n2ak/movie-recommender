@@ -36,6 +36,7 @@ with DAG(
         return process_data(p1, p2, model_type)
 
     train_dlrm_task = DockerOperator(
+        container_name="train_dlrm_task",
         dag=dag,
         task_id='train_dlrm_task',
         image='pytorch_train',
@@ -46,6 +47,12 @@ with DAG(
             # Request all available GPUs
             DeviceRequest(count=-1, capabilities=[['gpu']])
         ],
+        environment=dict(
+            EPOCHS=2,
+            EXP_NAME="movie_recom",
+            MLFLOW_TRACKING_URI="http://host.docker.internal:8081",
+            DB_URL='postgresql+psycopg2://admin:password@host.docker.internal:5432/mydb',
+        )
     )
 
     paths: dict = extract_data_task()

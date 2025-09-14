@@ -23,7 +23,7 @@ def read_db(db_url):
 
 
 def extract_data():
-    # Env.dump()
+    Env.dump()
 
     ratings, movies = read_db(Env.DB_URL)
     print("Done extracting data.")
