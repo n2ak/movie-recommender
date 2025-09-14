@@ -18,16 +18,13 @@ def process_data(ratings_path: str, movies_path: str, model: Literal["xgb", "dlr
         case "xgb":
             train, test = process_data_for_xgb(ratings_path, movies_path)
 
-    train_path = f"train_path_{model}.parquet"
-    test_path = f"test_path_{model}.parquet"
-
     conn = create_engine(Env.DB_URL)
 
     train["movie_genres"] = train["movie_genres"].apply(lambda x: x.tolist())
     test["movie_genres"] = test["movie_genres"].apply(lambda x: x.tolist())
 
-    train.to_sql("dlrm_train_ds", conn, index=False, if_exists="replace")
-    test.to_sql("dlrm_test_ds", conn, index=False, if_exists="replace")
+    train.to_sql(f"{model}_train_ds", conn, index=False, if_exists="replace")
+    test.to_sql("{model}_test_ds", conn, index=False, if_exists="replace")
 
     print("Data is written to db.")
 
