@@ -10,7 +10,8 @@ RUN pip install --no-cache-dir lightning==2.5.0
 RUN pip install --no-cache-dir psycopg2-binary sqlalchemy
 
 COPY movie_recommender movie_recommender
-COPY train_dlrm.py .
+COPY training/train_dlrm.py .
+COPY training/train_utils.py .
 
 
 ENV CUDA_VISIBLE_DEVICES=0
