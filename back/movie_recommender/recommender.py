@@ -10,8 +10,6 @@ if True:
     sys.path.append(p)
     from movie_recommender.modeling.base import Recommendation, MovieRecommender
     from movie_recommender.utils import Singleton
-    from movie_recommender.modeling.dlrm import DLRM
-    from movie_recommender.modeling.xgbmr import XGBMR
     from movie_recommender.sim_search import SimilaritySearch
 
 ModelType = Literal["xgb_cpu", "xgb_cuda", "dlrm_cpu", "dlrm_cuda"]
@@ -42,12 +40,16 @@ class Recommender(Singleton):
         if model is None:
             match modelname:
                 case "dlrm_cpu":
+                    from movie_recommender.modeling.dlrm import DLRM
                     model = DLRM.load(None, device="cpu")
                 case "dlrm_cuda":
+                    from movie_recommender.modeling.dlrm import DLRM
                     model = DLRM.load(None, device="cuda")
                 case "xgb_cpu":
+                    from movie_recommender.modeling.xgbmr import XGBMR
                     model = XGBMR().load_model(device="cpu")
                 case "xgb_cuda":
+                    from movie_recommender.modeling.xgbmr import XGBMR
                     model = XGBMR().load_model(device="cuda")
                 case _:
                     raise Exception(f"{modelname}?")

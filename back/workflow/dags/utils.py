@@ -37,7 +37,6 @@ class Env_():
             "MLFLOW_TRACKING_URI",
             "http://localhost:8081"
         )
-        print("mlflow tracking uri is set to: %s", uri)
         return uri
 
     def dump(self):
@@ -55,7 +54,6 @@ class Env_():
 
 
 Env = Env_()
-Env.MLFLOW_TRACKING_URI
 
 
 def read_parquet(*paths: str):

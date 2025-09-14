@@ -1,5 +1,7 @@
 
 
+import pandas as pd
+from train_utils import get_env, read_ds
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from sklearn.decomposition import PCA
@@ -7,28 +9,24 @@ from movie_recommender.logging import logger
 from movie_recommender.sim_search import SimilaritySearch
 from movie_recommender.modeling.workflow import save_figures
 
-try:
-    from .utils import Env, read_parquet
-except ImportError:
-    from utils import Env, read_parquet  # type: ignore
-
-
 simsearch_exp_name = "SimilaritySearch"
 
 
-def train_simsearch(rating_path: str, movies_path: str):
-    Env.dump()
-    ratings, movies = read_parquet(rating_path, movies_path)
+def train_simsearch(ratings: pd.DataFrame, movies: pd.DataFrame, max_rating: int, tracking_uri: str):
+    # ratings, movies = read_parquet(rating_path, movies_path)
+    if isinstance(movies.movie_genres[0], str):
+        movies.movie_genres = movies.movie_genres.apply(lambda x: x.split(","))
 
-    max_rating = Env.MAX_RATING
+    # needed for somereason
+    ratings = ratings.rename(str, axis="columns")
+    movies = movies.rename(str, axis="columns")
 
     simsearch = SimilaritySearch().fit(ratings.copy(), movies.copy(), max_rating)
-    run_id = simsearch.save(simsearch_exp_name, Env.MLFLOW_TRACKING_URI)
+    run_id = simsearch.save(simsearch_exp_name, tracking_uri)
     return run_id
 
 
-def test_simsearch(run_id: str):
-    Env.dump()
+def test_simsearch():
 
     figures: dict[str, Figure] = {}
 
@@ -50,12 +48,12 @@ def test_simsearch(run_id: str):
         uid,
         add_closest_users=True,
         filter_watched=True,
-        genres=("Romance")
+        genres=("Romance",)
     )
     assert simsearch._get_movies(
         movie_ids)[["movie_genre_Romance"]].all().item()
 
-    save_figures(figures, run_id=run_id)
+    # save_figures(figures, run_id=run_id)
     logger.info("Similarity Search test passed successfully")
 
 
@@ -107,3 +105,22 @@ def test_movies(simsearch: SimilaritySearch, figures: dict[str, Figure]):
 
     figures["movies.png"] = plt.gcf()
     plt.legend()
+
+
+if __name__ == "__main__":
+    import sys
+    import mlflow
+    uri = get_env("MLFLOW_TRACKING_URI", "http://localhost:8081")
+    mlflow.set_tracking_uri(uri)
+    arg = sys.argv[1]
+    if arg == "train":
+        db_url = get_env(
+            "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
+        ratings = read_ds("ratings", db_url)
+        movies = read_ds("movies", db_url)
+        train_simsearch(ratings, movies, 5, uri)
+    elif arg == "test":
+        test_simsearch()
+    else:
+        logger.error(f'Invalid arg {arg}')
+        sys.exit(1)

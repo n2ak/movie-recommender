@@ -56,6 +56,9 @@ def training(
 
 def train_xgb(train: pd.DataFrame, test: pd.DataFrame, max_rating: int, exp_name: str, optimize: bool,
               num_boost_round: int, tracking_uri: str):
+    train.set_index(["user_id", "movie_id"], inplace=True)
+    test.set_index(["user_id", "movie_id"], inplace=True)
+
     users, movies = split_(pd.concat([train, test], axis=0))
     logger.info("****************Starting xgb training...**************")
     logger.info("Train ds shape: %s", train.shape)
@@ -142,18 +145,28 @@ def test_xgb_model():
 
 
 if __name__ == "__main__":
-    db_url = get_env(
-        "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
-    logger.info("DB URL: %s", db_url)
-    train, test = read_ds("xgb_train_ds", db_url), read_ds(
-        "xgb_test_ds", db_url)
+    import sys
+    arg = sys.argv[1]
+    uri = get_env("MLFLOW_TRACKING_URI", "http://localhost:8081")
+    mlflow.set_tracking_uri(uri)
 
-    train_xgb(
-        train,
-        test,
-        max_rating=5,
-        exp_name=get_env("EXP_NAME", "movie_recom"),
-        optimize=False,
-        num_boost_round=get_env("NUM_BOOST_ROUND", 500),
-        tracking_uri=get_env("MLFLOW_TRACKING_URI", "http://localhost:8081"),
-    )
+    if arg == "train":
+        db_url = get_env(
+            "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
+        logger.info("DB URL: %s", db_url)
+        train, test = read_ds("xgb_train_ds", db_url), read_ds(
+            "xgb_test_ds", db_url)
+        train_xgb(
+            train,
+            test,
+            max_rating=5,
+            exp_name=get_env("EXP_NAME", "movie_recom"),
+            optimize=False,
+            num_boost_round=get_env("NUM_BOOST_ROUND", 500),
+            tracking_uri=uri,
+        )
+    elif arg == "test":
+        test_xgb_model()
+    else:
+        logger.error(f'Invalid arg {arg}')
+        sys.exit(1)

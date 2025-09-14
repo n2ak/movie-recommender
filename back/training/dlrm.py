@@ -44,8 +44,8 @@ def create_data_loaders(
     batch_size = 64 * 4
 
     for c, u in zip(cat_cols, unique):
-        assert train[c].max() < u, c
-        assert test[c].max() < u, c
+        assert train[c].max() < u, (c, train[c].max(), u)
+        assert test[c].max() < u,  (c, test[c].max(), u)
     train_ds = DS(
         train[num_cols].values,
         train[cat_cols].values,
@@ -188,7 +188,7 @@ def test_dlrm_model():
     Recommender.single(Request(
         userId=0,
         genres=[],
-        model="dlrm_cpu",
+        model="dlrm_cuda",
         temp=0,
         start=0,
         count=10,
@@ -197,16 +197,27 @@ def test_dlrm_model():
 
 
 if __name__ == "__main__":
-    db_url = get_env(
-        "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
-    logger.info("DB URL: %s", db_url)
-    train, test = read_ds("dlrm_train_ds", db_url), read_ds(
-        "dlrm_test_ds", db_url)
+    import sys
+    arg = sys.argv[1]
+    uri = get_env("MLFLOW_TRACKING_URI", "http://localhost:8081")
+    mlflow.set_tracking_uri(uri)
 
-    train_dlrm(
-        train,
-        test,
-        epochs=get_env("EPOCHS", 2),
-        exp_name=get_env("EXP_NAME", "movie_recom"),
-        tracking_uri=get_env("MLFLOW_TRACKING_URI", "http://localhost:8081"),
-    )
+    if arg == "train":
+        db_url = get_env(
+            "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
+        logger.info("DB URL: %s", db_url)
+        train, test = read_ds("dlrm_train_ds", db_url), read_ds(
+            "dlrm_test_ds", db_url)
+
+        train_dlrm(
+            train,
+            test,
+            epochs=get_env("EPOCHS", 2),
+            exp_name=get_env("EXP_NAME", "movie_recom"),
+            tracking_uri=uri,
+        )
+    elif arg == "test":
+        test_dlrm_model()
+    else:
+        logger.error(f'Invalid arg {arg}')
+        sys.exit(1)

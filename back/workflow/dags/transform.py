@@ -1,36 +1,48 @@
-from typing import Literal
+import numpy as np
 import pandas as pd
-# from movie_recommender.logging import logger
+from typing import Literal
 try:
     from .utils import Env, read_parquet
 except ImportError:
     from utils import Env, read_parquet  # type: ignore
 
 
-def process_data(ratings_path: str, movies_path: str, model: Literal["xgb", "dlrm"]):
+def read_ds(table_name: str, db_url):
+    import pandas as pd
+    from sqlalchemy import create_engine
+    engine = create_engine(db_url)
+    table = pd.read_sql_table(table_name, engine)
+    return table
+
+
+def process_data(model: Literal["xgb", "dlrm"]):
+    ratings, movies = read_ds(
+        "ratings", Env.DB_URL), read_ds("movies", Env.DB_URL)
+    # needed for somereason
+    ratings = ratings.rename(str, axis="columns")
+    movies = movies.rename(str, axis="columns")
+    if isinstance(movies.movie_genres[0], str):
+        movies.movie_genres = movies.movie_genres.apply(lambda x: x.split(","))
+
     from sqlalchemy import create_engine
     # Env.dump()
     print(f"Proccessing data for: {model=}")
 
     match model:
         case "dlrm":
-            train, test = process_data_for_dlrm(ratings_path, movies_path)
+            train, test = process_data_for_dlrm(ratings, movies)
         case "xgb":
-            train, test = process_data_for_xgb(ratings_path, movies_path)
+            train, test = process_data_for_xgb(ratings, movies)
 
     conn = create_engine(Env.DB_URL)
 
-    train["movie_genres"] = train["movie_genres"].apply(lambda x: x.tolist())
-    test["movie_genres"] = test["movie_genres"].apply(lambda x: x.tolist())
-
     train.to_sql(f"{model}_train_ds", conn, index=False, if_exists="replace")
-    test.to_sql("{model}_test_ds", conn, index=False, if_exists="replace")
+    test.to_sql(f"{model}_test_ds", conn, index=False, if_exists="replace")
 
     print("Data is written to db.")
 
 
-def process_data_for_xgb(ratings_path: str, movies_path: str):
-    ratings, movies = read_parquet(ratings_path, movies_path)
+def process_data_for_xgb(ratings: pd.DataFrame, movies: pd.DataFrame):
     movielens = MovieLens.preprocess(
         ratings.copy(), movies.copy(),
         Env.MAX_RATING,
@@ -48,16 +60,12 @@ def process_data_for_xgb(ratings_path: str, movies_path: str):
 
     movie_genres = list(filter(lambda c: c.startswith(
         "movie_genre_"), train.columns.tolist()))
-
-    train = train.set_index(["user_id", "movie_id"])
     train.drop(columns=movie_genres, inplace=True)
-    test = test.set_index(["user_id", "movie_id"])
     test.drop(columns=movie_genres, inplace=True)
     return train, test
 
 
-def process_data_for_dlrm(ratings_path: str, movies_path: str):
-    ratings, movies = read_parquet(ratings_path, movies_path)
+def process_data_for_dlrm(ratings: pd.DataFrame, movies: pd.DataFrame):
 
     movielens = MovieLens.preprocess(
         ratings.copy(), movies.copy(),
@@ -75,6 +83,12 @@ def process_data_for_dlrm(ratings_path: str, movies_path: str):
     )
     train[['movie_total_rating', 'user_total_rating']] = train[[
         'movie_total_rating', 'user_total_rating']].astype(float)
+
+    if isinstance(train.movie_genres[0], np.ndarray):
+        train["movie_genres"] = train["movie_genres"].apply(
+            lambda x: x.tolist())
+        test["movie_genres"] = test["movie_genres"].apply(lambda x: x.tolist())
+
     return train, test
 
 

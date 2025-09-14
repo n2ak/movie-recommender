@@ -5,17 +5,17 @@ except ImportError:
     from utils import Env  # type: ignore
 
 
-def read_db(db_url):
+def read_db(db_url, ratings_table: str, movies_table: str):
     import pandas as pd
     from sqlalchemy import create_engine
     print(f"Reading db from: '{db_url}'")
     engine = create_engine(db_url)
-    ratings = pd.read_sql_table("movie_rating", engine, columns=[
+    ratings = pd.read_sql_table(ratings_table, engine, columns=[
                                 "rating", "movieModelId", "userModelId"])
     ratings.rename(columns=dict(userModelId="user_id",
                    movieModelId="movie_id"), inplace=True)
 
-    movies = pd.read_sql_table("movie", engine, columns=[
+    movies = pd.read_sql_table(movies_table, engine, columns=[
                                "id", "title", "genres", "year"])
     movies.rename(
         columns={c: f"movie_{c}" for c in movies.columns}, inplace=True)
@@ -23,19 +23,15 @@ def read_db(db_url):
 
 
 def extract_data():
+    from sqlalchemy import create_engine
     Env.dump()
 
-    ratings, movies = read_db(Env.DB_URL)
+    ratings, movies = read_db(Env.DB_URL, "movie_rating", "movie")
     print("Done extracting data.")
     movies.drop(columns=["movie_title"], inplace=True)
     ratings["rating"] = ratings["rating"] / max_rating
 
-    movies_path = "movies.parquet"
-    ratings_path = "ratings.parquet"
-
-    movies.to_parquet(movies_path)
-    ratings.to_parquet(ratings_path)
-    return dict(
-        movies_path=movies_path,
-        ratings_path=ratings_path,
-    )
+    conn = create_engine(Env.DB_URL)
+    movies.movie_genres = movies.movie_genres.apply(lambda x: ",".join(x))
+    ratings.to_sql("ratings", conn, index=False, if_exists="replace")
+    movies.to_sql("movies", conn, index=False, if_exists="replace")
