@@ -30,7 +30,7 @@ model UserModel {
 
 model MovieModel {
   id            Int      @id @unique
-  imdbId        Int      @unique
+  imdbId        String   @unique
   title         String
   genres        String[]
   avg_rating    Float

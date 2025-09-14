@@ -4,22 +4,21 @@ import { LoremIpsum } from "lorem-ipsum";
 import Papa from "papaparse";
 
 type MovieCSVType = {
-  movieId: number, movie_genres: string, movie_year: number, title: string,
-  movie_avg_rating: number, movie_total_rating: number, imdbId: number
+  movie_id: number, genres: string, year: number, title: string,
+  movie_avg_rating: number, movie_total_rating: number, imdbId: string
+  posters: string
+
 };
 type UserCSVType = {
-  userId: number, username: string
+  user_id: number, username: string
 };
 type RatingCSVType = {
-  userId: number, movieId: number, rating: number, time: Date
+  user_id: number, movie_id: number, rating: number,
+  // time: Date
 };
 
-const DUMMY_HREF = "blank";
 const CHUNK_SIZE = 100_000;
 
-const USERS_FILE = "../../../back/dataset/db/users.csv";
-const MOVIES_FILE = "../../../back/dataset/db/movies.csv";
-const RATINGS_FILE = "../../../back/dataset/db/ratings.csv";
 
 const prisma = new PrismaClient();
 type FirstParameterType<T extends (...args: any) => any> = Parameters<T>[0];
@@ -49,6 +48,7 @@ function randomString(min: number, max: number) {
 }
 
 function parse_csv<T>(path: string) {
+  console.log("Parsing csv file", path);
   const file = fs.readFileSync(path, "utf8");
   return Papa.parse<T>(file, {
     header: true,
@@ -74,8 +74,8 @@ async function chunked<T>(data: T[], fn: (t: { data: T[], skipDuplicates: boolea
 
 async function createUsers(tx: TX, data: UserCSVType[]) {
   const n = await chunked(
-    data.map(({ userId, username, }): Prisma.UserModelCreateWithoutMovieReviewsInput => ({
-      id: userId,
+    data.map(({ user_id, username }): Prisma.UserModelCreateWithoutMovieReviewsInput => ({
+      id: user_id,
       username,
       email: `${username}@email.com`,
       password: username,
@@ -88,24 +88,25 @@ async function createUsers(tx: TX, data: UserCSVType[]) {
 async function createMovies(tx: TX, data: MovieCSVType[]) {
   const n = await chunked(
     data.map(({
-      movie_genres,
+      genres,
       movie_avg_rating: avgRating,
       imdbId: imdbId,
       title: name,
       movie_total_rating: ratingCount,
-      movie_year,
-      movieId,
+      year,
+      movie_id,
+      posters
     }): Prisma.MovieModelCreateWithoutReviewsInput => ({
-      id: movieId,
+      id: movie_id,
       imdbId,
-      href: DUMMY_HREF,
+      href: String(posters),
       avg_rating: avgRating,
-      genres: movie_genres.split("|"),
+      genres: genres.split("|"),
       title: String(name),
       total_ratings: Number(ratingCount),
-      year: movie_year,
+      year: year,
       desc: randomString(200, 300),
-      createdAt: new Date(movie_year),
+      createdAt: new Date(year),
     })),
     tx.movieModel.createMany
   );
@@ -114,13 +115,13 @@ async function createMovies(tx: TX, data: MovieCSVType[]) {
 
 async function createReviews(tx: TX, data: RatingCSVType[]) {
   const n = await chunked(
-    data.map(({ movieId, userId }): Prisma.MovieReviewCreateManyInput => ({
+    data.map(({ movie_id, user_id }): Prisma.MovieReviewCreateManyInput => ({
       title: randomString(10, 50),
       text: randomString(100, 300),
       ndislikes: random(100),
       nlikes: random(100),
-      movieModelId: movieId,
-      userModelId: userId,
+      movieModelId: movie_id,
+      userModelId: user_id,
     })),
     tx.movieReview.createMany
   );
@@ -130,12 +131,12 @@ async function createReviews(tx: TX, data: RatingCSVType[]) {
 async function createdRatings(tx: TX, data: RatingCSVType[]) {
   const n = await chunked(
     data.map((
-      { movieId, userId, rating, time }
+      { movie_id, user_id, rating }
     ): Prisma.UserMovieRatingCreateManyInput => ({
-      movieModelId: movieId,
-      userModelId: userId,
+      movieModelId: movie_id,
+      userModelId: user_id,
       rating: rating,
-      timestamp: new Date(time),
+      timestamp: new Date(),
     })),
     tx.userMovieRating.createMany
   );
@@ -143,10 +144,13 @@ async function createdRatings(tx: TX, data: RatingCSVType[]) {
 }
 
 async function main() {
-  console.log("Parsing csv files...");
-  const users_csv = parse_csv<UserCSVType>(USERS_FILE);
-  const movies_csv = parse_csv<MovieCSVType>(MOVIES_FILE);
-  const ratings_csv = parse_csv<RatingCSVType>(RATINGS_FILE);
+  if (process.argv.length < 5) {
+    throw Error(`Invalid command: expected 3 argumens, found ${process.argv.length - 2}`)
+  }
+  const [ratings_file, movies_file, users_file] = process.argv.slice(-3) as any;
+  const users_csv = parse_csv<UserCSVType>(users_file);
+  const movies_csv = parse_csv<MovieCSVType>(movies_file);
+  const ratings_csv = parse_csv<RatingCSVType>(ratings_file);
 
   await prisma.$transaction(
     async (tx) => {

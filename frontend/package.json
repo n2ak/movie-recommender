@@ -11,8 +11,7 @@
     "db:migrate": "cd packages/database && npx prisma migrate dev --name init",
     "db:generate": "cd packages/database && npx prisma generate",
     "dockerize": "docker build -f apps/web/Dockerfile -t webapp .",
-    "db:seed": "cd packages/database && npx prisma generate && npx prisma migrate reset --force && npx prisma migrate dev --name init && npx ts-node src/scripts/seed.ts",
-    "db:dump": "cd packages/database && npx ts-node src/scripts/dump.ts",
+    "db:seed": "cd packages/database && npx ts-node src/scripts/seed.ts",
     "clean-install": "rimraf ./node_modules && pnpm i",
     "clean": "find . -name \"node_modules\" -type d -prune -exec rm -rf {} +"
   },

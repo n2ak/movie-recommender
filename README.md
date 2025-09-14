@@ -2,11 +2,15 @@
 
 [movielens](https://grouplens.org/datasets/movielens/)
 
-### Usage
+### Seed
 
 ```bash
-docker compose up
-./start.ps1 # fill db for first time
-cd front/
-pnpm run dev
+./filldb.sh
+```
+
+### build docker
+
+```bash
+cd back
+./build_docker.sh
 ```
