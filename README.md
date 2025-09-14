@@ -11,6 +11,6 @@
 ### build docker
 
 ```bash
-cd back
+cd backend
 ./build_docker.sh
 ```
