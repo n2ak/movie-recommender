@@ -4,7 +4,7 @@ set -e
 pushd frontend
     pnpm run db:migrate
 popd
-pushd back
+pushd backend
     paths=$(python scripts/get_ds.py)
 popd
 pushd frontend
