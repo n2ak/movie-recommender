@@ -1,3 +1,4 @@
+name: "movie_recommendation_system"
 services:
   db:
     container_name: db
@@ -28,11 +29,12 @@ services:
     image: adminer
     restart: unless-stopped
     ports:
-      - 8080:8080
+      - 8082:8080
     networks:
       - net
       
   redis:
+    profiles: ["web"]
     container_name: redis
     image: redis:alpine
     restart: unless-stopped
@@ -56,6 +58,8 @@ services:
       db:
         condition: service_healthy
         restart: true
+      redis:
+        condition: service_healthy
     networks:
       - net
     environment:
@@ -81,9 +85,15 @@ services:
       db:
         condition: service_healthy
         restart: true
+      mlflow:
+        condition: service_healthy
+        restart: true
+        
     environment:
-      MLFLOW_TRACKING_URI: "http://host.docker.internal:8081"
-    restart: unless-stopped
+      MLFLOW_TRACKING_URI: "http://mlflow:8081"
+    restart: "no"
+    networks:
+      - net
 
   mlflow:
     container_name: mlflow-server
@@ -95,17 +105,64 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:${MLFLOW_PORT}/health')",
+          "CMD","python","-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8081/health')",
         ]
       interval: 10s
       timeout: 5s
       retries: 10
     volumes:
       - ./vlms/mlruns:/mlruns
+    environment:
+      MLFLOW_PORT: "8081"
+    networks:
+      - net
+  
+  airflow:
+    profiles: ["airflow"]
+    container_name: custom_airflow
+    build: 
+      context: ./workflow
+    ports:
+      - 8080:8080
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_db:5432/airflow_db
+    volumes:
+      - ./workflow/dags:/opt/airflow/dags
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - airflow_db
+      - mlflow
+    command: >
+      bash -c "airflow db migrate
+       && echo "Server is starting up..."
+       && airflow standalone"
+    user: "0:0"
+    networks:
+      - airflow_net
+    group_add:
+      - '1001'
+    env_file:
+      - path: ./workflow/.env
+        required: true
+    restart: unless-stopped
+
+  airflow_db:
+    profiles: ["airflow"]
+    container_name: airflow_db
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow_db
+    volumes:
+      - ./vlms/postgres-db-volume:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - airflow_net
 
 networks:
   net:
+    driver: bridge
+  airflow_net:
     driver: bridge
