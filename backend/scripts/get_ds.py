@@ -11,7 +11,7 @@ splits = {
 def read_ds():
     df_train = pd.read_parquet(ds_path + splits["train"])
     df_val = pd.read_parquet(ds_path + splits["val"])
-    df = pd.concat([df_train, df_val], axis=0)
+    df = pd.concat([df_train, df_val], axis=0)[:100_000]
     return df
 
 
