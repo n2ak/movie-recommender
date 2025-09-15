@@ -28,7 +28,8 @@ async def check_response(resp_json, data):
     return result
 
 
-MODELS: list[ModelType] = ["xgb_cpu", "dlrm_cpu"]  # + ["xgb_cuda","dlrm_cuda"]
+# + {"xgb_cuda","dlrm_cuda"}
+MODELS: set[ModelType] = {"xgb_cuda", "dlrm_cuda"}
 
 
 @pytest_asyncio.fixture
@@ -68,6 +69,6 @@ async def test_genres(aclient: AsyncClient):
             start=0,
             count=None,
             model=model,
-            temp=0,
+            temp=0.5,
         )
         await check_response(await recomend_movies(aclient, data),  data)

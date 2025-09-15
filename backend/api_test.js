@@ -1,15 +1,19 @@
 
+
+if (process.argv.length < 3)
+    throw Error("Provide number of requests")
+const n = Number(process.argv[2])
 await Promise.all(
-    Array(300).fill(0).map(_ =>
+    Array(n).fill(0).map(_ =>
         fetch('http://localhost:8000/movies-recom', {
             method: 'POST',
             body: JSON.stringify({
-                userId: 1,
-                genres: [],
+                userId: 0,
+                genres: ["Action"],
                 start: 0,
                 count: 10,
                 model: "xgb_cpu",
-                temp: 0,
+                temp: 0.4,
             }),
             headers: {
                 'Content-Type': 'application/json',

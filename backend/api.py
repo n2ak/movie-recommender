@@ -48,10 +48,13 @@ async def lifespan(app: FastAPI):
     uri = os.environ["MLFLOW_TRACKING_URI"]
     print("Starting up...")
     print("MLFLOW_TRACKING_URI", uri)
+
     mlflow.set_tracking_uri(uri)
-    Recommender.load_all_models(exclude=["dlrm_cpu", "dlrm_cuda", "xgb_cuda"])
+    Recommender.load_all_models(exclude=["dlrm_cpu", "xgb_cpu"])
     print("Loaded models")
+
     asyncio.create_task(worker())
+
     print("\n\nServer is up...\n\n")
     yield
     print("Shutting down...")
