@@ -30,7 +30,7 @@ def get_docker_operator(task_id, image, command, environment, gpu=True, **kwargs
 with DAG(
     dag_id='movie_recommender',
     default_args=default_args,
-    schedule='@daily',
+    # schedule='@daily',
     start_date=datetime(2025, 1, 1),
     catchup=False,
     tags=['ml', 'etl', 'mlflow', 'pytorch', 'xgb'],
@@ -62,7 +62,7 @@ with DAG(
             MLFLOW_TRACKING_URI=Env.MLFLOW_TRACKING_URI,
             DB_URL=Env.DB_URL,
         ),
-        pool="apool", # must be set in Admin -> pools with 1 slot
+        pool="apool",  # must be set in Admin -> pools with 1 slot
     )
     train_xgb_task = get_docker_operator(
         task_id='train_xgb_task',

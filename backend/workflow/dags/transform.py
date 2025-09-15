@@ -38,7 +38,6 @@ def process_data(model: Literal["xgb", "dlrm"]):
 
     train.to_sql(f"{model}_train_ds", conn, index=False, if_exists="replace")
     test.to_sql(f"{model}_test_ds", conn, index=False, if_exists="replace")
-
     print("Data is written to db.")
 
 
@@ -76,7 +75,7 @@ def process_data_for_dlrm(ratings: pd.DataFrame, movies: pd.DataFrame):
     train, test = movielens.prepare_for_training(
         train_size=Env.TRAIN_SIZE,
         add_rating_features=True,
-        encode_year=False,
+        encode_year=True,
         columns2scale=[
             'movie_mean_rating', 'movie_total_rating', 'user_mean_rating', 'user_total_rating'
         ]
