@@ -2,6 +2,7 @@
 
 set -e
 pushd frontend
+    pnpm run db:reset
     pnpm run db:migrate
 popd
 pushd backend
