@@ -8,7 +8,7 @@ export type BackendRequest = {
     genres?: MovieGenre[]
     start?: number
     model?: AvailableModels,
-    temp?: number
+    temp: number
 
 }
 export type Prediction = {

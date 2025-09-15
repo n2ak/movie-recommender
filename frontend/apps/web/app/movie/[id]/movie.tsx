@@ -37,7 +37,7 @@ export function MoviePage({
         <img
           src={movie.href}
           alt={movie.title}
-          className="w-64 rounded-lg shadow-lg"
+          className="w-64 rounded-lg shadow-lg max-h-100"
         />
         <div className="flex-1 space-y-4">
           <h1 className="text-4xl font-bold">{movie.title}</h1>

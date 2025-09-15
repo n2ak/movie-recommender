@@ -1,24 +1,34 @@
-// "use client";
+"use client"
+import { useTemperatureStore } from "@/app/(home)/temp-input";
 import { MovieCarousel } from "@/components/MovieCarousel";
 import {
-  getMostWatchedGenres,
   getRecommendedGenreMovies,
-  getRecommendedMoviesForUser,
+  getRecommendedMoviesForUser
 } from "@/lib/actions/movie";
 import type { MovieGenre } from "@repo/database";
+import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import Skeleton from "./Skeleton";
 
-export async function Recommended() {
+export function Recommended() {
+  const store = useTemperatureStore();
+  if (!store || store.temp === null)
+    return null;
+  const temp = store.temp;
   return (
     <Recommendation
       title={"Movies we think you would like:"}
-      func={() => getRecommendedMoviesForUser({ count: 10 })}
+      func={() => getRecommendedMoviesForUser({ count: 10, temp })}
+      qkey={["Recommended", String(temp)]}
     />
   );
 }
 
-async function RecommendedGenre({ genre }: { genre: MovieGenre }) {
+function RecommendedGenre({ genre }: { genre: MovieGenre }) {
+  const store = useTemperatureStore();
+  if (!store || store.temp === null)
+    return null;
+  const temp = store.temp;
   return (
     <Recommendation
       title={
@@ -26,13 +36,13 @@ async function RecommendedGenre({ genre }: { genre: MovieGenre }) {
           Recommended {<span className="text-primary">{genre}</span>} movies:
         </span>
       }
-      func={() => getRecommendedGenreMovies({ genre })}
+      func={() => getRecommendedGenreMovies({ genre, temp })}
+      qkey={["RecommendedGenre", genre, String(temp)]}
     />
   );
 }
 
-export async function RecommendedGenres() {
-  const genres = (await getMostWatchedGenres({})).data!.map(([g]) => g);
+export function RecommendedGenres({ genres }: { genres: string[] }) {
   return (
     <>
       {genres.map((g) => (
@@ -46,15 +56,21 @@ export async function RecommendedGenres() {
   );
 }
 
-async function Recommendation({
+function Recommendation({
   title,
   func,
+  qkey,
 }: {
   title: string | React.ReactNode;
   func: () => ReturnType<typeof getRecommendedMoviesForUser>;
+  qkey: string[]
 }) {
-  const movies = (await func()).data!;
+  const q = useQuery({
+    queryFn: async () => (await func()).data!,
+    queryKey: qkey,
+    initialData: []
+  });
   return (
-    <>{movies!.length > 0 && <MovieCarousel title={title} movies={movies} />}</>
+    <>{q.data!.length > 0 && <MovieCarousel title={title} movies={q.data} />}</>
   );
 }

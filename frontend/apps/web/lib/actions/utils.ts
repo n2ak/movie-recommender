@@ -61,7 +61,7 @@ export function action<T extends object, B, I = Omit<T, "userId">>(
         key,
         duration: `${duration}ms`,
         successful: !data.message,
-        result: data,
+        // result: data,
       },
       "Server Action"
     );

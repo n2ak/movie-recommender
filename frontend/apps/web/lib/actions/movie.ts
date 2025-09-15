@@ -47,18 +47,18 @@ export const editMovieReviewAndRating = action(
 export const getRecommendedMoviesForUser = action(
   "getRecommendedMoviesForUser",
 
-  async ({ count, userId }: { count: number; userId: number }) =>
+  async ({ count, userId, temp }: { count: number; userId: number, temp: number }) =>
     handleBackendResponse(
-      await Backend.getMoviesRecom({ userId, count }),
+      await Backend.getMoviesRecom({ userId, count, temp }),
       userId
     )
 );
 
 export const getRecommendedGenreMovies = action(
   "getRecommendedGenreMovies",
-  async ({ genre, userId }: { genre: MovieGenre; userId: number }) =>
+  async ({ genre, userId, temp }: { genre: MovieGenre; userId: number, temp: number }) =>
     handleBackendResponse(
-      await Backend.getMoviesRecom({ userId, count: 10, genres: [genre] }),
+      await Backend.getMoviesRecom({ userId, count: 10, genres: [genre], temp }),
       userId
     )
 );
