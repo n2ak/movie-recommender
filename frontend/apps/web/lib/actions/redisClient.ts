@@ -12,6 +12,11 @@ const create = () => {
   const redis = new Redis(options);
   return redis;
 };
+declare const globalThis: {
+  redisClient: ReturnType<typeof create>;
+} & typeof global;
+const redisClient = globalThis.redisClient ?? create();
+if (process.env.NODE_ENV !== "production") globalThis.redisClient = redisClient;
 
 export function cachedQuery<I, O>(
   fetch: (i: I) => Promise<O>,
@@ -39,11 +44,6 @@ export async function clearCacheKey(key: string, reason: string) {
   return await redisClient.del(key);
 }
 
-declare const globalThis: {
-  redisClient: ReturnType<typeof create>;
-} & typeof global;
-const redisClient = globalThis.redisClient ?? create();
-if (process.env.NODE_ENV !== "production") globalThis.redisClient = redisClient;
 
 export async function cachedCounter(key: string, ttl?: number) {
   const cache = await redisClient.incr(key);

@@ -1,9 +1,20 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
 import type { BackendRequest, BackendResponse, Prediction } from "./types";
 
-const apiClient = axios.create({
-  baseURL: process.env.BACKEND_URL || "http://127.0.0.1:8000",
-});
+const createClient = () => {
+  const baseURL = process.env.BACKEND_URL || "http://127.0.0.1:8000"
+  const apiClient = axios.create({
+    baseURL: baseURL,
+  });
+  console.log("Backend base url:", baseURL);
+
+  return apiClient;
+}
+declare const globalThis: {
+  apiClient: ReturnType<typeof createClient>;
+} & typeof global;
+const apiClient = globalThis.apiClient ?? createClient();
+if (process.env.NODE_ENV !== "production") globalThis.apiClient = apiClient;
 
 apiClient.interceptors.response.use(
   (response) => response,
