@@ -13,7 +13,7 @@ export default async function ReviewsPage({
   const movie = await getMovieForUser({ movieId });
   if (!movie.data) {
     // TODO
-    return redirect("/home");
+    return redirect("/");
   }
 
   return <MovieReviews movie={movie.data} />;

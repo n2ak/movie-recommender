@@ -31,7 +31,7 @@ function SwitchModeIcon() {
 function OnNavbar({ user }: { user: UserInfo }) {
   const dict = useDictionary();
   const links = [
-    { name: dict.home, href: "/home" },
+    { name: dict.home, href: "/" },
     { name: "Ratings", href: "/ratings" },
   ];
   return (
@@ -89,7 +89,7 @@ function Links({ links }: { links: { name: string; href: string }[] }) {
 
 function Logo() {
   return (
-    <Link href="/home" className="hidden sm:block relative">
+    <Link href="/" className="hidden sm:block relative">
       <img
         src="/res/movies.png"
         className="h-15 w-15 -translate-y-3"

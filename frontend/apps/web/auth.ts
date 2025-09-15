@@ -40,7 +40,7 @@ const { auth, handlers } = NextAuth({
       const isLoggedIn = !!auth?.user;
       const inLoginPage = nextUrl.pathname.startsWith("/auth/login");
       if (isLoggedIn && inLoginPage)
-        return Response.redirect(new URL("/home", nextUrl));
+        return Response.redirect(new URL("/", nextUrl));
 
       if (isLoggedIn) return true;
       if (inLoginPage) return true;
@@ -66,3 +66,4 @@ const { auth, handlers } = NextAuth({
   },
 });
 export { auth, handlers };
+

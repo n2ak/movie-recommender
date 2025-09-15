@@ -13,5 +13,5 @@ export const getSimilarMovies = async (
         movieIds,
     });
 };
-export { type BackendResponse } from "./client";
+export { type BackendResponse } from "./types";
 

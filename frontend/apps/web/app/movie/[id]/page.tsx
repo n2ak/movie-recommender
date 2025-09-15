@@ -24,7 +24,7 @@ export default async function Page({
     similarMovies.message
   ) {
     // TODO
-    return redirect("/home");
+    return redirect("/");
   }
   return <MoviePage movie={movie.data} similarMovies={similarMovies.data} />;
 }

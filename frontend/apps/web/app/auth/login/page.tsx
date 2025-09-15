@@ -39,8 +39,8 @@ export default function SignIn() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      usernameOrEmail: "user0@email.com",
-      password: "user0@email.com",
+      usernameOrEmail: "user0",
+      password: "user0",
     },
   });
   async function onSubmit(data: z.infer<typeof FormSchema>) {
@@ -49,7 +49,7 @@ export default function SignIn() {
       redirect: false,
     });
     if (!res.error) {
-      window.location.href = "/home";
+      window.location.href = "/";
     } else {
       setError(true);
     }
