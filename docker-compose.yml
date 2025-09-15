@@ -147,6 +147,9 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_db:5432/airflow_db
     volumes:
       - ./workflow/dags:/opt/airflow/dags
+      - ./workflow/logs:/opt/airflow/logs
+      - ./workflow/config:/opt/airflow/config
+      - ./workflow/plugins:/opt/airflow/plugins
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - airflow_db
