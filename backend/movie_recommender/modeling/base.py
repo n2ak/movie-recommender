@@ -33,12 +33,10 @@ class MovieRecommender(ABC, Generic[T]):
             ratings = np.concat([self.predict(b, max_rating) for b in batch])
         if clamp:
             ratings = np.clip(ratings, 0, max_rating)
-        # if temp != 0: TODO
-        #     ratings, userIds, movieIds = self.apply_temp(ratings, userIds, movieIds,temp)
         batch = self.unbatch(ratings, [len(m) for m in movieIds])
-        if not wrap:
-            return []
-        return [self.to_pred([u] * len(m), m, r,) for u, m, r in zip(userIds, movieIds, batch)]
+        batch = [self.apply_temp(r, [u] * len(m), m, t)
+                 for r, u, m, t in zip(batch, userIds, movieIds, temps)]
+        return [self.to_pred(u, m, r,) for r, u, m in batch]
 
     def unbatch(self, batch: NDArray[np.float32], lengths: list[int]):
         arr: list[NDArray[np.float32]] = []
@@ -51,11 +49,15 @@ class MovieRecommender(ABC, Generic[T]):
 
     def apply_temp(
         self,
-        ratings: list[float] | np.ndarray,
-        userIds: list[int] | np.ndarray,
-        movieIds: list[int] | np.ndarray,
+        ratings: list[float] | NDArray[np.float32],
+        userIds: list[int] | NDArray[np.int32],
+        movieIds: list[int] | NDArray[np.int32],
         temp: float,
     ):
+        assert len(ratings) == len(userIds) == len(
+            movieIds), (len(ratings), len(userIds), len(movieIds))
+        if temp == 0:
+            return ratings, userIds, movieIds
         assert 0 < temp <= 1
 
         ratings = np.array(ratings, dtype=np.float32)
@@ -68,8 +70,9 @@ class MovieRecommender(ABC, Generic[T]):
             return torch.multinomial(array, count).tolist()
         indices = multinomial(ratings, 10)
         ratings = ratings[indices]
-        userIds = np.array(userIds, dtype=np.float32)[indices]
-        movieIds = np.array(movieIds, dtype=np.float32)[indices]
+        userIds = np.array(userIds, dtype=np.float32)[indices]  # type: ignore
+        movieIds = np.array(movieIds, dtype=np.float32)[
+            indices]  # type: ignore
         return ratings, userIds, movieIds
 
     @abstractmethod

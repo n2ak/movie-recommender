@@ -3,9 +3,11 @@ import sys
 import time
 import mlflow
 import asyncio
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Response
 from contextlib import asynccontextmanager
 from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse
+# for models to load when testing!!!
+sys.path.append(os.path.abspath("./training"))
 
 
 TIMEOUT = 0.1

@@ -30,7 +30,7 @@ docker compose --profile airflow up -d
 
 ```bash
 cd backend
-pytest -v -s
+MLFLOW_TRACKING_URI=... python -m pytest -v -s
 ```
 ### to test backend api from frontend
 
@@ -40,4 +40,3 @@ MLFLOW_TRACKING_URI=... python api.py
 cd ../frontend
 pnpm run test:api
 ```
-
