@@ -108,7 +108,7 @@ services:
       - net
 
   mlflow:
-    profiles: ["local_training","web"]
+    profiles: ["local_training","web","airflow"]
     container_name: mlflow-server
     image: ghcr.io/mlflow/mlflow:v3.3.2
     ports:
@@ -152,9 +152,9 @@ services:
       - airflow_db
       - mlflow
     command: >
-      bash -c "airflow db migrate
-       && echo "Server is starting up..."
-       && airflow standalone"
+      bash -c "airflow db migrate &&
+       echo 'Server is starting up...' &&
+       airflow standalone"
     user: "0:0"
     networks:
       - airflow_net
