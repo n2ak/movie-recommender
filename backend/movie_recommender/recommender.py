@@ -33,6 +33,7 @@ class Recommender(Singleton):
         for model in ["xgb_cpu", "xgb_cuda", "dlrm_cpu", "dlrm_cuda"]:
             if model in exclude:
                 continue
+            print(f"Preloading {model=}")
             instance.get_model(model)  # type: ignore
 
     def get_model(self, modelname: ModelType) -> MovieRecommender:

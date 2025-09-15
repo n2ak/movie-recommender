@@ -49,6 +49,21 @@ def load_models_frame(exp_name, model_type=None, order_by=None):
     return models
 
 
+def load_xgboost(model_uri: str, run_name: str):
+    if not len(mlflow.artifacts.list_artifacts(artifact_uri=model_uri)):
+        raise Exception(f"No artifact from {model_uri=}, {run_name=}")
+    import xgboost as xgb
+    best_model: xgb.Booster = mlflow.xgboost.load_model(  # type: ignore
+        model_uri)
+    return best_model
+
+
+def load_pytorch(model_uri: str, run_name: str):
+    if not len(mlflow.artifacts.list_artifacts(artifact_uri=model_uri)):
+        raise Exception(f"No artifact from {model_uri=}, {run_name=}")
+    return mlflow.pytorch.load_model(model_uri)
+
+
 def load_best_model(experiment_name, model_type, sortby, run_id=None):
     models = load_models_frame(
         experiment_name, model_type=model_type, order_by=sortby)
@@ -95,6 +110,12 @@ def log_temp_artifacts(save_fn, artifact_path=None, run_id=None):
 @functools.lru_cache(maxsize=16)
 def download_artifacts(run_id: str, artifact_path: str):
     print(f"Getting artifacts, {run_id=}, {artifact_path=}")
+    files = mlflow.artifacts.list_artifacts(
+        run_id=run_id)
+    # print("files", files)
+    if not len(files):
+        raise Exception(f"No files! {run_id=}, {artifact_path=}")
+
     return mlflow.artifacts.download_artifacts(  # type: ignore
         run_id=run_id,
         artifact_path=artifact_path,

@@ -34,13 +34,11 @@ class XGBMR(MovieRecommender[NDArray]):
 
     def load_model(self, run_id=None, exp_name="movie_recom", device="cpu"):
         import pathlib
-        import mlflow
-        from .workflow import load_best_model
-
+        from .workflow import load_best_model, load_xgboost
         model_uri, run_id, run_name = load_best_model(
             exp_name, "XGBMR", "metrics.val-mae", run_id)
-        best_model: xgb.Booster = mlflow.xgboost.load_model(  # type: ignore
-            model_uri)
+        print(f'Loading {model_uri=}')
+        best_model = load_xgboost(model_uri=model_uri, run_name=run_name)
         best_model.set_param({"device": device})
         print("XGB loaded on device:", device)
         if best_model is None:

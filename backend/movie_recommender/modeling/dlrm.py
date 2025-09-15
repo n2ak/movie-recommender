@@ -334,12 +334,11 @@ class TrainableModule(L.LightningModule):
 
     @classmethod
     def load_from_run(cls, run_id: Optional[str] = None, exp_name="movie_recom") -> Self:
-        import mlflow
-        from .workflow import load_best_model
+        from .workflow import load_best_model, load_pytorch
         model_uri, run_id, run_name = load_best_model(
             exp_name, "DLRM", "metrics.val_loss", run_id=run_id)
         logger.info(f"Loading from: {model_uri=}, {run_id=}, {run_name=}")
-        return mlflow.pytorch.load_model(model_uri)  # type: ignore
+        return load_pytorch(model_uri=model_uri, run_name=run_name)
 
 
 def chunk_dict_of_tensors(data_dict: dict[str, torch.Tensor], n):

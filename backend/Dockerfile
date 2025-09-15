@@ -16,4 +16,5 @@ COPY api.py .
 
 ENV CUDA_VISIBLE_DEVICES=0
 
-CMD ["python","api.py"]
+# CMD ["python","api.py"]
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]

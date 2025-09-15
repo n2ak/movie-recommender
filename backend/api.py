@@ -6,7 +6,6 @@ import asyncio
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse
-sys.path.append("./dags")
 
 
 TIMEOUT = 0.1
@@ -44,21 +43,18 @@ async def worker():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    uri = os.environ["MLFLOW_TRACKING_URI"]
     print("Starting up...")
-    mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
+    print("MLFLOW_TRACKING_URI", uri)
+    mlflow.set_tracking_uri(uri)
     Recommender.load_all_models(exclude=["dlrm_cpu", "dlrm_cuda", "xgb_cuda"])
+    print("Loaded models")
     asyncio.create_task(worker())
     print("\n\nServer is up...\n\n")
     yield
     print("Shutting down...")
 
 app = FastAPI(lifespan=lifespan)
-
-
-# @app.middleware("http")
-# async def log_requests(request: Request, call_next):
-#     response = await call_next(request)
-#     return response
 
 
 @app.post("/movies-recom")
