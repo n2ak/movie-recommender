@@ -104,6 +104,7 @@ def log_temp_artifacts(save_fn, artifact_path=None, run_id=None):
     import mlflow
     with tempfile.TemporaryDirectory() as f:
         save_fn(f)
+        print("Logging folder", f)
         mlflow.log_artifacts(f, artifact_path, run_id=run_id)
 
 

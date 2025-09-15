@@ -18,7 +18,7 @@ cd frontend && pnpm run dev
 
 # OR
 
-docker compose --profile backend_api --profile web up -d
+docker compose --profile web up -d
 ```
 ### to start airflow
 

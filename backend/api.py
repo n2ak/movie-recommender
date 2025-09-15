@@ -3,7 +3,7 @@ import sys
 import time
 import mlflow
 import asyncio
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from contextlib import asynccontextmanager
 from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse
 
@@ -70,6 +70,10 @@ async def movies_recom(data: RecomRequest):
         time=0
     )
 
+
+@app.get("/health")
+async def health():
+    return Response(status_code=200)
 
 if __name__ == "__main__":
     import uvicorn

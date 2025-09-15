@@ -1,6 +1,7 @@
 name: "movie_recommendation_system"
 services:
   db:
+    profiles: ["local_training","web"]
     container_name: db
     image: postgres
     environment:
@@ -59,6 +60,8 @@ services:
         condition: service_healthy
         restart: true
       redis:
+        condition: service_started
+      backend:
         condition: service_healthy
     networks:
       - net
@@ -74,7 +77,7 @@ services:
       REDIS_PASSWORD: password
 
   backend:
-    profiles: ["backend_api"]
+    profiles: ["backend_api","web"]
     container_name: backend_api
     build:
       context: ./backend
@@ -88,19 +91,32 @@ services:
       mlflow:
         condition: service_healthy
         restart: true
-        
+    healthcheck:
+      test:
+        [
+          "CMD","python","-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     environment:
       MLFLOW_TRACKING_URI: "http://mlflow:8081"
+      MLFLOW_ARTIFACT_UPLOAD_DOWNLOAD_TIMEOUT: 30
     restart: "no"
     networks:
       - net
 
   mlflow:
+    profiles: ["local_training","web"]
     container_name: mlflow-server
     image: ghcr.io/mlflow/mlflow:v3.3.2
     ports:
       - "8081:8081"
-    command: mlflow server --host 0.0.0.0 --port 8081
+    command: >
+      mlflow server 
+          --host 0.0.0.0 
+          --port 8081
     restart: unless-stopped
     healthcheck:
       test:
@@ -113,8 +129,10 @@ services:
       retries: 10
     volumes:
       - ./vlms/mlruns:/mlruns
+      - ./vlms/mlartifacts:/mlartifacts
     environment:
       MLFLOW_PORT: "8081"
+      MLFLOW_ARTIFACT_UPLOAD_DOWNLOAD_TIMEOUT: 30
     networks:
       - net
   
