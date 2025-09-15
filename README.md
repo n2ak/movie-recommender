@@ -4,11 +4,11 @@
 ./filldb.sh
 ```
 
-### build docker
+### build training docker images
 
 ```bash
 cd backend
-./build_docker.sh
+./build_training_docker_images.sh
 ```
 ### to run
 
