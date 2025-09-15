@@ -1,7 +1,7 @@
 name: "movie_recommendation_system"
 services:
   db:
-    profiles: ["local_training","web"]
+    profiles: ["local_training","web","airflow"]
     container_name: db
     image: postgres
     environment:
@@ -151,6 +151,7 @@ services:
     depends_on:
       - airflow_db
       - mlflow
+      - db # for training
     command: >
       bash -c "airflow db migrate &&
        echo 'Server is starting up...' &&
