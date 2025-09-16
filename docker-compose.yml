@@ -1,25 +1,26 @@
 name: "movie_recommendation_system"
 services:
   db:
-    profiles: ["local_training","web","airflow"]
     container_name: db
     image: postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       PGDATA: /data/postgres
-      POSTGRES_DB: mydb
-
+      POSTGRES_DB: ${DB_DB}
+      PGPORT: ${DB_PORT}
+    depends_on: 
+      - adminer
     volumes:
       - ./vlms/database:/data/postgres
     ports:
-      - "5432:5432"
+      - "${DB_PORT}:${DB_PORT}"
     networks:
       - net
     restart: unless-stopped
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_DB}"]
       interval: 10s
       retries: 5
       start_period: 30s
@@ -33,28 +34,28 @@ services:
       - 8082:8080
     networks:
       - net
+      - mlflow_net
       
   redis:
-    profiles: ["web"]
     container_name: redis
     image: redis:alpine
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:${REDIS_PORT}"
     networks:
       - net
     environment:
-      REDIS_PASSWORD: password
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       # pass time to live env
 
   webapp:
-    profiles: ["web"]
     container_name: webapp
     build:
       context: ./frontend
       dockerfile: apps/web/Dockerfile
     ports:
-      - "3000:3000"
+      - "${WEB_PORT}:3000"
     depends_on:
       db:
         condition: service_healthy
@@ -67,23 +68,22 @@ services:
       - net
     environment:
       AUTH_SECRET: "lv5macbVjLrol6GRhpHvpt/lNIPKKtEeIVIfKYKG1D8: "
-      DATABASE_URL: "postgresql://admin:password@db:5432/mydb?schema=public"
-      BACKEND_URL: "http://host.docker.internal:8000"
-      NEXTAUTH_URL: "http://localhost:3000/"
+      DATABASE_URL: "postgresql://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_DB}?schema=public"
+      BACKEND_URL: "http://host.docker.internal:${BACKEND_PORT}"
+      NEXTAUTH_URL: "http://localhost:${WEB_PORT}/"
       AUTH_TRUST_HOST: true
 
       REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: password
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
 
   backend:
-    profiles: ["backend_api","web"]
     container_name: backend_api
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
       db:
         condition: service_healthy
@@ -95,56 +95,92 @@ services:
       test:
         [
           "CMD","python","-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+          "import urllib.request; urllib.request.urlopen('http://localhost:${BACKEND_PORT}/health')",
         ]
       interval: 10s
       timeout: 5s
       retries: 10
     environment:
-      MLFLOW_TRACKING_URI: "http://mlflow:8081"
+      MLFLOW_TRACKING_URI: "http://mlflow:${MLFLOW_PORT}"
       MLFLOW_ARTIFACT_UPLOAD_DOWNLOAD_TIMEOUT: 30
+      BACKEND_PORT: "${BACKEND_PORT}"
+
+      MLFLOW_S3_ENDPOINT_URL: "http://host.docker.internal:${MINIO_PORT}"
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_DEFAULT_REGION: ${MINIO_REGION}
     restart: "no"
     networks:
       - net
+      - mlflow_net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: ['gpu']
+              count: all
+              driver: nvidia
 
   mlflow:
-    profiles: ["local_training","web","airflow"]
     container_name: mlflow-server
     image: ghcr.io/mlflow/mlflow:v3.3.2
     ports:
-      - "8081:8081"
-    command: >
-      mlflow server 
-          --host 0.0.0.0 
-          --port 8081
+      - "${MLFLOW_PORT}:${MLFLOW_PORT}"
     restart: unless-stopped
     healthcheck:
       test:
         [
           "CMD","python","-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8081/health')",
+          "import urllib.request; urllib.request.urlopen('http://localhost:${MLFLOW_PORT}/health')",
         ]
       interval: 10s
       timeout: 5s
       retries: 10
-    volumes:
-      - ./vlms/mlruns:/mlruns
-      - ./vlms/mlartifacts:/mlartifacts
+    # volumes:
+    #   - ./vlms/mlruns:/mlruns
+    #   - ./vlms/mlartifacts:/mlartifacts
     environment:
-      MLFLOW_PORT: "8081"
+    
+      MLFLOW_BACKEND_STORE_URI: ${MLFLOW_BACKEND_STORE_URI}
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: ${MLFLOW_DEFAULT_ARTIFACT_ROOT}
+      MLFLOW_PORT: ${MLFLOW_PORT}
+      MLFLOW_HOST: ${MLFLOW_HOST}
+      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      MLFLOW_S3_IGNORE_TLS: "true"
       MLFLOW_ARTIFACT_UPLOAD_DOWNLOAD_TIMEOUT: 30
+    command: >
+      /bin/bash -c "
+        pip install --no-cache-dir psycopg2-binary boto3 && \
+        mlflow server \
+        --host ${MLFLOW_HOST} \
+        --backend-store-uri ${MLFLOW_BACKEND_STORE_URI} \
+        --port ${MLFLOW_PORT} \
+        --artifacts-destination ${MLFLOW_DEFAULT_ARTIFACT_ROOT} \
+      "
+    depends_on:
+        # --default-artifact-root ${MLFLOW_DEFAULT_ARTIFACT_ROOT} \
+      mlflow_db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      create-bucket:
+        condition: service_started
     networks:
-      - net
-  
+      - mlflow_net
+    
   airflow:
-    profiles: ["airflow"]
     container_name: custom_airflow
     build: 
       context: ./workflow
     ports:
       - 8080:8080
     environment:
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_db:5432/airflow_db
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AF_PG_USER}:${AF_PG_PASSWORD}@airflow_db:${AF_PG_PORT}/${AF_PG_DB}
     volumes:
       - ./workflow/dags:/opt/airflow/dags
       - ./workflow/logs:/opt/airflow/logs
@@ -170,21 +206,84 @@ services:
     restart: unless-stopped
 
   airflow_db:
-    profiles: ["airflow"]
     container_name: airflow_db
     image: postgres:13
     environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow_db
+      POSTGRES_USER: ${AF_PG_USER}
+      POSTGRES_PASSWORD: ${AF_PG_PASSWORD}
+      POSTGRES_DB: ${AF_PG_DB}
+      PG_PORT: ${AF_PG_PORT}
     volumes:
       - ./vlms/postgres-db-volume:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - airflow_net
 
+  minio:
+    container_name: minio
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./vlms/minio-data:/data
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000" # S3
+      - "9001:9001" # Console
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${MINIO_PORT}/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks:
+      - mlflow_net
+
+  create-bucket:
+    container_name: create-buckets
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c '
+        mc alias set myminio http://${MINIO_HOST}:${MINIO_PORT} ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} &&
+        mc mb --ignore-existing myminio/${MLFLOW_MINIO_BUCKET} &&
+        mc mb --ignore-existing myminio/${DB_MINIO_BUCKET} &&
+        echo "Buckets created successfully!"
+      '
+    restart: "no"
+    networks:
+      - mlflow_net
+
+
+  mlflow_db:
+    image: postgres:13
+    container_name: mlflow_db
+    environment:
+      POSTGRES_USER: ${MLFLOW_PG_USER}
+      POSTGRES_PASSWORD: ${MLFLOW_PG_PASSWORD}
+      POSTGRES_DB: ${MLFLOW_PG_DB}
+      PGPORT: 5432
+    volumes:
+      - ./vlms/mlflow_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MLFLOW_PG_USER} -d ${MLFLOW_PG_DB}"]
+
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - mlflow_net
+    restart: unless-stopped
+    ports:
+      - "${MLFLOW_PG_PORT}:5432"
+
 networks:
   net:
     driver: bridge
   airflow_net:
+    driver: bridge
+  mlflow_net:
     driver: bridge
