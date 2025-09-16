@@ -17,6 +17,12 @@ ModelType = Literal["xgb_cpu", "xgb_cuda", "dlrm_cpu", "dlrm_cuda"]
 class Recommender(Singleton):
     max_rating = 5
     champion = True
+    current_champions = {}
+    registered_names = {
+        "dlrm": os.environ["DLRM_REGISTERED_NAME"],
+        "xgb": os.environ["XGB_REGISTERED_NAME"],
+        "simsearch": os.environ["SS_REGISTERED_NAME"],
+    }
 
     def init(self):
         self.simsearch = SimilaritySearch.load_from_disk()
@@ -36,9 +42,9 @@ class Recommender(Singleton):
             print(f"Preloading {model=}")
             instance.get_model(model)  # type: ignore
 
-    def get_model(self, modelname: ModelType) -> MovieRecommender:
+    def get_model(self, modelname: ModelType, reload=False) -> MovieRecommender:
         model = self.models[modelname]
-        if model is None:
+        if model is None or reload:
             match modelname:
                 case "dlrm_cpu":
                     from movie_recommender.modeling.dlrm import DLRM
@@ -104,11 +110,32 @@ class Recommender(Singleton):
                for result, start, count in zip(results, starts, counts)]
         return ret
 
+    @classmethod
+    def check_for_new_champions(cls):
+        from movie_recommender.workflow import get_champion_run_id
+        recommender = Recommender.get_instance()
 
-pass
+        def check(full_name, name):
+            run_id = get_champion_run_id(cls.registered_names[name])
+            old_run_id = cls.current_champions.get(full_name, run_id)
+            new = old_run_id != run_id
+            cls.current_champions[full_name] = run_id
+            if new:
+                print(f"New champion for model={full_name}")
+            return new
+
+        print("Checking for new champions")
+        for model_name in recommender.models:
+            name = model_name.removesuffix("_cpu")
+            name = name.removesuffix("_cuda")
+            if check(model_name, name):
+                # we have to reload
+                recommender.get_model(model_name, reload=True)
+
+        if check("simsearch", "simsearch"):
+            recommender.simsearch = SimilaritySearch.load_from_disk()
 
 
-# @dataclass
 class Response(Schema):
     userId: int
     result: list[Recommendation]  # Recommendation

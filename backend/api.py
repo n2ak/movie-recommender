@@ -1,21 +1,28 @@
+import os
+import sys
+import time
+import asyncio
 import dotenv
-# for local testing
-dotenv.load_dotenv("../.env")
+from fastapi import FastAPI, Response
+from fastapi_utils import tasks
+from contextlib import asynccontextmanager
+
 if True:
-    import os
-    import sys
-    import time
-    import asyncio
-    from fastapi import FastAPI, Response
-    from contextlib import asynccontextmanager
+    # for local testing
+    dotenv.load_dotenv("../.env")
     from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse
-    from movie_recommender.workflow import connect_minio, connect_mlflow
+    from movie_recommender.workflow import connect_minio, connect_mlflow, get_champion_run_id
     # for models to load when testing!!!
     sys.path.append(os.path.abspath("./training"))
 
 TIMEOUT = 0.1
 BATCH_SIZE = 64
 queue: asyncio.Queue[tuple[RecomRequest, asyncio.Future]] = asyncio.Queue()
+
+
+@tasks.repeat_every(seconds=30)  # Run every 5 seconds
+async def periodic_task():
+    Recommender.check_for_new_champions()
 
 
 async def worker():
@@ -55,6 +62,7 @@ async def lifespan(app: FastAPI):
     Recommender.load_all_models(exclude=["dlrm_cpu", "xgb_cpu"])
     print("Loaded models")
 
+    asyncio.create_task(periodic_task())
     asyncio.create_task(worker())
 
     print("\n\nServer is up...\n\n")
