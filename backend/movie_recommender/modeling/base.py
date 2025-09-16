@@ -94,8 +94,8 @@ class MovieRecommender(ABC, Generic[T]):
     @abstractmethod
     def _prepare_batch(
         self,
-        userIds: list[int],
-        movieIds: list[list[int]],
+        user_ids: list[int],
+        movie_ids_list: list[list[int]],
     ) -> list[T]:
         raise NotImplementedError()
 

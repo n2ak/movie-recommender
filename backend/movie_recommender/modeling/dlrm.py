@@ -1,5 +1,6 @@
+import mlflow.pytorch
 from movie_recommender.logging import logger
-from typing import Type, TypeVar, Literal, Optional, Callable
+from typing import Type, Literal, Optional, Callable
 from functools import cached_property
 from lightning.pytorch.callbacks import Callback
 import lightning as L
@@ -13,7 +14,6 @@ from .base import MLP,  MovieRecommender
 from dataclasses import dataclass, asdict
 from dataclasses import dataclass
 from typing import Self, Type, Optional
-from numpy.typing import NDArray
 
 
 @dataclass(eq=True)
@@ -198,7 +198,7 @@ class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
 
     def log_artifacts(self):
         logger.info("Logging artifacts.")
-        from .workflow import log_temp_artifacts
+        from ..workflow import log_temp_artifacts
 
         def save(dir):
             self.movies.to_parquet(f"{dir}/movies.parquet")
@@ -211,7 +211,7 @@ class MetricCollector(Callback):
         super().__init__()
         self.logged_metrics_history = []
 
-    def on_train_epoch_end(self, trainer, _):
+    def on_train_epoch_end(self, trainer, _):  # type: ignore
         epoch_metrics = trainer.logged_metrics
         self.logged_metrics_history.append(epoch_metrics.copy())
 
@@ -317,7 +317,6 @@ class TrainableModule(L.LightningModule):
 
         mlflow.set_experiment(exp_name)
         mlflow.pytorch.autolog(log_every_n_step=1)  # type: ignore
-
         with mlflow.start_run(tags={"model_type": "DLRM"}) as run:
             import json
             run_id: str = run.info.run_id
@@ -334,7 +333,7 @@ class TrainableModule(L.LightningModule):
 
     @classmethod
     def load_from_run(cls, run_id: Optional[str] = None, exp_name="movie_recom") -> Self:
-        from .workflow import load_best_model, load_pytorch
+        from ..workflow import load_best_model, load_pytorch
         model_uri, run_id, run_name = load_best_model(
             exp_name, "DLRM", "metrics.val_loss", run_id=run_id)
         logger.info(f"Loading from: {model_uri=}, {run_id=}, {run_name=}")

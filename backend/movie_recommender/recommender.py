@@ -19,7 +19,8 @@ class Recommender(Singleton):
     max_rating = 5
 
     def init(self):
-        self.simsearch = SimilaritySearch.load_from_disk("SimilaritySearch")
+        self.simsearch = SimilaritySearch.load_from_disk(
+            "SimilaritySearch".lower())
         self.models: dict[ModelType, Optional[MovieRecommender]] = {
             "dlrm_cpu": None,
             "dlrm_cuda": None,

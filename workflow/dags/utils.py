@@ -1,3 +1,5 @@
+import pathlib
+from minio import Minio
 import typing
 
 T = typing.TypeVar("T")
@@ -59,3 +61,55 @@ Env = Env_()
 def read_parquet(*paths: str):
     import pandas as pd
     return [pd.read_parquet(p) for p in paths]
+
+
+client: typing.Optional[Minio] = None
+
+
+def connect_minio():
+    global client
+    import os
+    if client is None:
+        endpoint = os.environ["MLFLOW_S3_ENDPOINT_URL"]
+        secure = endpoint.startswith("https://")
+        endpoint = endpoint.replace("http://", "").replace("https://", "")
+        print("Secure", secure)
+        client = Minio(
+            endpoint=endpoint,
+            access_key=os.environ["AWS_ACCESS_KEY_ID"],
+            secret_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+            region=os.environ["AWS_DEFAULT_REGION"],
+            secure=secure,
+        )
+        print("Buckets", client.list_buckets())
+
+
+def upload_files(save_fn: typing.Callable[[pathlib.Path], typing.Any], bucket):
+    import tempfile
+    assert client is not None
+    with tempfile.TemporaryDirectory() as dir:
+        save_fn(pathlib.Path(dir))
+        print(f"Uploading {dir=} to s3 {bucket=}")
+        for file in pathlib.Path(dir).glob("*"):
+            filepath = str(file)
+            object_name = filepath.split("/")[-1]
+            print(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
+            client.fput_object(
+                bucket, object_name=object_name, file_path=filepath)
+
+
+def download_file(bucket, object_name, path):
+    assert client is not None
+    client.fget_object(bucket, object_name, path)
+    return path
+
+
+def download_parquet(bucket: str, *filenames: str):
+    import tempfile
+    import pandas as pd
+    connect_minio()
+    with tempfile.TemporaryDirectory() as dir:
+        dfs = [pd.read_parquet(download_file(
+            bucket, f'{filename}.parquet', f"{dir}/{filename}.parquet")
+        ) for filename in filenames]
+    return dfs

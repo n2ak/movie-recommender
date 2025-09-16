@@ -6,7 +6,7 @@ import xgboost as xgb
 import mlflow
 from numpy.typing import NDArray
 
-from movie_recommender.modeling.workflow import download_artifacts
+from movie_recommender.workflow import download_artifacts
 
 
 class XGBMR(MovieRecommender[NDArray]):
@@ -34,7 +34,7 @@ class XGBMR(MovieRecommender[NDArray]):
 
     def load_model(self, run_id=None, exp_name="movie_recom", device="cpu"):
         import pathlib
-        from .workflow import load_best_model, load_xgboost
+        from ..workflow import load_best_model, load_xgboost
         model_uri, run_id, run_name = load_best_model(
             exp_name, "XGBMR", "metrics.val-mae", run_id)
         print(f'Loading {model_uri=}')
@@ -138,7 +138,7 @@ class XGBMR(MovieRecommender[NDArray]):
 
     def log_artifacts(self):
         logger.info("Logging artifacts.")
-        from .workflow import log_temp_artifacts
+        from ..workflow import log_temp_artifacts
 
         def save(dir):
             self.movies.to_parquet(f"{dir}/movies.parquet")

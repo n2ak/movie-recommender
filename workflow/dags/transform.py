@@ -2,29 +2,23 @@ import numpy as np
 import pandas as pd
 from typing import Literal
 try:
-    from .utils import Env, read_parquet
+    from .utils import Env, upload_files, download_parquet
 except ImportError:
-    from utils import Env, read_parquet  # type: ignore
+    from utils import Env, upload_files, download_parquet  # type: ignore
 
 
-def read_ds(table_name: str, db_url):
-    import pandas as pd
-    from sqlalchemy import create_engine
-    engine = create_engine(db_url)
-    table = pd.read_sql_table(table_name, engine)
-    return table
+bucket = "trainingbucket"
 
 
 def process_data(model: Literal["xgb", "dlrm"]):
-    ratings, movies = read_ds(
-        "ratings", Env.DB_URL), read_ds("movies", Env.DB_URL)
+    ratings, movies = download_parquet(bucket, "ratings", "movies")
+
     # needed for somereason
     ratings = ratings.rename(str, axis="columns")
     movies = movies.rename(str, axis="columns")
     if isinstance(movies.movie_genres[0], str):
         movies.movie_genres = movies.movie_genres.apply(lambda x: x.split(","))
 
-    from sqlalchemy import create_engine
     # Env.dump()
     print(f"Proccessing data for: {model=}")
 
@@ -34,10 +28,11 @@ def process_data(model: Literal["xgb", "dlrm"]):
         case "xgb":
             train, test = process_data_for_xgb(ratings, movies)
 
-    conn = create_engine(Env.DB_URL)
+    def save_fn(path):
+        train.to_parquet(path / f"{model}_train.parquet")
+        test.to_parquet(path / f"{model}_test.parquet")
 
-    train.to_sql(f"{model}_train_ds", conn, index=False, if_exists="replace")
-    test.to_sql(f"{model}_test_ds", conn, index=False, if_exists="replace")
+    upload_files(save_fn, "trainingbucket")
     print("Data is written to db.")
 
 

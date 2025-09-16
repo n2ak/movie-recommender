@@ -6,6 +6,7 @@ import asyncio
 from fastapi import FastAPI, Response
 from contextlib import asynccontextmanager
 from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse
+from movie_recommender.workflow import connect_minio
 # for models to load when testing!!!
 sys.path.append(os.path.abspath("./training"))
 
@@ -45,6 +46,7 @@ async def worker():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    connect_minio()
     uri = os.environ["MLFLOW_TRACKING_URI"]
     print("Starting up...")
     print("MLFLOW_TRACKING_URI", uri)
@@ -83,6 +85,8 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        app, host="0.0.0.0", port=8000,
+        app,
+        host="0.0.0.0",
+        port=int(os.getenv("BACKEND_PORT", 8000)),
         # log_config=None,
     )

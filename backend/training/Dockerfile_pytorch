@@ -11,7 +11,6 @@ RUN pip install --no-cache-dir psycopg2-binary sqlalchemy
 
 COPY movie_recommender movie_recommender
 COPY training/dlrm.py train_dlrm.py
-COPY training/train_utils.py .
 
 
 ENV CUDA_VISIBLE_DEVICES=0

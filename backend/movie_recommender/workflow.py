@@ -1,13 +1,14 @@
 
+import mlflow
+import pathlib
 import functools
-from movie_recommender.logging import logger
 import numpy as np
-from .base import MovieRecommender
-from typing import Callable
+import pandas as pd
+import mlflow.artifacts
+from minio import Minio
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-import mlflow
-import pandas as pd
+from typing import Callable, Optional, Any
 
 
 def load_runs_frame(exp_name, model_type=None, order_by=None):
@@ -61,14 +62,14 @@ def load_xgboost(model_uri: str, run_name: str):
 def load_pytorch(model_uri: str, run_name: str):
     if not len(mlflow.artifacts.list_artifacts(artifact_uri=model_uri)):
         raise Exception(f"No artifact from {model_uri=}, {run_name=}")
-    return mlflow.pytorch.load_model(model_uri)
+    return mlflow.pytorch.load_model(model_uri)  # type: ignore
 
 
 def load_best_model(experiment_name, model_type, sortby, run_id=None):
     models = load_models_frame(
         experiment_name, model_type=model_type, order_by=sortby)
     if run_id is not None:
-        logger.info("Selecting models with run_id: %s", run_id)
+        print("Selecting models with run_id: %s", run_id)
         models = models[models.run_id == run_id]
     if len(models) == 0:
         raise Exception(
@@ -124,7 +125,7 @@ def download_artifacts(run_id: str, artifact_path: str):
 
 
 def save_plots(
-    model: "MovieRecommender",
+    model,  # : MovieRecommender,
     prepare: Callable[[pd.DataFrame], tuple[np.ndarray, np.ndarray, np.ndarray]],
     train_ds,
     test_ds,
@@ -132,8 +133,8 @@ def save_plots(
     run_id: str
 ):
     figures = {}
-    from movie_recommender.modeling.workflow import save_figures
-    from ..utils import report
+    from movie_recommender.workflow import save_figures
+    from .utils import report
     user_ids, movie_ids, train_y = prepare(train_ds)
     report(
         model,
@@ -158,3 +159,58 @@ def save_plots(
     figures["test.png"] = plt.gcf()
     plt.close()
     save_figures(figures, run_id=run_id)
+
+
+client: Optional[Minio] = None
+
+
+def connect_minio():
+    global client
+    import os
+    if client is None:
+        endpoint = os.environ["MLFLOW_S3_ENDPOINT_URL"]
+        secure = endpoint.startswith("https://")
+        endpoint_stripped = endpoint.replace(
+            "http://", "").replace("https://", "")
+        print("Secure", secure)
+        client = Minio(
+            endpoint=endpoint.replace(
+                "http://", "").replace("https://", ""),
+            access_key=os.environ["AWS_ACCESS_KEY_ID"],
+            secret_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+            region=os.environ["AWS_DEFAULT_REGION"],
+            secure=secure,
+        )
+        print()
+        print("Connected to minio on:", endpoint)
+        print("Available Buckets", client.list_buckets())
+
+
+def upload_files(save_fn: Callable[[pathlib.Path], Any], bucket):
+    import tempfile
+    assert client is not None
+    with tempfile.TemporaryDirectory() as dir:
+        save_fn(pathlib.Path(dir))
+        print(f"Uploading {dir=} to s3 {bucket=}")
+        for file in pathlib.Path(dir).glob("*"):
+            filepath = str(file)
+            object_name = filepath.split("/")[-1]
+            print(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
+            client.fput_object(
+                bucket, object_name=object_name, file_path=filepath)
+
+
+def download_file(bucket, object_name, path):
+    assert client is not None
+    client.fget_object(bucket, object_name, path)
+    return path
+
+
+def download_parquet(bucket: str, *filenames: str):
+    import tempfile
+    connect_minio()
+    with tempfile.TemporaryDirectory() as dir:
+        dfs = [pd.read_parquet(download_file(
+            bucket, f'{filename}.parquet', f"{dir}/{filename}.parquet")
+        ) for filename in filenames]
+    return dfs

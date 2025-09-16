@@ -1,8 +1,8 @@
 max_rating = 5
 try:
-    from .utils import Env
+    from .utils import Env, upload_files, connect_minio
 except ImportError:
-    from utils import Env  # type: ignore
+    from utils import Env, upload_files, connect_minio  # type: ignore
 
 
 def read_db(db_url, ratings_table: str, movies_table: str):
@@ -23,7 +23,8 @@ def read_db(db_url, ratings_table: str, movies_table: str):
 
 
 def extract_data():
-    from sqlalchemy import create_engine
+    # from sqlalchemy import create_engine
+    connect_minio()
     Env.dump()
 
     ratings, movies = read_db(Env.DB_URL, "movie_rating", "movie")
@@ -31,7 +32,10 @@ def extract_data():
     movies.drop(columns=["movie_title"], inplace=True)
     ratings["rating"] = ratings["rating"] / max_rating
 
-    conn = create_engine(Env.DB_URL)
+    # conn = create_engine(Env.DB_URL)
     movies.movie_genres = movies.movie_genres.apply(lambda x: ",".join(x))
-    ratings.to_sql("ratings", conn, index=False, if_exists="replace")
-    movies.to_sql("movies", conn, index=False, if_exists="replace")
+
+    def save_fn(path):
+        ratings.to_parquet(path / "ratings.parquet")
+        movies.to_parquet(path / "movies.parquet")
+    upload_files(save_fn, "trainingbucket")

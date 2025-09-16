@@ -4,8 +4,9 @@ import numpy as np
 import pandas as pd
 import torch.nn.functional as F
 from movie_recommender.modeling.dlrm import DLRM, TrainableModule, DLRMParams
+from movie_recommender.workflow import download_parquet
 from movie_recommender.data import MovieLens, get_cols
-from train_utils import mae, rmse, get_env, read_ds
+from movie_recommender.train_utils import mae, rmse, get_env
 import logging
 
 logger = logging.getLogger(__file__)
@@ -198,16 +199,18 @@ def test_dlrm_model():
 
 if __name__ == "__main__":
     import sys
+    import os
     arg = sys.argv[1]
     uri = get_env("MLFLOW_TRACKING_URI", "http://localhost:8081")
+
     mlflow.set_tracking_uri(uri)
+    bucket = os.environ["DB_MINIO_BUCKET"]
 
     if arg == "train":
         db_url = get_env(
             "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
         logger.info("DB URL: %s", db_url)
-        train, test = read_ds("dlrm_train_ds", db_url), read_ds(
-            "dlrm_test_ds", db_url)
+        train, test = download_parquet(bucket, "dlrm_train", "dlrm_test")
 
         train_dlrm(
             train,

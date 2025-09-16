@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 from movie_recommender.data import MovieLens
 from movie_recommender.utils import report
 from movie_recommender.modeling.xgbmr import XGBMR
-from train_utils import read_ds, mae as _mae, get_env
+from movie_recommender.train_utils import mae as _mae, get_env
+from movie_recommender.workflow import download_parquet
 import logging
 
 logger = logging.getLogger(__file__)
@@ -49,7 +50,7 @@ def training(
         custom_metric=mae,
         maximize=False,
     )
-    from movie_recommender.modeling.workflow import save_plots
+    from movie_recommender.workflow import save_plots
     # save_plots(model, prepare, train_ds, test_ds, max_rating, run_id=run_id)
     return result
 
@@ -146,16 +147,18 @@ def test_xgb_model():
 
 if __name__ == "__main__":
     import sys
+    import os
     arg = sys.argv[1]
     uri = get_env("MLFLOW_TRACKING_URI", "http://localhost:8081")
     mlflow.set_tracking_uri(uri)
+    bucket = os.environ["DB_MINIO_BUCKET"]
 
     if arg == "train":
         db_url = get_env(
             "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
         logger.info("DB URL: %s", db_url)
-        train, test = read_ds("xgb_train_ds", db_url), read_ds(
-            "xgb_test_ds", db_url)
+        train, test = download_parquet(bucket, "xgb_train", "xgb_test")
+
         train_xgb(
             train,
             test,

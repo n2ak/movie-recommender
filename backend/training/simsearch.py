@@ -1,18 +1,19 @@
 
 
 import pandas as pd
-from train_utils import get_env, read_ds
+from movie_recommender.train_utils import get_env, read_ds
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from sklearn.decomposition import PCA
 from movie_recommender.logging import logger
 from movie_recommender.sim_search import SimilaritySearch
-from movie_recommender.modeling.workflow import save_figures
+from movie_recommender.workflow import save_figures
 
-simsearch_exp_name = "SimilaritySearch"
+simsearch_exp_name = "SimilaritySearch".lower()
 
 
-def train_simsearch(ratings: pd.DataFrame, movies: pd.DataFrame, max_rating: int, tracking_uri: str):
+def train_simsearch(ratings: pd.DataFrame, movies: pd.DataFrame, max_rating: int,
+                    tracking_uri: str, exp_name=simsearch_exp_name):
     # ratings, movies = read_parquet(rating_path, movies_path)
     if isinstance(movies.movie_genres[0], str):
         movies.movie_genres = movies.movie_genres.apply(lambda x: x.split(","))
@@ -22,7 +23,7 @@ def train_simsearch(ratings: pd.DataFrame, movies: pd.DataFrame, max_rating: int
     movies = movies.rename(str, axis="columns")
 
     simsearch = SimilaritySearch().fit(ratings.copy(), movies.copy(), max_rating)
-    run_id = simsearch.save(simsearch_exp_name, tracking_uri)
+    run_id = simsearch.save(exp_name, tracking_uri)
     return run_id
 
 

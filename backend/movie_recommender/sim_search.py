@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.neighbors import KNeighborsTransformer
 from movie_recommender.data import MovieLens
 from movie_recommender.logging import logger
-from movie_recommender.modeling.workflow import download_artifacts
+from movie_recommender.workflow import download_artifacts
 import functools
 
 
@@ -223,7 +223,7 @@ class SimilaritySearch:
     def save(self, exp_name, tracking_uri):
         import mlflow
         import pickle
-        from movie_recommender.modeling.workflow import log_temp_artifacts
+        from movie_recommender.workflow import log_temp_artifacts
 
         def save(dir):
             self.ratings.to_parquet(f"{dir}/ratings.parquet")
@@ -231,15 +231,21 @@ class SimilaritySearch:
             with open(fname, mode="wb") as f:
                 pickle.dump(self, f)
 
-        mlflow.set_experiment(exp_name)
+        print("URI", tracking_uri)
         mlflow.set_tracking_uri(tracking_uri)
+        mlflow.set_experiment(exp_name)
 
-        with mlflow.start_run() as run:
+        with mlflow.start_run(tags={"model_type": "SimilaritySearch"}) as run:
             mlflow.log_params(self._params)
             run_id: str = run.info.run_id
             logger.info("Run id: %s", run_id)
             log_temp_artifacts(save, artifact_path="resources")
         return run_id
+
+
+class B:
+    def __init__(self):
+        self.a = 1
 
 
 def unique_keep_order(arr):

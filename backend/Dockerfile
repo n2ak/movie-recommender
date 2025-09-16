@@ -10,11 +10,12 @@ RUN pip install --no-cache-dir lightning==2.5.0
 RUN pip install --no-cache-dir xgboost
 RUN pip install --no-cache-dir psycopg2-binary sqlalchemy
 RUN pip install --no-cache-dir fastapi uvicorn
+RUN pip install --no-cache-dir minio boto3
 
 COPY movie_recommender movie_recommender
 COPY api.py .
 
 ENV CUDA_VISIBLE_DEVICES=0
 
-# CMD ["python","api.py"]
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python","api.py"]
+# CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]

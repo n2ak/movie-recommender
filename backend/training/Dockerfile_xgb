@@ -12,7 +12,6 @@ RUN pip install --no-cache-dir xgboost
 
 COPY movie_recommender movie_recommender
 COPY training/xgb.py train_xgb.py
-COPY training/train_utils.py .
 
 
 ENV CUDA_VISIBLE_DEVICES=0
