@@ -1,3 +1,6 @@
+import os
+
+import mlflow.xgboost
 from movie_recommender.logging import logger
 import numpy as np
 import pandas as pd
@@ -5,8 +8,12 @@ from .base import MovieRecommender
 import xgboost as xgb
 import mlflow
 from numpy.typing import NDArray
+from movie_recommender.workflow import (
+    download_artifacts, register_last_model_and_try_promote, log_temp_artifacts, get_champion_run_id, model_uri
+)
 
-from movie_recommender.workflow import download_artifacts
+
+registered_name = os.environ["XGB_REGISTERED_NAME"]
 
 
 class XGBMR(MovieRecommender[NDArray]):
@@ -22,9 +29,9 @@ class XGBMR(MovieRecommender[NDArray]):
         ) | kwargs
         self.params = params
 
-    def predict(self, X, max_rating):
+    def predict(self, batch, max_rating):
         # print("XGB batch length:", X.shape)
-        pred = self.model.predict(xgb.DMatrix(X))
+        pred = self.model.predict(xgb.DMatrix(batch))
         return pred*max_rating
 
     def save(self, path):
@@ -32,36 +39,27 @@ class XGBMR(MovieRecommender[NDArray]):
         with open(path, "wb") as f:
             pickle.dump(self, f)
 
-    def load_model(self, run_id=None, exp_name="movie_recom", device="cpu"):
+    def load_model(self, champion=True, device="cpu"):
         import pathlib
-        from ..workflow import load_best_model, load_xgboost
-        model_uri, run_id, run_name = load_best_model(
-            exp_name, "XGBMR", "metrics.val-mae", run_id)
-        print(f'Loading {model_uri=}')
-        best_model = load_xgboost(model_uri=model_uri, run_name=run_name)
+        best_model: xgb.Booster = mlflow.xgboost.load_model(  # type: ignore
+            model_uri(registered_name, champion)
+        )
         best_model.set_param({"device": device})
         print("XGB loaded on device:", device)
-        if best_model is None:
-            raise Exception(f"No model for experiment: {exp_name}")
+
         artifact_path = download_artifacts(
-            run_id=run_id,
+            run_id=get_champion_run_id(registered_name),
             artifact_path="resources",
         )
 
-        funcs = {
-            "parquet": pd.read_parquet,
-            "csv": pd.read_csv,
-        }
-
         def read_file(name) -> pd.DataFrame:
-            p = list(pathlib.Path(artifact_path).glob(f"{name}.*"))[0]
-            ext = str(p).split(".")[-1]
-            return funcs[ext](p)
+            return pd.read_parquet(pathlib.Path(artifact_path) / f"{name}.parquet")
+
         self.movies = read_file("movies")
         self.users = read_file("users")
         self.model: xgb.Booster = best_model
         logger.info(
-            f"Loaded model, experiment: '{exp_name}', run_id: '{run_id}', run_name: '{run_name}'"
+            f"Loaded champion model, {registered_name=}"
         )
         return self
 
@@ -98,11 +96,6 @@ class XGBMR(MovieRecommender[NDArray]):
 
         self.movies = movies
         self.users = users
-        # movies = df.droplevel("user_id")[movie_cols]
-        # movies = movies.loc[~movies.index.duplicated(keep='first'), :]
-
-        # users = df.droplevel("movie_id")[user_cols]
-        # users = users.loc[~users.index.duplicated(keep='first'), :]
 
     def fit(
         self,
@@ -134,11 +127,14 @@ class XGBMR(MovieRecommender[NDArray]):
 
             self.log_artifacts()
             logger.info("Done training.")
+        register_last_model_and_try_promote(
+            registered_name=registered_name,
+            metric_name="val_loss"
+        )
         return eval_results, run_id
 
     def log_artifacts(self):
         logger.info("Logging artifacts.")
-        from ..workflow import log_temp_artifacts
 
         def save(dir):
             self.movies.to_parquet(f"{dir}/movies.parquet")

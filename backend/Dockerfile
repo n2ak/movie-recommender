@@ -10,7 +10,8 @@ RUN pip install --no-cache-dir lightning==2.5.0
 RUN pip install --no-cache-dir xgboost
 RUN pip install --no-cache-dir psycopg2-binary sqlalchemy
 RUN pip install --no-cache-dir fastapi uvicorn
-RUN pip install --no-cache-dir minio boto3
+RUN pip install --no-cache-dir minio boto3 python-dotenv
+
 
 COPY movie_recommender movie_recommender
 COPY api.py .

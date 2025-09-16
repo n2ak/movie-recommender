@@ -1,7 +1,6 @@
 from movie_recommender.utils import Timer
 import os
-from movie_recommender.logging import logger
-from typing import Optional, Literal, Any
+from typing import Optional, Literal
 from pydantic import BaseModel as Schema
 if True:
     import sys
@@ -17,10 +16,10 @@ ModelType = Literal["xgb_cpu", "xgb_cuda", "dlrm_cpu", "dlrm_cuda"]
 
 class Recommender(Singleton):
     max_rating = 5
+    champion = True
 
     def init(self):
-        self.simsearch = SimilaritySearch.load_from_disk(
-            "SimilaritySearch".lower())
+        self.simsearch = SimilaritySearch.load_from_disk()
         self.models: dict[ModelType, Optional[MovieRecommender]] = {
             "dlrm_cpu": None,
             "dlrm_cuda": None,
@@ -43,16 +42,16 @@ class Recommender(Singleton):
             match modelname:
                 case "dlrm_cpu":
                     from movie_recommender.modeling.dlrm import DLRM
-                    model = DLRM.load(None, device="cpu")
+                    model = DLRM.load(champion=self.champion, device="cpu")
                 case "dlrm_cuda":
                     from movie_recommender.modeling.dlrm import DLRM
-                    model = DLRM.load(None, device="cuda")
+                    model = DLRM.load(champion=self.champion, device="cuda")
                 case "xgb_cpu":
                     from movie_recommender.modeling.xgbmr import XGBMR
-                    model = XGBMR().load_model(device="cpu")
+                    model = XGBMR().load_model(champion=self.champion, device="cpu")
                 case "xgb_cuda":
                     from movie_recommender.modeling.xgbmr import XGBMR
-                    model = XGBMR().load_model(device="cuda")
+                    model = XGBMR().load_model(champion=self.champion, device="cuda")
                 case _:
                     raise Exception(f"{modelname}?")
         self.models[modelname] = model

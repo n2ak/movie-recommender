@@ -1,6 +1,6 @@
 
+import os
 import mlflow
-import pathlib
 import functools
 import numpy as np
 import pandas as pd
@@ -8,84 +8,112 @@ import mlflow.artifacts
 from minio import Minio
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from typing import Callable, Optional, Any
+from typing import Callable, Optional
 
 
-def load_runs_frame(exp_name, model_type=None, order_by=None):
-    experiment = mlflow.get_experiment_by_name(exp_name)
-    if experiment is None:
-        raise Exception(f"No experiment with name: '{exp_name}'.")
-    runs: pd.DataFrame = mlflow.search_runs(
-        experiment_ids=[experiment.experiment_id])  # type: ignore
-    if len(runs) == 0:
-        raise Exception(f"No runs in experiment with name: '{exp_name}'.")
-    runs.rename(columns={
-        "tags.mlflow.runName": "run_name",
-        "tags.model_type": "model_type",
-        "params.model_params": "model_params",
-    }, inplace=True)
-    if "model_params" not in runs.columns:
-        runs["model_params"] = None
-    cols = ["run_id", "experiment_id", "status",
-            "model_params", "model_type", "run_name"]
-    cols += [c for c in runs.columns if c.startswith("metrics.")]
-    runs = runs[cols]
-    if model_type is not None:
-        runs = runs[runs["model_type"] == model_type]
-
-    if order_by:
-        runs = runs.sort_values(order_by)
-    return runs, experiment.experiment_id
+_mlflowClient: Optional[mlflow.MlflowClient] = None
+minioClient: Optional[Minio] = None
 
 
-def load_models_frame(exp_name, model_type=None, order_by=None):
-    runs, experiment_id = load_runs_frame(
-        exp_name, model_type=model_type, order_by=order_by)
-    models = mlflow.search_logged_models(experiment_ids=[experiment_id])
-    if len(runs) == 0:
-        raise Exception(f"No models in experiment with name: '{exp_name}'.")
-    models = models.rename(columns={"source_run_id": "run_id"})
-    models = models[["run_id", "model_id"]]
-    models = runs.merge(models, on="run_id")
-    return models
+def connect_minio():
+    global minioClient
+    import os
+    if minioClient is not None:
+        return
+    endpoint = os.environ["MLFLOW_S3_ENDPOINT_URL"]
+    secure = endpoint.startswith("https://")
+    endpoint_stripped = endpoint.replace(
+        "http://", "").replace("https://", "")
+    print("Secure", secure)
+    minioClient = Minio(
+        endpoint=endpoint_stripped,
+        access_key=os.environ["AWS_ACCESS_KEY_ID"],
+        secret_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+        region=os.environ["AWS_DEFAULT_REGION"],
+        secure=secure,
+    )
+    print()
+    print("Available Buckets", minioClient.list_buckets())
+    print("Connected to minio on:", endpoint)
 
 
-def load_xgboost(model_uri: str, run_name: str):
-    if not len(mlflow.artifacts.list_artifacts(artifact_uri=model_uri)):
-        raise Exception(f"No artifact from {model_uri=}, {run_name=}")
-    import xgboost as xgb
-    best_model: xgb.Booster = mlflow.xgboost.load_model(  # type: ignore
-        model_uri)
-    return best_model
+def connect_mlflow():
+    global _mlflowClient
+    if _mlflowClient is not None:
+        return
+    uri = os.environ["MLFLOW_TRACKING_URI"]
+    mlflow.set_tracking_uri(uri)
+    _mlflowClient = mlflow.MlflowClient(uri)
+    print("Connected to mlflow on:", uri)
 
 
-def load_pytorch(model_uri: str, run_name: str):
-    if not len(mlflow.artifacts.list_artifacts(artifact_uri=model_uri)):
-        raise Exception(f"No artifact from {model_uri=}, {run_name=}")
-    return mlflow.pytorch.load_model(model_uri)  # type: ignore
+def get_mlflow_client():
+    assert _mlflowClient is not None
+    return _mlflowClient
 
 
-def load_best_model(experiment_name, model_type, sortby, run_id=None):
-    models = load_models_frame(
-        experiment_name, model_type=model_type, order_by=sortby)
-    if run_id is not None:
-        print("Selecting models with run_id: %s", run_id)
-        models = models[models.run_id == run_id]
-    if len(models) == 0:
-        raise Exception(
-            f"No models, {experiment_name=}, {model_type=}, {run_id=}"
+def model_uri(registered_name: str, champion=True):
+    if champion:
+        return f"models:/{registered_name}@champion"
+    return f"models:/{registered_name}/latest"
+
+
+def try_promote_model(model_name: str, metric: str):
+    import mlflow.exceptions
+    assert_mlflow_connection()
+    assert _mlflowClient is not None
+    latest_registered_version = _mlflowClient.get_registered_model(
+        model_name).latest_versions[-1]  # type: ignore
+    try:
+        champion = _mlflowClient.get_model_version_by_alias(
+            model_name, "champion")
+        assert champion.run_id is not None
+        champion_loss = _mlflowClient.get_run(
+            champion.run_id).data.metrics[metric]
+        latest_loss = _mlflowClient.get_run(
+            latest_registered_version.run_id).data.metrics[metric]
+        print(
+            f"Champion '{metric}': {champion_loss:.4f},",
+            f"Latest '{metric}': {latest_loss:.4f}"
         )
+        if latest_loss < champion_loss:
+            _mlflowClient.set_registered_model_alias(
+                model_name, "champion", latest_registered_version.version)
+            print(f"{model_name} has new champion")
+        else:
+            print(f"No new champion for{model_name}")
+    except mlflow.exceptions.RestException:
+        _mlflowClient.set_registered_model_alias(
+            model_name, "champion", latest_registered_version.version)
+        print(f"{model_name}'s first model")
 
-    model_row = models.iloc[0]
-    model_id = model_row["model_id"]
-    run_name = model_row["run_name"]
-    run_id = model_row["run_id"]
 
-    model_uri = f"models:/{model_id}"
-    return model_uri, run_id, run_name
+def get_champion_run_id(registered_name: str):
+    assert_mlflow_connection()
+    assert _mlflowClient is not None
+    return _mlflowClient.get_model_version_by_alias(name=registered_name, alias="champion").run_id
+
+
+def assert_mlflow_connection():
+    assert _mlflowClient is not None
+    assert mlflow.is_tracking_uri_set()
+
+
+def register_last_model(registered_name: str):
+    info = mlflow.last_logged_model()
+    if info is None:
+        raise Exception("No last logged model")
+    return mlflow.register_model(f"models:/{info.model_id}", name=registered_name)
+
+
+def register_last_model_and_try_promote(registered_name: str, metric_name: str):
+    assert_mlflow_connection()
+    register_last_model(registered_name)
+    try_promote_model(registered_name, metric_name)
 
 
 def log_txt(val: str, name: str):
+    assert_mlflow_connection()
     from tempfile import NamedTemporaryFile
     with NamedTemporaryFile(prefix=f"{name}_", suffix=".txt", mode="r+t") as file:
         file.write(val)
@@ -101,6 +129,7 @@ def save_figures(figures: dict[str, Figure], run_id, artifact_path=None):
 
 
 def log_temp_artifacts(save_fn, artifact_path=None, run_id=None):
+    assert_mlflow_connection()
     import tempfile
     import mlflow
     with tempfile.TemporaryDirectory() as f:
@@ -111,6 +140,7 @@ def log_temp_artifacts(save_fn, artifact_path=None, run_id=None):
 
 @functools.lru_cache(maxsize=16)
 def download_artifacts(run_id: str, artifact_path: str):
+    assert_mlflow_connection()
     print(f"Getting artifacts, {run_id=}, {artifact_path=}")
     files = mlflow.artifacts.list_artifacts(
         run_id=run_id)
@@ -161,56 +191,17 @@ def save_plots(
     save_figures(figures, run_id=run_id)
 
 
-client: Optional[Minio] = None
-
-
-def connect_minio():
-    global client
-    import os
-    if client is None:
-        endpoint = os.environ["MLFLOW_S3_ENDPOINT_URL"]
-        secure = endpoint.startswith("https://")
-        endpoint_stripped = endpoint.replace(
-            "http://", "").replace("https://", "")
-        print("Secure", secure)
-        client = Minio(
-            endpoint=endpoint.replace(
-                "http://", "").replace("https://", ""),
-            access_key=os.environ["AWS_ACCESS_KEY_ID"],
-            secret_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-            region=os.environ["AWS_DEFAULT_REGION"],
-            secure=secure,
-        )
-        print()
-        print("Connected to minio on:", endpoint)
-        print("Available Buckets", client.list_buckets())
-
-
-def upload_files(save_fn: Callable[[pathlib.Path], Any], bucket):
-    import tempfile
-    assert client is not None
-    with tempfile.TemporaryDirectory() as dir:
-        save_fn(pathlib.Path(dir))
-        print(f"Uploading {dir=} to s3 {bucket=}")
-        for file in pathlib.Path(dir).glob("*"):
-            filepath = str(file)
-            object_name = filepath.split("/")[-1]
-            print(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
-            client.fput_object(
-                bucket, object_name=object_name, file_path=filepath)
-
-
-def download_file(bucket, object_name, path):
-    assert client is not None
-    client.fget_object(bucket, object_name, path)
+def download_file_from_s3(bucket, object_name, path):
+    assert minioClient is not None
+    minioClient.fget_object(bucket, object_name, path)
     return path
 
 
-def download_parquet(bucket: str, *filenames: str):
+def download_parquet_from_s3(bucket: str, *filenames: str):
     import tempfile
     connect_minio()
     with tempfile.TemporaryDirectory() as dir:
-        dfs = [pd.read_parquet(download_file(
+        dfs = [pd.read_parquet(download_file_from_s3(
             bucket, f'{filename}.parquet', f"{dir}/{filename}.parquet")
         ) for filename in filenames]
     return dfs

@@ -110,6 +110,9 @@ services:
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       AWS_DEFAULT_REGION: ${MINIO_REGION}
     restart: "no"
+    env_file:
+      - path: .env
+        required: true
     networks:
       - net
       - mlflow_net

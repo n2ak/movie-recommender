@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import torch.nn.functional as F
 from movie_recommender.modeling.dlrm import DLRM, TrainableModule, DLRMParams
-from movie_recommender.workflow import download_parquet
+from movie_recommender.workflow import download_parquet_from_s3, connect_minio, connect_mlflow
 from movie_recommender.data import MovieLens, get_cols
 from movie_recommender.train_utils import mae, rmse, get_env
 import logging
@@ -146,14 +146,14 @@ def train_dlrm(
     test: pd.DataFrame,
     epochs: int,
     exp_name: str,
-    tracking_uri: str
 ):
+    connect_minio()
+    connect_mlflow()
+
     logger.info("****************Starting dlrm training...**************")
     logger.info("Train ds shape: %s", train.shape)
     logger.info("Test ds shape: %s", test.shape)
     logger.info("Epochs: %s", epochs)
-    logger.info(f"Mlflow {exp_name=}, {tracking_uri=}")
-    mlflow.set_tracking_uri(tracking_uri)
 
     unique, cat_cols, num_cols, embds, nmovies, nusers = process_data(
         train, test
@@ -171,7 +171,7 @@ def train_dlrm(
         valid_dl,
         epochs=epochs,
         acc="gpu",
-        log_mlflow=(exp_name, tracking_uri)
+        exp_name=exp_name,
     )
     logger.info("****************Training is done*******************")
 
@@ -186,6 +186,7 @@ def prepare(ds, cat_cols):
 def test_dlrm_model():
     from movie_recommender.recommender import Recommender, Request
     Recommender.instance = None
+    Recommender.champion = False
     Recommender.single(Request(
         userId=0,
         genres=[],
@@ -201,23 +202,21 @@ if __name__ == "__main__":
     import sys
     import os
     arg = sys.argv[1]
-    uri = get_env("MLFLOW_TRACKING_URI", "http://localhost:8081")
 
-    mlflow.set_tracking_uri(uri)
     bucket = os.environ["DB_MINIO_BUCKET"]
 
     if arg == "train":
         db_url = get_env(
             "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
         logger.info("DB URL: %s", db_url)
-        train, test = download_parquet(bucket, "dlrm_train", "dlrm_test")
+        train, test = download_parquet_from_s3(
+            bucket, "dlrm_train", "dlrm_test")
 
         train_dlrm(
             train,
             test,
             epochs=get_env("EPOCHS", 2),
             exp_name=get_env("EXP_NAME", "movie_recom"),
-            tracking_uri=uri,
         )
     elif arg == "test":
         test_dlrm_model()

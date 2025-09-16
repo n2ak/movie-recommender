@@ -1,3 +1,5 @@
+import os
+import mlflow.pytorch
 import mlflow.pytorch
 from movie_recommender.logging import logger
 from typing import Type, Literal, Optional, Callable
@@ -14,6 +16,9 @@ from .base import MLP,  MovieRecommender
 from dataclasses import dataclass, asdict
 from dataclasses import dataclass
 from typing import Self, Type, Optional
+from ..workflow import log_temp_artifacts, register_last_model_and_try_promote, model_uri
+
+registered_name = os.environ["DLRM_REGISTERED_NAME"]
 
 
 @dataclass(eq=True)
@@ -155,9 +160,9 @@ class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
     def device_(self): return next(self.parameters()).device
 
     @classmethod
-    def load(cls, run_id=None, device="cpu") -> "DLRM":
+    def load(cls, champion=True, device="cpu") -> "DLRM":
         print("Loading dlrm on device:", device)
-        return TrainableModule.load_from_run(run_id).model.to(device)
+        return TrainableModule.load(champion=champion).model.to(device)
 
     def predict(self, batch: dict[str, torch.Tensor], max_rating):
         self.eval()
@@ -198,7 +203,6 @@ class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
 
     def log_artifacts(self):
         logger.info("Logging artifacts.")
-        from ..workflow import log_temp_artifacts
 
         def save(dir):
             self.movies.to_parquet(f"{dir}/movies.parquet")
@@ -264,7 +268,7 @@ class TrainableModule(L.LightningModule):
             on_step=False,
         )
 
-    def configure_optimizers(self):
+    def configure_optimizers(self):  # type: ignore
         optimizer = torch.optim.AdamW(
             self.parameters(), lr=self.model.params.lr
         )
@@ -282,7 +286,7 @@ class TrainableModule(L.LightningModule):
         dataloader,
         valloader,
         epochs,
-        log_mlflow: tuple[str, str],
+        exp_name: str,
         seed=0,
         early_stopping=None,
         ModelCheckpoint_monitor=None,
@@ -313,8 +317,6 @@ class TrainableModule(L.LightningModule):
             deterministic=True,
             max_epochs=epochs,
         )
-        exp_name, _ = log_mlflow
-
         mlflow.set_experiment(exp_name)
         mlflow.pytorch.autolog(log_every_n_step=1)  # type: ignore
         with mlflow.start_run(tags={"model_type": "DLRM"}) as run:
@@ -327,22 +329,16 @@ class TrainableModule(L.LightningModule):
                 train_dataloaders=dataloader,
                 val_dataloaders=valloader,
             )
-            # self.model.log_artifacts()
 
+        register_last_model_and_try_promote(
+            registered_name=registered_name,
+            metric_name="val_loss",
+        )
         return run_id
 
     @classmethod
-    def load_from_run(cls, run_id: Optional[str] = None, exp_name="movie_recom") -> Self:
-        from ..workflow import load_best_model, load_pytorch
-        model_uri, run_id, run_name = load_best_model(
-            exp_name, "DLRM", "metrics.val_loss", run_id=run_id)
-        logger.info(f"Loading from: {model_uri=}, {run_id=}, {run_name=}")
-        return load_pytorch(model_uri=model_uri, run_name=run_name)
-
-
-def chunk_dict_of_tensors(data_dict: dict[str, torch.Tensor], n):
-    arr = {k: v.split(n) for k, v in data_dict.items()}
-    ret = []
-    for i in range(len(next(iter(arr.values())))):
-        ret.append({k: v[i] for k, v in arr.items()})
-    return ret
+    def load(cls, champion=True) -> Self:
+        # mlflow.artifacts.list_artifacts(f"models:/{model_name}@champion")
+        return mlflow.pytorch.load_model(  # type: ignore
+            model_uri(registered_name, champion)
+        )

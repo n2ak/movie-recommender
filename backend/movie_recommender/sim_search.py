@@ -1,3 +1,4 @@
+import mlflow
 from IPython import display
 from typing import Self
 import numpy as np
@@ -5,11 +6,16 @@ import pandas as pd
 from sklearn.neighbors import KNeighborsTransformer
 from movie_recommender.data import MovieLens
 from movie_recommender.logging import logger
-from movie_recommender.workflow import download_artifacts
+from movie_recommender.workflow import (
+    download_artifacts, register_last_model, get_mlflow_client, model_uri
+)
 import functools
+import os
+
+registered_name = os.environ["SS_REGISTERED_NAME"]
 
 
-class SimilaritySearch:
+class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
     """
     Useful for suggesting movies to be ran through a DNN, to reduce the input to the DNN
     from millions to thousands or so. 
@@ -55,31 +61,10 @@ class SimilaritySearch:
         return self
 
     @classmethod
-    def load_from_disk(cls, exp_name) -> Self:
-        import mlflow
-        import pathlib
-        experiment = mlflow.get_experiment_by_name(exp_name)
-        if not experiment:
-            raise Exception(f"No experiment named: '{exp_name}'")
-        experiment_id = experiment.experiment_id
-
-        df: pd.DataFrame = mlflow.search_runs(
-            experiment_ids=[experiment_id],
-            order_by=["start_time DESC"],
-            max_results=1
-        )  # type: ignore
-        if len(df) == 0:
-            raise Exception(f"Expermient '{exp_name}' has no runs.")
-
-        latest_run_id = df.iloc[0]["run_id"]
-        logger.info(f"Downloading from run id: '{latest_run_id}'")
-        artifact_path = download_artifacts(
-            run_id=latest_run_id,
-            artifact_path="resources",
-        )
-        import pickle
-        with open(pathlib.Path(artifact_path) / "simsearch.pickle", "rb") as f:
-            return pickle.load(f)
+    def load_from_disk(cls, champion=True) -> Self:
+        return mlflow.pyfunc.load_model(
+            model_uri(registered_name, champion)
+        ).unwrap_python_model()  # type: ignore
 
     def __movies_data(self, movies: pd.DataFrame):
         return movies.drop(columns=["movie_id"])
@@ -220,26 +205,17 @@ class SimilaritySearch:
     def _get_users(self, ids) -> pd.DataFrame:
         return self.users.loc[ids]
 
-    def save(self, exp_name, tracking_uri):
-        import mlflow
-        import pickle
-        from movie_recommender.workflow import log_temp_artifacts
-
-        def save(dir):
-            self.ratings.to_parquet(f"{dir}/ratings.parquet")
-            fname = f"{dir}/simsearch.pickle"
-            with open(fname, mode="wb") as f:
-                pickle.dump(self, f)
-
-        print("URI", tracking_uri)
-        mlflow.set_tracking_uri(tracking_uri)
+    def save(self, exp_name):
         mlflow.set_experiment(exp_name)
-
         with mlflow.start_run(tags={"model_type": "SimilaritySearch"}) as run:
             mlflow.log_params(self._params)
             run_id: str = run.info.run_id
             logger.info("Run id: %s", run_id)
-            log_temp_artifacts(save, artifact_path="resources")
+            info = mlflow.pyfunc.log_model(python_model=self)
+        version = register_last_model(registered_name=registered_name)
+
+        get_mlflow_client().set_registered_model_alias(
+            registered_name, "champion", version.version)
         return run_id
 
 

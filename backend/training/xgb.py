@@ -8,7 +8,7 @@ from movie_recommender.data import MovieLens
 from movie_recommender.utils import report
 from movie_recommender.modeling.xgbmr import XGBMR
 from movie_recommender.train_utils import mae as _mae, get_env
-from movie_recommender.workflow import download_parquet
+from movie_recommender.workflow import download_parquet_from_s3, connect_minio, connect_mlflow
 import logging
 
 logger = logging.getLogger(__file__)
@@ -56,7 +56,10 @@ def training(
 
 
 def train_xgb(train: pd.DataFrame, test: pd.DataFrame, max_rating: int, exp_name: str, optimize: bool,
-              num_boost_round: int, tracking_uri: str):
+              num_boost_round: int):
+    connect_minio()
+    connect_mlflow()
+
     train.set_index(["user_id", "movie_id"], inplace=True)
     test.set_index(["user_id", "movie_id"], inplace=True)
 
@@ -66,9 +69,6 @@ def train_xgb(train: pd.DataFrame, test: pd.DataFrame, max_rating: int, exp_name
     logger.info("Test ds shape: %s", test.shape)
     logger.info("num_boost_round: %s", num_boost_round)
     logger.info("optimize: %s", optimize)
-    logger.info(f"Mlflow {exp_name=}, {tracking_uri=}")
-
-    mlflow.set_tracking_uri(tracking_uri)
 
     if optimize:
         optimized(exp_name, train, test, users,
@@ -134,6 +134,7 @@ def mae(predt: np.ndarray, dtrain: xgb.DMatrix) -> tuple[str, float]:
 def test_xgb_model():
     from movie_recommender.recommender import Recommender, Request
     Recommender.instance = None
+    Recommender.champion = False
     Recommender.single(Request(
         userId=0,
         genres=[],
@@ -149,15 +150,13 @@ if __name__ == "__main__":
     import sys
     import os
     arg = sys.argv[1]
-    uri = get_env("MLFLOW_TRACKING_URI", "http://localhost:8081")
-    mlflow.set_tracking_uri(uri)
     bucket = os.environ["DB_MINIO_BUCKET"]
 
     if arg == "train":
         db_url = get_env(
             "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
         logger.info("DB URL: %s", db_url)
-        train, test = download_parquet(bucket, "xgb_train", "xgb_test")
+        train, test = download_parquet_from_s3(bucket, "xgb_train", "xgb_test")
 
         train_xgb(
             train,
@@ -166,7 +165,6 @@ if __name__ == "__main__":
             exp_name=get_env("EXP_NAME", "movie_recom"),
             optimize=False,
             num_boost_round=get_env("NUM_BOOST_ROUND", 500),
-            tracking_uri=uri,
         )
     elif arg == "test":
         test_xgb_model()
