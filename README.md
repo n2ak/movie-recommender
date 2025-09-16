@@ -1,29 +1,28 @@
 ### Seed
 
 ```bash
-./filldb.sh
+docker compose db up -d  && ./filldb.sh
 ```
 
 ### build training docker images
 
 ```bash
-cd backend
-./build_training_docker_images.sh
+cd backend && ./build_training_docker_images.sh
 ```
 ### to run
 
 ```bash
-docker compose --profile backend_api up -d
+docker compose backend up -d
 cd frontend && pnpm run dev
 
 # OR
 
-docker compose --profile web up -d
+docker compose webapp up -d
 ```
 ### to start airflow
 
 ```bash
-docker compose --profile airflow up -d
+docker compose airflow up -d
 ```
 
 ### to test backend api
