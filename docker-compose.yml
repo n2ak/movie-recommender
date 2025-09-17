@@ -4,19 +4,27 @@ services:
     container_name: db
     image: postgres
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: admin
       PGDATA: /data/postgres
-      POSTGRES_DB: ${DB_DB}
       PGPORT: ${DB_PORT}
+
+      # multi users
+      DB_USERS: "${DB_USER} ${AF_PG_USER}$ ${MLFLOW_PG_USER}"
+      DB_PASSWORDS: "${DB_PASSWORD} ${AF_PG_PASSWORD} ${MLFLOW_PG_PASSWORD}"
+      DB_DBS: "${DB_DB} ${AF_PG_DB} ${MLFLOW_PG_DB}"
     depends_on: 
       - adminer
     volumes:
       - ./vlms/database:/data/postgres
+      - ./scripts/db_init:/docker-entrypoint-initdb.d
     ports:
       - "${DB_PORT}:${DB_PORT}"
     networks:
-      - net
+      - webappnet
+      - airflow_net
+      - mlflow_net
     restart: unless-stopped
 
     healthcheck:
@@ -33,7 +41,6 @@ services:
     ports:
       - 8082:8080
     networks:
-      - net
       - mlflow_net
       
   redis:
@@ -43,7 +50,7 @@ services:
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
     networks:
-      - net
+      - webappnet
     environment:
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -65,7 +72,7 @@ services:
       backend:
         condition: service_healthy
     networks:
-      - net
+      - webappnet
     environment:
       AUTH_SECRET: "lv5macbVjLrol6GRhpHvpt/lNIPKKtEeIVIfKYKG1D8: "
       DATABASE_URL: "postgresql://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_DB}?schema=public"
@@ -114,7 +121,7 @@ services:
       - path: .env
         required: true
     networks:
-      - net
+      - webappnet
       - mlflow_net
     deploy:
       resources:
@@ -139,9 +146,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-    # volumes:
-    #   - ./vlms/mlruns:/mlruns
-    #   - ./vlms/mlartifacts:/mlartifacts
     environment:
     
       MLFLOW_BACKEND_STORE_URI: ${MLFLOW_BACKEND_STORE_URI}
@@ -165,11 +169,9 @@ services:
       "
     depends_on:
         # --default-artifact-root ${MLFLOW_DEFAULT_ARTIFACT_ROOT} \
-      mlflow_db:
+      db:
         condition: service_healthy
       minio:
-        condition: service_healthy
-      db:
         condition: service_healthy
       create-bucket:
         condition: service_started
@@ -183,7 +185,7 @@ services:
     ports:
       - 8080:8080
     environment:
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AF_PG_USER}:${AF_PG_PASSWORD}@airflow_db:${AF_PG_PORT}/${AF_PG_DB}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AF_PG_USER}:${AF_PG_PASSWORD}@db:5432/${AF_PG_DB}
       AIRFLOW__CORE__TEST_CONNECTION: Enabled
     volumes:
       - ./workflow/dags:/opt/airflow/dags
@@ -192,9 +194,8 @@ services:
       - ./workflow/plugins:/opt/airflow/plugins
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
-      - airflow_db
+      - db
       - mlflow
-      - db # for training
     command: >
       bash -c "airflow db migrate &&
        echo 'Server is starting up...' &&
@@ -208,20 +209,6 @@ services:
       - path: ./workflow/.env
         required: true
     restart: unless-stopped
-
-  airflow_db:
-    container_name: airflow_db
-    image: postgres:13
-    environment:
-      POSTGRES_USER: ${AF_PG_USER}
-      POSTGRES_PASSWORD: ${AF_PG_PASSWORD}
-      POSTGRES_DB: ${AF_PG_DB}
-      PG_PORT: ${AF_PG_PORT}
-    volumes:
-      - ./vlms/postgres-db-volume:/var/lib/postgresql/data
-    restart: unless-stopped
-    networks:
-      - airflow_net
 
   minio:
     container_name: minio
@@ -243,6 +230,7 @@ services:
     restart: unless-stopped
     networks:
       - mlflow_net
+      - airflow_net
 
   create-bucket:
     container_name: create-buckets
@@ -261,33 +249,10 @@ services:
     networks:
       - mlflow_net
 
-
-  mlflow_db:
-    image: postgres:13
-    container_name: mlflow_db
-    environment:
-      POSTGRES_USER: ${MLFLOW_PG_USER}
-      POSTGRES_PASSWORD: ${MLFLOW_PG_PASSWORD}
-      POSTGRES_DB: ${MLFLOW_PG_DB}
-      PGPORT: 5432
-    volumes:
-      - ./vlms/mlflow_db:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${MLFLOW_PG_USER} -d ${MLFLOW_PG_DB}"]
-
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    networks:
-      - mlflow_net
-    restart: unless-stopped
-    ports:
-      - "${MLFLOW_PG_PORT}:5432"
-
 networks:
-  net:
-    driver: bridge
-  airflow_net:
+  webappnet:
     driver: bridge
   mlflow_net:
+    driver: bridge
+  airflow_net:
     driver: bridge
