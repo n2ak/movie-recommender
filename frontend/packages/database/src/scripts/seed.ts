@@ -58,18 +58,23 @@ function parse_csv<T>(path: string) {
   });
 }
 
-async function chunked<T>(data: T[], fn: (t: { data: T[], skipDuplicates: boolean }) => Promise<{ count: number }>) {
-  const sum = (numbers: number[]) => numbers.reduce((acc, curr) => acc + curr, 0);
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-  const chunkedArray: T[][] = [];
+async function chunked<T>(data: T[], fn: (t: { data: T[], skipDuplicates: boolean }) => Promise<{ count: number }>) {
+
+  let sum = 0;
   for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-    chunkedArray.push(data.slice(i, i + CHUNK_SIZE));
+    const slice = data.slice(i, i + CHUNK_SIZE);
+    const ret = await fn({
+      data: slice,
+      skipDuplicates: true,
+    });
+    sum += ret.count;
+    if (i != data.length - 1) await sleep(.5);
   }
-  const promises = await Promise.all(chunkedArray.map(d => fn({
-    data: d,
-    skipDuplicates: true,
-  })));
-  return sum(promises.map(p => p.count));
+  return sum;
 }
 
 async function createUsers(tx: TX, data: UserCSVType[]) {
@@ -105,7 +110,7 @@ async function createMovies(tx: TX, data: MovieCSVType[]) {
       title: String(name),
       total_ratings: Number(ratingCount),
       year: year,
-      desc: randomString(200, 300),
+      desc: randomString(50, 150),
       createdAt: new Date(year),
     })),
     tx.movieModel.createMany
@@ -116,8 +121,8 @@ async function createMovies(tx: TX, data: MovieCSVType[]) {
 async function createReviews(tx: TX, data: RatingCSVType[]) {
   const n = await chunked(
     data.map(({ movie_id, user_id }): Prisma.MovieReviewCreateManyInput => ({
-      title: randomString(10, 50),
-      text: randomString(100, 300),
+      title: randomString(5, 10),
+      text: randomString(20, 60),
       ndislikes: random(100),
       nlikes: random(100),
       movieModelId: movie_id,
@@ -152,16 +157,16 @@ async function main() {
   const movies_csv = parse_csv<MovieCSVType>(movies_file);
   const ratings_csv = parse_csv<RatingCSVType>(ratings_file);
 
+  console.log("Pushing to db...");
   await prisma.$transaction(
     async (tx) => {
-      console.log("Pushing to db...");
       await createUsers(tx, users_csv.data);
       await createMovies(tx, movies_csv.data);
       await createdRatings(tx, ratings_csv.data);
       await createReviews(tx, ratings_csv.data);
     },
     {
-      timeout: 60 * 1000,
+      timeout: 5 * 60 * 1000,
     }
   );
   console.log("Done.");

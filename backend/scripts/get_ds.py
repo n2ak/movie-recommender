@@ -8,10 +8,12 @@ splits = {
 }
 
 
-def read_ds():
+def read_ds(limit=None):
     df_train = pd.read_parquet(ds_path + splits["train"])
     df_val = pd.read_parquet(ds_path + splits["val"])
-    df = pd.concat([df_train, df_val], axis=0)[:100_000]
+    df = pd.concat([df_train, df_val], axis=0)
+    if limit is not None:
+        df = df[:limit]
     return df
 
 
@@ -63,8 +65,8 @@ def save(**ds: pd.DataFrame):
     return paths
 
 
-def main():
-    df = read_ds()
+def main(limit):
+    df = read_ds(limit)
     ratings, movies, users = process(df)
     paths = save(
         ratings=ratings,
@@ -75,4 +77,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    limit = int(sys.argv[1]) if len(sys.argv) > 1 else None
+    main(limit)
