@@ -1,9 +1,11 @@
-from airflow import DAG
-from airflow.decorators import task
+from airflow.sdk import Variable
+from airflow import DAG  # type: ignore
+from airflow.decorators import task  # type: ignore
 from airflow.providers.docker.operators.docker import DockerOperator  # type: ignore
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook  # type: ignore
+# from airflow.operators.python import PythonOperator
 from docker.types import DeviceRequest
 from pendulum import datetime
-from utils import Env
 
 default_args = {
     'owner': 'movie_recommender',
@@ -36,31 +38,66 @@ with DAG(
     tags=['ml', 'etl', 'mlflow', 'pytorch', 'xgb'],
 ) as dag:
 
+    config: dict[str, dict[str, str]] = Variable.get(
+        "config", deserialize_json=True)
+
+    xgb: dict[str, str] = config["xgb"]
+    dlrm: dict[str, str] = config["dlrm"]
+    globalvar: dict[str, str] = config["global"]
+
+    DLRM_EPOCHS = dlrm["epochs"]
+    DLRM_MAX_RATING = dlrm["max_rating"]
+    DLRM_TRAIN_SIZE = dlrm["train_size"]
+
+    XGB_MAX_RATING = xgb["max_rating"]
+    XGB_TRAIN_SIZE = xgb["train_size"]
+    XGB_NUM_BOOST_ROUND = xgb["num_boosting_round"]
+
+    DB_URL = globalvar["db_url"]
+    EXP_NAME = globalvar["exp_name"]
+    DB_MINIO_BUCKET = globalvar["db_minio_bucket"]
+    MLFLOW_TRACKING_URI = globalvar["mlflow_tracking_uri"]
+    MINIO_USER = globalvar["minio_user"]
+    MINIO_PASSWORD = globalvar["minio_password"]
+    MINIO_S3_ENDPOINT = globalvar["minio_endpoint"]
+
     @task
-    def extract_data_task():
+    def extract_data_task(db_url: str):
         try:
             from .extract import extract_data
         except ImportError:
             from extract import extract_data  # type: ignore
-        return extract_data()
+        return extract_data(db_url)
 
     @task
-    def process_data_task(model_type):
+    def process_data_task(dir, model_type, max_rating: int, train_size: float):
         try:
             from .transform import process_data
         except ImportError:
             from transform import process_data  # type: ignore
-        return process_data(model_type)
+        return process_data(dir, model_type, max_rating, train_size)
+
+    @task
+    def upload_folder_to_s3(s3_bucket: str, directory: str):
+        try:
+            from .utils import upload_folder_to_s3 as upload
+        except ImportError:
+            from utils import upload_folder_to_s3 as upload  # type: ignore
+        upload(s3_bucket, directory, creds=dict(
+            minio_user=MINIO_USER,
+            minio_passwd=MINIO_PASSWORD,
+            endpoint=MINIO_S3_ENDPOINT,
+        ))
 
     train_dlrm_task = get_docker_operator(
         task_id='train_dlrm_task',
-        image='pytorch_train',
+        image='pytorch_tr   ain',
         command=["python", "train_dlrm.py", "train"],
         environment=dict(
-            EPOCHS=2,
-            EXP_NAME=Env.exp_name,
-            MLFLOW_TRACKING_URI=Env.MLFLOW_TRACKING_URI,
-            DB_URL=Env.DB_URL,
+            EPOCHS=DLRM_EPOCHS,
+            EXP_NAME=EXP_NAME,
+            MLFLOW_TRACKING_URI=MLFLOW_TRACKING_URI,
+            DB_URL=DB_URL,
         ),
         pool="apool",  # must be set in Admin -> pools with 1 slot
     )
@@ -69,10 +106,10 @@ with DAG(
         image='xgb_train',
         command=["python", "train_xgb.py", "train"],
         environment=dict(
-            NUM_BOOST_ROUND=1000,
-            EXP_NAME=Env.exp_name,
-            MLFLOW_TRACKING_URI=Env.MLFLOW_TRACKING_URI,
-            DB_URL=Env.DB_URL,
+            NUM_BOOST_ROUND=XGB_NUM_BOOST_ROUND,
+            EXP_NAME=EXP_NAME,
+            MLFLOW_TRACKING_URI=MLFLOW_TRACKING_URI,
+            DB_URL=DB_URL,
         ),
         pool="apool",
     )
@@ -81,8 +118,8 @@ with DAG(
         image='pytorch_train',
         command=["python", "train_dlrm.py", "test"],
         environment=dict(
-            EXP_NAME=Env.exp_name,
-            MLFLOW_TRACKING_URI=Env.MLFLOW_TRACKING_URI,
+            EXP_NAME=EXP_NAME,
+            MLFLOW_TRACKING_URI=MLFLOW_TRACKING_URI,
         ),
         pool="apool",
     )
@@ -91,22 +128,35 @@ with DAG(
         image='xgb_train',
         command=["python", "train_xgb.py", "test"],
         environment=dict(
-            EXP_NAME=Env.exp_name,
-            MLFLOW_TRACKING_URI=Env.MLFLOW_TRACKING_URI,
+            EXP_NAME=EXP_NAME,
+            MLFLOW_TRACKING_URI=MLFLOW_TRACKING_URI,
         ),
         pool="apool",
     )
-    extract = extract_data_task()
+
+    data_dir = extract_data_task(DB_URL)
+
+    dlrm_dir = process_data_task(
+        data_dir, "dlrm", int(DLRM_MAX_RATING), float(DLRM_TRAIN_SIZE)
+    )
+    xgb_dir = process_data_task(
+        data_dir, "xgb", int(XGB_MAX_RATING), float(XGB_TRAIN_SIZE)
+    )
+    simsearch_dir = process_data_task(
+        data_dir, "simsearch", 5, 1
+    )
 
     (
-        extract
-        >> process_data_task("dlrm")
+        upload_folder_to_s3(DB_MINIO_BUCKET, dlrm_dir)
         >> train_dlrm_task
         >> test_dlrm_task
-    )
+    )  # type: ignore
     (
-        extract
-        >> process_data_task("xgb")
+        upload_folder_to_s3(DB_MINIO_BUCKET, xgb_dir)
         >> train_xgb_task
         >> test_xgb_task
-    )
+    )  # type: ignore
+    (
+        upload_folder_to_s3(DB_MINIO_BUCKET, simsearch_dir)
+        # >> train_simsearch
+    )  # type: ignore

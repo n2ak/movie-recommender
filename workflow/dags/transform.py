@@ -1,89 +1,13 @@
+import tempfile
 import numpy as np
 import pandas as pd
 from typing import Literal
 try:
-    from .utils import Env, upload_files, download_parquet
+    from .utils import read_parquet
 except ImportError:
-    from utils import Env, upload_files, download_parquet  # type: ignore
-
+    from utils import read_parquet  # type: ignore
 
 bucket = "trainingbucket"
-
-
-def process_data(model: Literal["xgb", "dlrm"]):
-    ratings, movies = download_parquet(bucket, "ratings", "movies")
-
-    # needed for somereason
-    ratings = ratings.rename(str, axis="columns")
-    movies = movies.rename(str, axis="columns")
-    if isinstance(movies.movie_genres[0], str):
-        movies.movie_genres = movies.movie_genres.apply(lambda x: x.split(","))
-
-    # Env.dump()
-    print(f"Proccessing data for: {model=}")
-
-    match model:
-        case "dlrm":
-            train, test = process_data_for_dlrm(ratings, movies)
-        case "xgb":
-            train, test = process_data_for_xgb(ratings, movies)
-
-    def save_fn(path):
-        train.to_parquet(path / f"{model}_train.parquet")
-        test.to_parquet(path / f"{model}_test.parquet")
-
-    upload_files(save_fn, "trainingbucket")
-    print("Data is written to db.")
-
-
-def process_data_for_xgb(ratings: pd.DataFrame, movies: pd.DataFrame):
-    movielens = MovieLens.preprocess(
-        ratings.copy(), movies.copy(),
-        Env.MAX_RATING,
-        hot_encode_genres=True,
-        # year_bin=10,
-    )
-    train, test = movielens.prepare_for_training(
-        train_size=Env.TRAIN_SIZE,
-        add_rating_features=True,
-        columns2scale=[
-            'movie_year', 'movie_mean_rating', 'movie_total_rating', 'user_mean_rating', 'user_total_rating'
-        ]
-    )
-    train = train.sample(frac=1, random_state=0)
-
-    movie_genres = list(filter(lambda c: c.startswith(
-        "movie_genre_"), train.columns.tolist()))
-    train.drop(columns=movie_genres, inplace=True)
-    test.drop(columns=movie_genres, inplace=True)
-    return train, test
-
-
-def process_data_for_dlrm(ratings: pd.DataFrame, movies: pd.DataFrame):
-
-    movielens = MovieLens.preprocess(
-        ratings.copy(), movies.copy(),
-        Env.MAX_RATING,
-        hot_encode_genres=False,
-        # year_bin=10,
-    )
-    train, test = movielens.prepare_for_training(
-        train_size=Env.TRAIN_SIZE,
-        add_rating_features=True,
-        encode_year=True,
-        columns2scale=[
-            'movie_mean_rating', 'movie_total_rating', 'user_mean_rating', 'user_total_rating'
-        ]
-    )
-    train[['movie_total_rating', 'user_total_rating']] = train[[
-        'movie_total_rating', 'user_total_rating']].astype(float)
-
-    if isinstance(train.movie_genres[0], np.ndarray):
-        train["movie_genres"] = train["movie_genres"].apply(
-            lambda x: x.tolist())
-        test["movie_genres"] = test["movie_genres"].apply(lambda x: x.tolist())
-
-    return train, test
 
 
 class MovieLens():
@@ -193,6 +117,116 @@ class MovieLens():
         if test_X.size:
             test_X[columns] = scaler.transform(test_X[columns])
         return train_X, test_X
+
+
+def process_data(dir: str, model: Literal["xgb", "dlrm", "simsearch"], max_rating: int, train_size: float, creds=None):
+    ratings, movies = read_parquet(
+        f"{dir}/ratings.parquet", f"{dir}/movies.parquet")
+
+    # needed for somereason
+    ratings = ratings.rename(str, axis="columns")
+    movies = movies.rename(str, axis="columns")
+    if isinstance(movies.movie_genres[0], str):
+        movies.movie_genres = movies.movie_genres.apply(lambda x: x.split(","))
+
+    # Env.dump()
+    print(f"Proccessing data for: {model=}")
+
+    match model:
+        case "dlrm":
+            train, test = process_data_for_dlrm(
+                ratings, movies, max_rating, train_size)
+        case "xgb":
+            train, test = process_data_for_xgb(
+                ratings, movies, max_rating, train_size)
+        case "simsearch":
+            return process_data_for_simsearch(ratings, movies, max_rating)
+
+    with tempfile.TemporaryDirectory(delete=False) as path:
+        train_path = f"{path}/train.parquet"
+        test_path = f"{path}/test.parquet"
+        train.to_parquet(train_path)
+        test.to_parquet(test_path)
+    return path
+
+
+def process_data_for_xgb(ratings: pd.DataFrame, movies: pd.DataFrame, max_rating: int, train_size: float):
+    movielens = MovieLens.preprocess(
+        ratings.copy(), movies.copy(),
+        max_rating,
+        hot_encode_genres=True,
+        # year_bin=10,
+    )
+    train, test = movielens.prepare_for_training(
+        train_size=train_size,
+        add_rating_features=True,
+        columns2scale=[
+            'movie_year', 'movie_mean_rating', 'movie_total_rating', 'user_mean_rating', 'user_total_rating'
+        ]
+    )
+    train = train.sample(frac=1, random_state=0)
+
+    movie_genres = list(filter(lambda c: c.startswith(
+        "movie_genre_"), train.columns.tolist()))
+    train.drop(columns=movie_genres, inplace=True)
+    test.drop(columns=movie_genres, inplace=True)
+    return train, test
+
+
+def process_data_for_dlrm(ratings: pd.DataFrame, movies: pd.DataFrame, max_rating: int, train_size: float):
+
+    movielens = MovieLens.preprocess(
+        ratings.copy(), movies.copy(),
+        max_rating=max_rating,
+        hot_encode_genres=False,
+        # year_bin=10,
+    )
+    train, test = movielens.prepare_for_training(
+        train_size=train_size,
+        add_rating_features=True,
+        encode_year=True,
+        columns2scale=[
+            'movie_mean_rating', 'movie_total_rating', 'user_mean_rating', 'user_total_rating'
+        ]
+    )
+    train[['movie_total_rating', 'user_total_rating']] = train[[
+        'movie_total_rating', 'user_total_rating']].astype(float)
+
+    if isinstance(train.movie_genres[0], np.ndarray):
+        train["movie_genres"] = train["movie_genres"].apply(
+            lambda x: x.tolist())
+        test["movie_genres"] = test["movie_genres"].apply(lambda x: x.tolist())
+
+    return train, test
+
+
+def process_data_for_simsearch(ratings: pd.DataFrame, movies: pd.DataFrame, max_rating):
+
+    # TODO
+    # ratings, movies = read_parquet(rating_path, movies_path)
+    if isinstance(movies.movie_genres[0], str):
+        movies.movie_genres = movies.movie_genres.apply(lambda x: x.split(","))
+
+    # needed for somereason
+    ratings = ratings.rename(str, axis="columns")
+    movies = movies.rename(str, axis="columns")
+
+    movielens = MovieLens.preprocess(
+        ratings, movies, max_rating,
+        hot_encode_genres=True
+    )
+    train, _ = movielens.prepare_for_training(
+        train_size=1,
+        add_rating_features=True,
+        columns2scale=['movie_year', 'movie_mean_rating',
+                       'movie_total_rating', 'user_mean_rating', 'user_total_rating']
+    )
+    train = train.reset_index(drop=True)
+
+    with tempfile.TemporaryDirectory(delete=False) as path:
+        train_path = f"{path}/simsearch_train.parquet"
+        train.to_parquet(train_path)
+    return path
 
 
 def get_cols(ratings: pd.DataFrame):

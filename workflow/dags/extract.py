@@ -1,8 +1,5 @@
+import tempfile
 max_rating = 5
-try:
-    from .utils import Env, upload_files, connect_minio
-except ImportError:
-    from utils import Env, upload_files, connect_minio  # type: ignore
 
 
 def read_db(db_url, ratings_table: str, movies_table: str):
@@ -22,20 +19,20 @@ def read_db(db_url, ratings_table: str, movies_table: str):
     return ratings, movies
 
 
-def extract_data():
+def extract_data(db_url: str):
     # from sqlalchemy import create_engine
-    connect_minio()
-    Env.dump()
+    # conn = create_engine(Env.DB_URL)
 
-    ratings, movies = read_db(Env.DB_URL, "movie_rating", "movie")
+    ratings, movies = read_db(db_url, "movie_rating", "movie")
     print("Done extracting data.")
     movies.drop(columns=["movie_title"], inplace=True)
     ratings["rating"] = ratings["rating"] / max_rating
 
-    # conn = create_engine(Env.DB_URL)
     movies.movie_genres = movies.movie_genres.apply(lambda x: ",".join(x))
 
-    def save_fn(path):
-        ratings.to_parquet(path / "ratings.parquet")
-        movies.to_parquet(path / "movies.parquet")
-    upload_files(save_fn, "trainingbucket")
+    with tempfile.TemporaryDirectory(delete=False) as path:
+        movies_path = f"{path}/movies.parquet"
+        ratings_path = f"{path}/ratings.parquet"
+        ratings.to_parquet(ratings_path)
+        movies.to_parquet(movies_path)
+    return path

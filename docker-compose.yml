@@ -184,6 +184,7 @@ services:
       - 8080:8080
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AF_PG_USER}:${AF_PG_PASSWORD}@airflow_db:${AF_PG_PORT}/${AF_PG_DB}
+      AIRFLOW__CORE__TEST_CONNECTION: Enabled
     volumes:
       - ./workflow/dags:/opt/airflow/dags
       - ./workflow/logs:/opt/airflow/logs

@@ -1,0 +1,21 @@
+{
+    "xgb": {
+        "max_rating": "5",
+        "train_size": "0.9",
+        "num_boosting_round": "500"
+    },
+    "dlrm": {
+        "max_rating": "5",
+        "train_size": "0.9",
+        "epochs": "3"
+    },
+    "global": {
+        "db_url": "postgresql://admin:password@host.docker.internal:5432/mydb",
+        "exp_name": "movie_recom",
+        "db_minio_bucket": "trainingbucket",
+        "mlflow_tracking_uri": "http://host.docker.internal:8081",
+        "minio_user": "minio",
+        "minio_password": "minio123",
+        "minio_endpoint": "http://host.docker.internal:9000"
+    }
+}
