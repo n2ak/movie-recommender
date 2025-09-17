@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 import matplotlib.pyplot as plt
-from movie_recommender.data import MovieLens
+from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.utils import report
 from movie_recommender.modeling.xgbmr import XGBMR
 from movie_recommender.train_utils import mae as _mae, get_env
@@ -110,12 +110,10 @@ def optimized(exp_name: str, train, test, users, movies, max_rating, num_boost_r
 
 
 def split_(df: pd.DataFrame):
-    movie_cols = MovieLens.movie_cols(df)
-    user_cols = MovieLens.user_cols(df)
-    movies = df.droplevel("user_id")[movie_cols]
+    movies = df.droplevel("user_id")[movie_cols(df)]
     movies = movies.loc[~movies.index.duplicated(keep='first'), :]
 
-    users = df.droplevel("movie_id")[user_cols]
+    users = df.droplevel("movie_id")[user_cols(df)]
     users = users.loc[~users.index.duplicated(keep='first'), :]
     return users, movies
 
@@ -153,9 +151,6 @@ if __name__ == "__main__":
     bucket = os.environ["DB_MINIO_BUCKET"]
 
     if arg == "train":
-        db_url = get_env(
-            "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
-        logger.info("DB URL: %s", db_url)
         train, test = download_parquet_from_s3(bucket, "xgb_train", "xgb_test")
 
         train_xgb(

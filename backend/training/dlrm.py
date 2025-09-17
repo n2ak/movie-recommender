@@ -5,7 +5,7 @@ import pandas as pd
 import torch.nn.functional as F
 from movie_recommender.modeling.dlrm import DLRM, TrainableModule, DLRMParams
 from movie_recommender.workflow import download_parquet_from_s3, connect_minio, connect_mlflow
-from movie_recommender.data import MovieLens, get_cols
+from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.train_utils import mae, rmse, get_env
 import logging
 
@@ -22,6 +22,17 @@ def create_data_sampler(y_train: np.ndarray):
         class_weights[(y_train*10).astype(int)].tolist(), y_train.size,
     )
     return sampler
+
+
+def get_cols(ratings: pd.DataFrame):
+    cat_cols = ratings.iloc[:1].select_dtypes(
+        ["int", "bool", "category"]).columns.to_list()
+    num_cols = ratings.iloc[:1].select_dtypes("float").columns.to_list()
+    if "rating" in num_cols:
+        num_cols.remove("rating")
+    ratings[cat_cols] = ratings[cat_cols]
+    ratings[num_cols] = ratings[num_cols].astype("float32")
+    return cat_cols, num_cols
 
 
 def process_data(train: pd.DataFrame, test: pd.DataFrame):
@@ -134,10 +145,8 @@ def create_model(
 
 
 def split_(df: pd.DataFrame):
-    movie_cols = MovieLens.movie_cols(df)
-    user_cols = MovieLens.user_cols(df)
-    movies = df[movie_cols].drop_duplicates("movie_id")
-    users = df[user_cols].drop_duplicates("user_id")
+    movies = df[movie_cols(df)].drop_duplicates("movie_id")
+    users = df[user_cols(df)].drop_duplicates("user_id")
     return users, movies
 
 
@@ -206,9 +215,6 @@ if __name__ == "__main__":
     bucket = os.environ["DB_MINIO_BUCKET"]
 
     if arg == "train":
-        db_url = get_env(
-            "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
-        logger.info("DB URL: %s", db_url)
         train, test = download_parquet_from_s3(
             bucket, "dlrm_train", "dlrm_test")
 

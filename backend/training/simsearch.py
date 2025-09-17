@@ -1,31 +1,22 @@
 
 
+import os
 import pandas as pd
-from movie_recommender.train_utils import get_env, read_ds
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from sklearn.decomposition import PCA
 from movie_recommender.logging import logger
 from movie_recommender.sim_search import SimilaritySearch
-from movie_recommender.workflow import save_figures, connect_minio, connect_mlflow
+from movie_recommender.workflow import save_figures, connect_minio, connect_mlflow, download_parquet_from_s3
 
 simsearch_exp_name = "SimilaritySearch".lower()
 
 
-def train_simsearch(
-        ratings: pd.DataFrame, movies: pd.DataFrame, max_rating: int, exp_name=simsearch_exp_name):
+def train_simsearch(train: pd.DataFrame, exp_name=simsearch_exp_name):
     connect_minio()
     connect_mlflow()
 
-    # ratings, movies = read_parquet(rating_path, movies_path)
-    if isinstance(movies.movie_genres[0], str):
-        movies.movie_genres = movies.movie_genres.apply(lambda x: x.split(","))
-
-    # needed for somereason
-    ratings = ratings.rename(str, axis="columns")
-    movies = movies.rename(str, axis="columns")
-
-    simsearch = SimilaritySearch().fit(ratings.copy(), movies.copy(), max_rating)
+    simsearch = SimilaritySearch().fit(train)
     run_id = simsearch.save(exp_name)
     return run_id
 
@@ -113,12 +104,12 @@ def test_movies(simsearch: SimilaritySearch, figures: dict[str, Figure]):
 if __name__ == "__main__":
     import sys
     arg = sys.argv[1]
+    bucket = os.environ["DB_MINIO_BUCKET"]
+
     if arg == "train":
-        db_url = get_env(
-            "DB_URL", 'postgresql+psycopg2://admin:password@localhost:5432/mydb')
-        ratings = read_ds("ratings", db_url)
-        movies = read_ds("movies", db_url)
-        train_simsearch(ratings, movies, 5)
+        train, = download_parquet_from_s3(bucket, "simsearch_train")
+
+        train_simsearch(train)
     elif arg == "test":
         test_simsearch()
     else:

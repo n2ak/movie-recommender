@@ -4,10 +4,10 @@ from typing import Self
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import KNeighborsTransformer
-from movie_recommender.data import MovieLens
+from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.logging import logger
 from movie_recommender.workflow import (
-    download_artifacts, register_last_model, get_mlflow_client, model_uri
+    register_last_model, promote_model_to_champion, model_uri
 )
 import functools
 import os
@@ -33,23 +33,15 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
             n_neighbors_user=n_neighbors_user,
         )
 
-    def fit(self, ratings, movies, max_rating=5):
-        movielens = MovieLens.preprocess(
-            ratings, movies, max_rating,
-            hot_encode_genres=True
-        )
-        train, test = movielens.prepare_for_training(
-            train_size=1,
-            add_rating_features=True,
-            columns2scale=['movie_year', 'movie_mean_rating',
-                           'movie_total_rating', 'user_mean_rating', 'user_total_rating']
-        )
-        train = train.reset_index(drop=True)
-        return self._fit(train)
-
-    def _fit(self, ratings: pd.DataFrame):
+    def fit(self, ratings: pd.DataFrame):
+        def split(ratings: pd.DataFrame):
+            movies = ratings[movie_cols(ratings)].drop_duplicates(
+                "movie_id").sort_values("movie_id").set_index("movie_id", drop=False)
+            users = ratings[user_cols(ratings)].drop_duplicates(
+                "user_id").sort_values("user_id").set_index("user_id", drop=False)
+            return movies, users
         self.ratings = ratings
-        self.movies, self.users = MovieLens.split(ratings)
+        self.movies, self.users = split(ratings)
 
         self.all_genres = [c.removeprefix("movie_genre_")
                            for c in self.movies.columns if c.startswith("movie_genre_")]
@@ -75,7 +67,8 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
     def map_genres(self, genres: list[str]):
         diff = self.setdiff(genres, self.all_genres, keep_order=False)
         if len(diff) != 0:
-            raise Exception(f"Invalid genres: {diff}")
+            raise Exception(
+                f"Invalid genres: {diff}, possible genres: {self.all_genres}")
         genres = ["movie_genre_" + g for g in genres]
         return genres
 
@@ -207,15 +200,15 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
 
     def save(self, exp_name):
         mlflow.set_experiment(exp_name)
+
         with mlflow.start_run(tags={"model_type": "SimilaritySearch"}) as run:
             mlflow.log_params(self._params)
             run_id: str = run.info.run_id
             logger.info("Run id: %s", run_id)
             info = mlflow.pyfunc.log_model(python_model=self)
-        version = register_last_model(registered_name=registered_name)
 
-        get_mlflow_client().set_registered_model_alias(
-            registered_name, "champion", version.version)
+        version = register_last_model(registered_name=registered_name).version
+        promote_model_to_champion(registered_name, version)
         return run_id
 
 

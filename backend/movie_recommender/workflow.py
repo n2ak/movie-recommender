@@ -58,34 +58,53 @@ def model_uri(registered_name: str, champion=True):
     return f"models:/{registered_name}/latest"
 
 
-def try_promote_model(model_name: str, metric: str):
+def get_run_metrics(run_id):
+    assert _mlflowClient is not None
+    return _mlflowClient.get_run(run_id).data.metrics
+
+
+def try_promote_model(model_name: str, metric: str, minimum=True):
     import mlflow.exceptions
     assert_mlflow_connection()
     assert _mlflowClient is not None
-    latest_registered_version = _mlflowClient.get_registered_model(
+
+    latest_registered = _mlflowClient.get_registered_model(
         model_name).latest_versions[-1]  # type: ignore
+
+    last_version = latest_registered.version
+
     try:
         champion = _mlflowClient.get_model_version_by_alias(
             model_name, "champion")
         assert champion.run_id is not None
-        champion_loss = _mlflowClient.get_run(
-            champion.run_id).data.metrics[metric]
-        latest_loss = _mlflowClient.get_run(
-            latest_registered_version.run_id).data.metrics[metric]
+
+        print("metrics", get_run_metrics(champion.run_id))
+        champion_loss = get_run_metrics(champion.run_id)[metric]
+        latest_loss = get_run_metrics(latest_registered.run_id)[metric]
+
         print(
             f"Champion '{metric}': {champion_loss:.4f},",
             f"Latest '{metric}': {latest_loss:.4f}"
         )
-        if latest_loss < champion_loss:
-            _mlflowClient.set_registered_model_alias(
-                model_name, "champion", latest_registered_version.version)
-            print(f"{model_name} has new champion")
+
+        condition = latest_loss < champion_loss if minimum else latest_loss > champion_loss
+
+        if condition:
+            promote_model_to_champion(model_name, last_version)
+            print(f"'{model_name}' has new champion")
         else:
-            print(f"No new champion for{model_name}")
+            print(f"No new champion for '{model_name}'")
+
     except mlflow.exceptions.RestException:
-        _mlflowClient.set_registered_model_alias(
-            model_name, "champion", latest_registered_version.version)
+        promote_model_to_champion(model_name, last_version)
         print(f"{model_name}'s first model")
+
+
+def promote_model_to_champion(registered_name, version: str):
+    assert _mlflowClient is not None
+    _mlflowClient.set_registered_model_alias(
+        registered_name, "champion", version)
+    print(f"Promoted {version=} of {registered_name=} to champion!")
 
 
 def get_champion_run_id(registered_name: str):
@@ -205,3 +224,18 @@ def download_parquet_from_s3(bucket: str, *filenames: str):
             bucket, f'{filename}.parquet', f"{dir}/{filename}.parquet")
         ) for filename in filenames]
     return dfs
+
+
+def upload_folder_to_s3(dir: str, bucket):
+    import pathlib
+    assert minioClient is not None
+    print(f"Uploading {dir=} to s3 {bucket=}")
+    for file in pathlib.Path(dir).glob("*"):
+        filepath = str(file)
+        object_name = filepath.split("/")[-1]
+
+        print(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
+
+        minioClient.fput_object(
+            bucket, object_name=object_name, file_path=filepath
+        )

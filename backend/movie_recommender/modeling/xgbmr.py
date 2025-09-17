@@ -129,7 +129,7 @@ class XGBMR(MovieRecommender[NDArray]):
             logger.info("Done training.")
         register_last_model_and_try_promote(
             registered_name=registered_name,
-            metric_name="val_loss"
+            metric_name="val-mae"
         )
         return eval_results, run_id
 
