@@ -1,9 +1,7 @@
-import mlflow
 import pandas as pd
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-import matplotlib.pyplot as plt
 from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.utils import report
 from movie_recommender.modeling.xgbmr import XGBMR
@@ -130,17 +128,13 @@ def mae(predt: np.ndarray, dtrain: xgb.DMatrix) -> tuple[str, float]:
 
 
 def test_xgb_model():
-    from movie_recommender.recommender import Recommender, Request
-    Recommender.instance = None
-    Recommender.champion = False
-    Recommender.single(Request(
-        userId=0,
-        genres=[],
-        model="xgb_cpu",
-        temp=0,
-        start=0,
-        count=10,
-    ))
+    XGBMR().load_model(champion=False, device="cuda").recommend_for_users_batched(
+        [0, 1],
+        movieIds=[[0, 1], [10, 30]],
+        max_rating=5,
+        clamp=True,
+        temps=[0.1, 0.3]
+    )
     logger.info("XGB model test passed successfully")
 
 

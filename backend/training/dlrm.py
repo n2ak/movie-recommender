@@ -1,4 +1,3 @@
-import mlflow
 import torch
 import numpy as np
 import pandas as pd
@@ -193,17 +192,13 @@ def prepare(ds, cat_cols):
 
 
 def test_dlrm_model():
-    from movie_recommender.recommender import Recommender, Request
-    Recommender.instance = None
-    Recommender.champion = False
-    Recommender.single(Request(
-        userId=0,
-        genres=[],
-        model="dlrm_cuda",
-        temp=0,
-        start=0,
-        count=10,
-    ))
+    DLRM.load(champion=False, device="cuda").recommend_for_users_batched(
+        [0, 1],
+        movieIds=[[0, 1], [10, 30]],
+        max_rating=5,
+        clamp=True,
+        temps=[0.1, 0.3]
+    )
     logger.info("DLRM model test passed successfully")
 
 
