@@ -243,12 +243,13 @@ class TrainableModule(L.LightningModule):
         #     "train_loss",
         # )
         with torch.no_grad():
-            self.log_dict({
-                "train_loss": loss,
-            } | self.run_metrics_(logits, y, "train"),
+            self.log_dict(
+                {
+                    "train_loss": loss,
+                } | self.run_metrics_(logits, y, "train"),
                 prog_bar=True,
                 on_epoch=True,
-                on_step=False,
+                on_step=True,
             )
         return loss
 
@@ -295,7 +296,6 @@ class TrainableModule(L.LightningModule):
         L.seed_everything(seed)
         import mlflow
         from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor, TQDMProgressBar
-        coll = MetricCollector()
         callbacks: list = [
             ModelCheckpoint(
                 dirpath="./lightning_runs",
@@ -304,7 +304,6 @@ class TrainableModule(L.LightningModule):
             ),
             LearningRateMonitor(),
             TQDMProgressBar(leave=True),
-            coll,
         ]
 
         if early_stopping is not None:

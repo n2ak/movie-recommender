@@ -52,7 +52,6 @@ def report(
         movieIds,
         max_rating,
         clamp=True,
-        wrap=True,
         temp=0,
     )
     df = pd.DataFrame(dict(

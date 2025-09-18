@@ -103,8 +103,7 @@ class Recommender(Singleton):
             userIds,
             movieIds=movieIds,
             max_rating=self.max_rating,
-            temps=temps,
-            wrap=True,
+            temps=temps
         )
         ret = [result[start:start + count]
                for result, start, count in zip(results, starts, counts)]

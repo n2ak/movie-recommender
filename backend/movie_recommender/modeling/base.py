@@ -16,7 +16,6 @@ class MovieRecommender(ABC, Generic[T]):
         movieIds: list[list[int]],
         max_rating: int,
         temps: list[float],
-        wrap=False,
         clamp=True,
     ) -> list[list["Recommendation"]] | list[list[float]]:
         from ..utils import is_array
