@@ -1,11 +1,10 @@
 import mlflow
-from IPython import display
 from typing import Self
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import KNeighborsTransformer
 from movie_recommender.data import movie_cols, user_cols
-from movie_recommender.logging import logger
+from movie_recommender.logging import Logger
 from movie_recommender.workflow import (
     register_last_model, promote_model_to_champion, model_uri
 )
@@ -204,7 +203,7 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
         with mlflow.start_run(tags={"model_type": "SimilaritySearch"}) as run:
             mlflow.log_params(self._params)
             run_id: str = run.info.run_id
-            logger.info("Run id: %s", run_id)
+            Logger.info("Run id: %s", run_id)
             info = mlflow.pyfunc.log_model(python_model=self)
 
         version = register_last_model(registered_name=registered_name).version

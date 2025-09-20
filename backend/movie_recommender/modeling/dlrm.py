@@ -1,7 +1,7 @@
 import os
 import mlflow.pytorch
 import mlflow.pytorch
-from movie_recommender.logging import logger
+from movie_recommender.logging import Logger
 from typing import Type, Literal, Optional, Callable
 from functools import cached_property
 from lightning.pytorch.callbacks import Callback
@@ -161,12 +161,12 @@ class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
 
     @classmethod
     def load(cls, champion=True, device="cpu") -> "DLRM":
-        print("Loading dlrm on device:", device)
+        Logger.info("Loading dlrm on device: %s", device)
         return TrainableModule.load(champion=champion).model.to(device)
 
     def predict(self, batch: dict[str, torch.Tensor], max_rating):
         self.eval()
-        # print("Dlrm batch length:", batch["num"].shape)
+        # Logger.info("Dlrm batch length:", batch["num"].shape)
         with torch.no_grad():
             res = self.forward(batch).cpu()
             res *= max_rating
@@ -193,7 +193,7 @@ class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
         for i, (user_id, movie_ids) in enumerate(zip(user_ids, movie_ids_list)):
             b = prepare(user_id, movie_ids)
             datas.append(b)
-            # print(f"{i+1} request batch shape: {b.shape}")
+            # Logger.info(f"{i+1} request batch shape: {b.shape}")
         batch = pd.concat(datas, axis=0)
         num = torch.from_numpy(batch[num_cols].values).float()
         cat = torch.from_numpy(batch[cat_cols].values)
@@ -202,7 +202,7 @@ class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
         return [dict(num=n.to(self.device_), cat=c.to(self.device_)) for n, c in zip(num.split(batch_size), cat.split(batch_size))]
 
     def log_artifacts(self):
-        logger.info("Logging artifacts.")
+        Logger.info("Logging artifacts.")
 
         def save(dir):
             self.movies.to_parquet(f"{dir}/movies.parquet")
@@ -321,7 +321,7 @@ class TrainableModule(L.LightningModule):
         with mlflow.start_run(tags={"model_type": "DLRM"}) as run:
             import json
             run_id: str = run.info.run_id
-            logger.info("Run id: %s", run_id)
+            Logger.info("Run id: %s", run_id)
             mlflow.log_params({"model_params": json.dumps(self.params_dict)})
             trainer.fit(
                 model=self,

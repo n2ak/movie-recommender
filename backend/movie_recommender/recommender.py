@@ -10,6 +10,7 @@ if True:
     from movie_recommender.modeling.base import Recommendation, MovieRecommender
     from movie_recommender.utils import Singleton
     from movie_recommender.sim_search import SimilaritySearch
+    from movie_recommender.logging import Logger
 
 ModelType = Literal["xgb_cpu", "xgb_cuda", "dlrm_cpu", "dlrm_cuda"]
 
@@ -39,7 +40,7 @@ class Recommender(Singleton):
         for model in ["xgb_cpu", "xgb_cuda", "dlrm_cpu", "dlrm_cuda"]:
             if model in exclude:
                 continue
-            print(f"Preloading {model=}")
+            Logger.info(f"Preloading {model=}")
             instance.get_model(model)  # type: ignore
 
     def get_model(self, modelname: ModelType, reload=False) -> MovieRecommender:
@@ -71,7 +72,6 @@ class Recommender(Singleton):
 
     @staticmethod
     def batched(requests: list["Request"]):
-        # print(f"Processing a batch of {len(requests)} requests")
         self = Recommender.get_instance()
         resp = []
         import time
@@ -123,10 +123,10 @@ class Recommender(Singleton):
             new = old_run_id != run_id
             cls.current_champions[full_name] = run_id
             if new:
-                print(f"New champion for model={full_name}")
+                Logger.info(f"New champion for model={full_name}")
             return new
 
-        print("Checking for new champions")
+        Logger.info("Checking for new champions")
         for model_name in recommender.models:
             name = model_name.removesuffix("_cpu")
             name = name.removesuffix("_cuda")

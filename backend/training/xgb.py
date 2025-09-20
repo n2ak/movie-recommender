@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from movie_recommender.data import movie_cols, user_cols
-from movie_recommender.utils import report
 from movie_recommender.modeling.xgbmr import XGBMR
-from movie_recommender.train_utils import mae as _mae, get_env, fix_split
-from movie_recommender.workflow import read_parquet_from_s3, connect_minio, connect_mlflow
+from movie_recommender.train_utils import fix_split
+from movie_recommender.workflow import read_parquet_from_s3
+from movie_recommender.logging import Logger
 import logging
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.metrics import mean_absolute_error
@@ -179,7 +179,7 @@ def cv(df: pd.DataFrame, params, n_splits=3, seed=0, **training_params):
         X_val = df.iloc[val_idx]
         X_train, X_val = fix_split(df, X_train, X_val)
 
-        # print(X_train.shape,X_val.shape,
+        # Logger.info("",X_train.shape,X_val.shape,
         #     "Val new user ids :",np.setdiff1d(
         #         X_val.user_id.unique(),
         #         X_train.user_id.unique(),
@@ -200,8 +200,7 @@ def cv(df: pd.DataFrame, params, n_splits=3, seed=0, **training_params):
             maximize=False,
         )
         pred = booster.predict(xgb.DMatrix(X_val, y_val))
-        # print(pred[:10])
-        print(f"Pred mean: {pred.mean():.2f} , std: {pred.std():.2f}")
+        Logger.debug(f"Pred mean: {pred.mean():.2f} , std: {pred.std():.2f}")
         scores.append(mean_absolute_error(y_val, pred))
 
     scores = np.array(scores)
@@ -287,11 +286,11 @@ def main(
         return np.mean(scores)
 
     # Optimize
-    print("Running CV...")
+    Logger.info("Running CV...")
     study = optuna.create_study(direction='minimize')
     study.optimize(objective_func, n_trials=n_trials,  # type: ignore
                    show_progress_bar=True)
-    print("Found best params:", study.best_params)
+    Logger.info("Found best params: %s", study.best_params)
 
     # Retrain
     train, test = simple_split(ratings, .8)
@@ -312,10 +311,11 @@ def main(
     cols = importances[importances.importance > (
         importances.importance.max() * pct_thresh)].feature.tolist()
 
-    print("Found most impactful features:", cols)
+    Logger.info("Found most impactful features: %s", cols)
 
-    print()
-    print("Training XGBMR...")
+    Logger.info("\n")
+
+    Logger.info("Training XGBMR...")
     from movie_recommender.modeling.xgbmr import XGBMR
     model = XGBMR(processor.user_data, processor.movie_data, cols=cols)
     _, run_id = model.fit(
@@ -327,8 +327,8 @@ def main(
         num_boost_round=num_boost_round,
         early_stopping_rounds=early_stopping_rounds,
     )
-    print()
-    print("Saving plots...")
+    Logger.info("\n")
+    Logger.info("Saving plots...")
     save_plots(
         model,
         prepare(X_train[model.cols], y_train),

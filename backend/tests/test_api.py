@@ -4,6 +4,7 @@ from typing import TypeVar
 from httpx import ASGITransport, AsyncClient
 from api import app, RecomResponse, RecomRequest
 from movie_recommender.recommender import ModelType
+from movie_recommender.logging import Logger
 from asgi_lifespan import LifespanManager  # pip install 'asgi-lifespan==2.*'
 
 
@@ -41,14 +42,14 @@ async def manager():
 @pytest_asyncio.fixture
 async def aclient(manager):
     async with AsyncClient(transport=ASGITransport(manager), base_url="http://test") as client:
-        print("Client is ready")
+        Logger.debug("Client is ready")
         yield client
 
 
 # @pytest.mark.asyncio
 # async def test_api(aclient: AsyncClient):
 #     for model in MODELS:
-#         print(model)
+#         Logger.debug(model)
 #         data = RecomRequest(
 #             userId=1,
 #             genres=[],

@@ -2,8 +2,7 @@ import json
 import os
 
 import mlflow.xgboost
-from movie_recommender.logging import logger
-import numpy as np
+from movie_recommender.logging import Logger
 import pandas as pd
 from .base import MovieRecommender
 import xgboost as xgb
@@ -26,8 +25,6 @@ class XGBMR(MovieRecommender[NDArray]):
 
     def predict(self, batch, max_rating):
         pred = self.model.predict(xgb.DMatrix(batch))
-        print(pred.std(), pred.mean())
-        print(pred)
         return pred*max_rating
 
     def save(self, path):
@@ -42,7 +39,7 @@ class XGBMR(MovieRecommender[NDArray]):
             model_uri(registered_name, champion)
         )
         best_model.set_param({"device": device})
-        print("XGB loaded on device:", device)
+        Logger.info("XGB loaded on device: %s", device)
 
         run_id = get_registered_model_run_id(
             registered_name, champion=champion
@@ -68,7 +65,7 @@ class XGBMR(MovieRecommender[NDArray]):
         )
 
         model.model = best_model
-        logger.info(
+        Logger.info(
             f"Loaded champion model, {registered_name=}"
         )
         return model
@@ -147,7 +144,7 @@ class XGBMR(MovieRecommender[NDArray]):
             evals.append((xgb.DMatrix(*eval_set), "val"))
         with mlflow.start_run(tags={"model_type": "XGBMR"}) as run:
             run_id = run.info.run_id
-            logger.info("Run id: %s", run_id)
+            Logger.info("Run id: %s", run_id)
             mlflow.log_param("custom_params", json.dumps(dict(
                 training_config=training_config,
                 cols=self.cols
@@ -163,7 +160,7 @@ class XGBMR(MovieRecommender[NDArray]):
             )
 
             self.log_artifacts()
-            logger.info("Done training.")
+            Logger.info("Done training.")
 
         register_last_model_and_try_promote(
             registered_name=registered_name,
@@ -172,7 +169,7 @@ class XGBMR(MovieRecommender[NDArray]):
         return eval_results, run_id
 
     def log_artifacts(self):
-        logger.info("Logging artifacts.")
+        Logger.info("Logging artifacts.")
 
         def save(dir):
             self.movies.to_parquet(f"{dir}/movies.parquet")

@@ -5,9 +5,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from sklearn.decomposition import PCA
-from movie_recommender.logging import logger
+from movie_recommender.logging import Logger
 from movie_recommender.sim_search import SimilaritySearch
-from movie_recommender.workflow import save_figures, connect_minio, connect_mlflow, download_parquet_from_s3
+from movie_recommender.workflow import connect_minio, connect_mlflow, download_parquet_from_s3
 
 simsearch_exp_name = "SimilaritySearch".lower()
 
@@ -48,7 +48,7 @@ def test_simsearch():
         movie_ids)[["movie_genre_Romance"]].all().item()
 
     # save_figures(figures, run_id=run_id)
-    logger.info("Similarity Search test passed successfully")
+    Logger.info("Similarity Search test passed successfully")
 
 
 def test_users(simsearch: SimilaritySearch, figures: dict[str, Figure]):
@@ -113,5 +113,5 @@ if __name__ == "__main__":
     elif arg == "test":
         test_simsearch()
     else:
-        logger.error(f'Invalid arg {arg}')
+        Logger.error(f'Invalid arg {arg}')
         sys.exit(1)

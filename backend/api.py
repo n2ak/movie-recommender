@@ -12,6 +12,7 @@ if True:
     dotenv.load_dotenv("../.env")
     from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse
     from movie_recommender.workflow import connect_minio, connect_mlflow
+    from movie_recommender.logging import Logger
     # for models to load when testing!!!
     sys.path.append(os.path.abspath("./training"))
 
@@ -38,36 +39,36 @@ async def worker():
 
         if requests:
             batch = [r for r, _ in requests]
-            print(f"Processing {len(batch)}/{BATCH_SIZE} requests")
+            Logger.info(f"Processing {len(batch)}/{BATCH_SIZE} requests")
             start = time.time()
             try:
                 preds = Recommender.batched(batch)
                 for pred, (_, fut) in zip(preds, requests):
                     fut.set_result(pred)
             except Exception as e:
-                print("Exception", e)
+                Logger.error("Exception: %s", e)
                 for _, fut in requests:
                     if not fut.done():
                         fut.set_exception(e)
             process_time = (time.time() - start) * 1000
-            print(f"Processing took {process_time:.0f}ms")
+            Logger.info(f"Processing took {process_time:.0f}ms")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     connect_minio()
     connect_mlflow()
-    print("Starting up...")
+    Logger.info("Starting up...")
 
     Recommender.load_all_models(exclude=["dlrm_cpu", "xgb_cpu"])
-    print("Loaded models")
+    Logger.info("Loaded models")
 
     asyncio.create_task(periodic_task())
     asyncio.create_task(worker())
 
-    print("\n\nServer is up...\n\n")
+    Logger.info("\n\nServer is up...\n\n")
     yield
-    print("Shutting down...")
+    Logger.info("Shutting down...")
 
 app = FastAPI(lifespan=lifespan)
 

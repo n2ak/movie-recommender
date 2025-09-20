@@ -2,15 +2,14 @@
 import os
 import mlflow
 import functools
-import numpy as np
 import pandas as pd
 import mlflow.artifacts
 from minio import Minio
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from typing import Callable, Optional
+from typing import Optional
 from numpy.typing import NDArray
-
+from .logging import Logger
 _mlflowClient: Optional[mlflow.MlflowClient] = None
 minioClient: Optional[Minio] = None
 
@@ -23,8 +22,8 @@ def connect_minio():
         secure = endpoint.startswith("https://")
         endpoint_stripped = endpoint.replace(
             "http://", "").replace("https://", "")
-        print("Secure", secure)
-        print("endpoint", endpoint)
+        Logger.debug("Secure %s", secure)
+        Logger.debug("endpoint %s", endpoint)
         minioClient = Minio(
             endpoint=endpoint_stripped,
             access_key=os.environ["AWS_ACCESS_KEY_ID"],
@@ -32,8 +31,8 @@ def connect_minio():
             region=os.environ["AWS_DEFAULT_REGION"],
             secure=secure,
         )
-        print("Connected to minio on:", endpoint)
-    print("Available Buckets", minioClient.list_buckets())
+        Logger.info("Connected to minio on: %s", endpoint)
+    Logger.debug("Available Buckets %s", minioClient.list_buckets())
 
 
 def connect_mlflow():
@@ -43,7 +42,7 @@ def connect_mlflow():
     uri = os.environ["MLFLOW_TRACKING_URI"]
     mlflow.set_tracking_uri(uri)
     _mlflowClient = mlflow.MlflowClient(uri)
-    print("Connected to mlflow on:", uri)
+    Logger.info("Connected to mlflow on: %s", uri)
 
 
 def get_mlflow_client():
@@ -77,33 +76,32 @@ def try_promote_model(model_name: str, metric: str, minimum=True):
             model_name, "champion")
         assert champion.run_id is not None
 
-        print("metrics", get_run_metrics(champion.run_id))
         champion_loss = get_run_metrics(champion.run_id)[metric]
         latest_loss = get_run_metrics(latest_registered.run_id)[metric]
 
-        print(
-            f"Champion '{metric}': {champion_loss:.4f},",
-            f"Latest '{metric}': {latest_loss:.4f}"
+        Logger.debug(
+            f"Champion '{metric}': {champion_loss:.4f}," +
+            f" Latest '{metric}': {latest_loss:.4f}"
         )
 
         condition = latest_loss < champion_loss if minimum else latest_loss > champion_loss
 
         if condition:
             promote_model_to_champion(model_name, last_version)
-            print(f"'{model_name}' has new champion")
+            Logger.debug(f"'{model_name}' has new champion")
         else:
-            print(f"No new champion for '{model_name}'")
+            Logger.debug(f"No new champion for '{model_name}'")
 
     except mlflow.exceptions.RestException:
         promote_model_to_champion(model_name, last_version)
-        print(f"{model_name}'s first model")
+        Logger.debug(f"{model_name}'s first model")
 
 
 def promote_model_to_champion(registered_name, version: str):
     assert _mlflowClient is not None
     _mlflowClient.set_registered_model_alias(
         registered_name, "champion", version)
-    print(f"Promoted {version=} of {registered_name=} to champion!")
+    Logger.debug(f"Promoted {version=} of {registered_name=} to champion!")
 
 
 def get_registered_model_run_id(registered_name: str, champion: bool):
@@ -154,17 +152,16 @@ def log_temp_artifacts(save_fn, artifact_path=None, run_id=None):
     import mlflow
     with tempfile.TemporaryDirectory() as f:
         save_fn(f)
-        print("Logging folder", f)
+        Logger.debug("Logging folder %s")
         mlflow.log_artifacts(f, artifact_path, run_id=run_id)
 
 
 @functools.lru_cache(maxsize=16)
 def download_artifacts(run_id: str, artifact_path: str):
     assert_mlflow_connection()
-    print(f"Getting artifacts, {run_id=}, {artifact_path=}")
+    Logger.debug(f"Getting artifacts, {run_id=}, {artifact_path=}")
     files = mlflow.artifacts.list_artifacts(
         run_id=run_id)
-    # print("files", files)
     if not len(files):
         raise Exception(f"No files! {run_id=}, {artifact_path=}")
 
@@ -185,7 +182,7 @@ def save_plots(
     from movie_recommender.workflow import save_figures
     from .utils import report
     user_ids, movie_ids, train_y = train_data
-    print("Training")
+    Logger.info("Training")
     report(
         model,
         user_ids,
@@ -197,7 +194,7 @@ def save_plots(
     figures["train.png"] = plt.gcf()
     plt.close()
 
-    print("Test")
+    Logger.info("Test")
     user_ids, movie_ids, test_y = test_data
     report(
         model,
@@ -249,12 +246,12 @@ def download_parquet_from_s3(bucket: str, *filenames: str):
 def upload_folder_to_s3(dir: str, bucket):
     import pathlib
     assert minioClient is not None
-    print(f"Uploading {dir=} to s3 {bucket=}")
+    Logger.debug(f"Uploading {dir=} to s3 {bucket=}")
     for file in pathlib.Path(dir).glob("*"):
         filepath = str(file)
         object_name = filepath.split("/")[-1]
 
-        print(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
+        Logger.debug(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
 
         minioClient.fput_object(
             bucket, object_name=object_name, file_path=filepath

@@ -1,10 +1,12 @@
 import logging
-logger = logging.getLogger('Logger')
-logger.setLevel(logging.INFO)
-if not logger.handlers:
+
+Logger = logging.getLogger('Logger')
+Logger.setLevel(logging.DEBUG)
+
+if not Logger.handlers:
     ch = logging.StreamHandler()
     ch.setFormatter(logging.Formatter(
         '[%(levelname)s] - %(message)s')
     )
-    logger.addHandler(ch)
-logger.propagate = False
+    Logger.addHandler(ch)
+Logger.propagate = False

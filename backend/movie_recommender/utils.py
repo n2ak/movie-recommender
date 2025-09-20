@@ -3,12 +3,11 @@ import time
 from contextlib import contextmanager
 from sklearn.metrics import mean_absolute_error
 from typing import Self
-import torch
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from movie_recommender.logging import logger
+from movie_recommender.logging import Logger
 sns.set_theme(style="darkgrid")
 plt.style.use('dark_background')
 
@@ -21,7 +20,7 @@ class Singleton:
         if cls.instance is None:
             instance = cls()
             instance.init(**kwargs)
-            print("%s has been initialized", cls.__name__)
+            Logger.info("%s has been initialized", cls.__name__)
             cls.instance = instance
         return cls.instance
 
@@ -63,11 +62,11 @@ def report(
 
     df["error"] = df.rating - df.pred
 
-    print(
+    Logger.info(
         f"True  : mean {df.rating.mean():.3f}, std {df.rating.std():.3f}")
-    print(f"Pred  : mean {df.pred.mean():.3f}, std {df.pred.std():.3f}")
-    print(f"MAE   : {mean_absolute_error(df.rating, df.pred)}")
-    print(
+    Logger.info(f"Pred  : mean {df.pred.mean():.3f}, std {df.pred.std():.3f}")
+    Logger.info(f"MAE   : {mean_absolute_error(df.rating, df.pred)}")
+    Logger.info(
         f"Error : mean {df.error.mean():.3f}, std {df.error.std():.3f}")
 
     fig, axes = plt.subplots(2, 2, figsize=figsize)
@@ -136,9 +135,11 @@ def Timer(name, mute=True):
     if indent == 0:
         if not mute:
             for k, v in timers.items():
-                print(f'{k}: {v:.0f}ms')
-            print('\t'*indent,
-                  f"******* {name} ended in {delta:.0f}ms *********")
+                Logger.debug(f'{k}: {v:.0f}ms')
+            Logger.debug(
+                ('\t'*indent) +
+                f"******* {name} ended in {delta:.0f}ms *********"
+            )
         timers.clear()
     else:
         timers[name] += delta
