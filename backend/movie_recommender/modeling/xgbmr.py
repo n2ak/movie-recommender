@@ -26,6 +26,8 @@ class XGBMR(MovieRecommender[NDArray]):
 
     def predict(self, batch, max_rating):
         pred = self.model.predict(xgb.DMatrix(batch))
+        print(pred.std(), pred.mean())
+        print(pred)
         return pred*max_rating
 
     def save(self, path):
@@ -90,6 +92,21 @@ class XGBMR(MovieRecommender[NDArray]):
             return [arr[i:i + n] for i in range(0, len(arr), n)]
         batch_size = self.MAX_BATCH_SIZE
         return chunk_split(batch, batch_size)  # type: ignore
+
+    def _prepare_simple(  # type: ignore
+        self,
+        user_ids: list[int],
+        movie_ids: list[int],
+    ):
+        user_data = self.users.loc[user_ids]
+        movie_data = self.movies.loc[movie_ids]
+
+        user_data.reset_index(drop=True, inplace=True)
+        movie_data.reset_index(drop=True, inplace=True)
+
+        batch = pd.concat([user_data, movie_data], axis=1)
+        batch = batch[self.cols]
+        return batch
 
     def _set_data(self, users: pd.DataFrame, movies: pd.DataFrame, cols=None):
 

@@ -35,7 +35,7 @@ class MovieRecommender(ABC, Generic[T]):
         batch = self.unbatch(ratings, [len(m) for m in movieIds])
         batch = [self.apply_temp(r, [u] * len(m), m, t)
                  for r, u, m, t in zip(batch, userIds, movieIds, temps)]
-        return [self.to_pred(u, m, r,) for r, u, m in batch]
+        return [self.wrap_ratings(u, m, r,) for r, u, m in batch]
 
     def unbatch(self, batch: NDArray[np.float32], lengths: list[int]):
         arr: list[NDArray[np.float32]] = []
@@ -82,6 +82,21 @@ class MovieRecommender(ABC, Generic[T]):
         sorted_indices = np.argsort(arrs[0])[::-1]
         return [arr[sorted_indices] for arr in arrs]
 
+    def recommend_simple(
+        self,
+        user_ids,
+        movie_ids,
+        max_rating,
+    ):
+        from ..utils import is_array
+        assert is_array(user_ids)
+        assert is_array(movie_ids)
+
+        batch = self._prepare_simple(user_ids, movie_ids)
+        ratings = self.predict(batch, max_rating=max_rating)
+        ratings = np.clip(ratings, 0, max_rating)
+        return self.wrap_ratings(user_ids, movie_ids, ratings)
+
     @abstractmethod
     def predict(
         self,
@@ -98,7 +113,15 @@ class MovieRecommender(ABC, Generic[T]):
     ) -> list[T]:
         raise NotImplementedError()
 
-    def to_pred(self, userIds, movieIds, preds):
+    @abstractmethod
+    def _prepare_simple(
+        self,
+        user_ids: list[int],
+        movie_ids: list[int],
+    ) -> T:
+        raise NotImplementedError()
+
+    def wrap_ratings(self, userIds, movieIds, preds):
         from ..utils import is_array
         assert is_array(userIds), type(userIds)
         assert is_array(movieIds), type(movieIds)

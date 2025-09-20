@@ -9,7 +9,7 @@ from minio import Minio
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from typing import Callable, Optional
-
+from numpy.typing import NDArray
 
 _mlflowClient: Optional[mlflow.MlflowClient] = None
 minioClient: Optional[Minio] = None
@@ -175,17 +175,17 @@ def download_artifacts(run_id: str, artifact_path: str):
 
 
 def save_plots(
-    model,  # : MovieRecommender,
-    prepare: Callable[[pd.DataFrame], tuple[np.ndarray, np.ndarray, np.ndarray]],
-    train_ds,
-    test_ds,
+    model,
+    train_data:  tuple[NDArray, NDArray, NDArray],
+    test_data:  tuple[NDArray, NDArray, NDArray],
     max_rating: int,
     run_id: str
 ):
     figures = {}
     from movie_recommender.workflow import save_figures
     from .utils import report
-    user_ids, movie_ids, train_y = prepare(train_ds)
+    user_ids, movie_ids, train_y = train_data
+    print("Training")
     report(
         model,
         user_ids,
@@ -197,7 +197,8 @@ def save_plots(
     figures["train.png"] = plt.gcf()
     plt.close()
 
-    user_ids, movie_ids, test_y = prepare(test_ds)
+    print("Test")
+    user_ids, movie_ids, test_y = test_data
     report(
         model,
         user_ids,

@@ -113,13 +113,20 @@ class MovieLensPreprocessor(BaseEstimator, TransformerMixin):
     def __init__(self, n_year_bins=3):
         self.n_year_bins = n_year_bins
 
-    def fit(self, train: pd.DataFrame, y=None):
-        self.year_bins = np.histogram_bin_edges(
+    def fit(self, train: pd.DataFrame, y=None, scale=True):
+        year_bins = np.histogram_bin_edges(
             train["movie_year"], bins=self.n_year_bins)
         train = train.copy()
         train = split_genres(train)
-        self.movie_data = get_movies_data(train.copy(), self.year_bins)
-        _, _, self.user_data = get_user_data(train)
+        movies = get_movies_data(train.copy(), year_bins)
+        _, _, users = get_user_data(train)
+
+        from sklearn.preprocessing import StandardScaler, MinMaxScaler
+        movies[movies.columns] = StandardScaler().fit_transform(movies)
+        users[users.columns] = StandardScaler().fit_transform(users)
+
+        self.movie_data = movies
+        self.user_data = users
 
         return self
 
@@ -144,7 +151,7 @@ class MovieLensPreprocessor(BaseEstimator, TransformerMixin):
 
     def scale(self, train, test):
         from sklearn.preprocessing import StandardScaler, MinMaxScaler
-        scaler = MinMaxScaler().fit(train)
+        scaler = StandardScaler().fit(train)
         cols = train.columns
         train[cols] = scaler.transform(train[cols])
         test[cols] = scaler.transform(test[cols])
@@ -154,7 +161,7 @@ class MovieLensPreprocessor(BaseEstimator, TransformerMixin):
         X_train, y_train = self.transform(train)
         X_test, y_test = self.transform(test)
         X_train, X_test = self.align(X_train, X_test)
-        X_train, X_test = self.scale(X_train, X_test)
+        # X_train, X_test = self.scale(X_train, X_test)
 
         assert X_train.columns.tolist() == X_test.columns.tolist()
 
@@ -192,8 +199,10 @@ def cv(df: pd.DataFrame, params, n_splits=3, seed=0, **training_params):
             **training_params,
             maximize=False,
         )
-        scores.append(mean_absolute_error(
-            y_val, booster.predict(xgb.DMatrix(X_val, y_val))))
+        pred = booster.predict(xgb.DMatrix(X_val, y_val))
+        # print(pred[:10])
+        print(f"Pred mean: {pred.mean():.2f} , std: {pred.std():.2f}")
+        scores.append(mean_absolute_error(y_val, pred))
 
     scores = np.array(scores)
     return scores
@@ -204,6 +213,8 @@ def train_xgb(
     X_train, y_train, X_test, y_test,
     **kwargs,
 ):
+    assert np.all((0 <= y_train) & (y_train <= 1))
+    assert np.all((0 <= y_test) & (y_test <= 1))
     dtrain = xgb.DMatrix(X_train, y_train)
     dval = xgb.DMatrix(X_test, y_test)
     booster = xgb.train(
@@ -224,9 +235,9 @@ def split_(df: pd.DataFrame):
     return users, movies
 
 
-def prepare(X: pd.DataFrame):
+def prepare(X: pd.DataFrame, y):
     X = X.reset_index()
-    user_ids, movie_ids, y = X.user_id, X.movie_id, X.rating
+    user_ids, movie_ids = X.user_id, X.movie_id
     return np.array(user_ids), np.array(movie_ids), np.array(y)
 
 
@@ -307,7 +318,7 @@ def main(
     print("Training XGBMR...")
     from movie_recommender.modeling.xgbmr import XGBMR
     model = XGBMR(processor.user_data, processor.movie_data, cols=cols)
-    model.fit(
+    _, run_id = model.fit(
         study.best_trial.params,
         X_train[model.cols], y_train,
         eval_set=(X_test[model.cols], y_test),
@@ -316,7 +327,15 @@ def main(
         num_boost_round=num_boost_round,
         early_stopping_rounds=early_stopping_rounds,
     )
-    # save_plots(model, prepare, X_train, X_test, max_rating, run_id=run_id)
+    print()
+    print("Saving plots...")
+    save_plots(
+        model,
+        prepare(X_train[model.cols], y_train),
+        prepare(X_test[model.cols], y_test),
+        max_rating=5,
+        run_id=run_id,
+    )
 
 
 if __name__ == "__main__":

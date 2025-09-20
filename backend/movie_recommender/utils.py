@@ -21,7 +21,7 @@ class Singleton:
         if cls.instance is None:
             instance = cls()
             instance.init(**kwargs)
-            logger.info("%s has been initialized", cls.__name__)
+            print("%s has been initialized", cls.__name__)
             cls.instance = instance
         return cls.instance
 
@@ -47,12 +47,10 @@ def report(
     figsize=(16, 8),
     title="",
 ):
-    recommendations = model.recommend_for_users(
+    recommendations = model.recommend_simple(
         userIds,
         movieIds,
         max_rating,
-        clamp=True,
-        temp=0,
     )
     df = pd.DataFrame(dict(
         userIds=[r.userId for r in recommendations],
@@ -65,11 +63,11 @@ def report(
 
     df["error"] = df.rating - df.pred
 
-    logger.info(
+    print(
         f"True  : mean {df.rating.mean():.3f}, std {df.rating.std():.3f}")
-    logger.info(f"Pred  : mean {df.pred.mean():.3f}, std {df.pred.std():.3f}")
-    logger.info(f"MAE   : {mean_absolute_error(df.rating, df.pred)}")
-    logger.info(
+    print(f"Pred  : mean {df.pred.mean():.3f}, std {df.pred.std():.3f}")
+    print(f"MAE   : {mean_absolute_error(df.rating, df.pred)}")
+    print(
         f"Error : mean {df.error.mean():.3f}, std {df.error.std():.3f}")
 
     fig, axes = plt.subplots(2, 2, figsize=figsize)
@@ -81,7 +79,8 @@ def report(
     sns.histplot(df.error, fill=True, label="error",  # type: ignore
                  ax=axes[1], kde=True, bins=20)
     sns.barplot(df.astype(int).groupby(
-        "rating").mean().error.abs(), ax=axes[2])  # type: ignore
+        # type: ignore
+        "rating").mean().error.abs(), ax=axes[2], label="avg error")
     sns.barplot(
         data=(
             pd.DataFrame(
@@ -104,11 +103,11 @@ def report(
     axes[1].set_xlim([-max_rating, max_rating])
     axes[2].set_ylim([0, max_rating])
 
-    # for a in axes:
-    #     a.legend()
-    plt.legend()
+    for a in axes:
+        a.legend()
     plt.suptitle(title)
     plt.tight_layout()
+    plt.legend()
 
     return df
 
