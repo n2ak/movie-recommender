@@ -56,7 +56,7 @@ def model_uri(registered_name: str, champion=True):
     return f"models:/{registered_name}/latest"
 
 
-def get_run_metrics(run_id):
+def get_run_metrics(run_id: str):
     assert _mlflowClient is not None
     return _mlflowClient.get_run(run_id).data.metrics
 

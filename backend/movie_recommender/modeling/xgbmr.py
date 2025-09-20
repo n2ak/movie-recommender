@@ -10,7 +10,7 @@ import mlflow
 from numpy.typing import NDArray
 from typing import Optional
 from movie_recommender.workflow import (
-    download_artifacts, register_last_model_and_try_promote, log_temp_artifacts, get_registered_model_run_id, model_uri
+    download_artifacts, register_last_model_and_try_promote, log_temp_artifacts, get_registered_model_run_id, model_uri, get_run_metrics
 )
 
 
@@ -68,6 +68,7 @@ class XGBMR(MovieRecommender[NDArray]):
         Logger.info(
             f"Loaded champion model, {registered_name=}"
         )
+        model.run_id = run_id
         return model
 
     def _prepare_batch(
@@ -166,6 +167,7 @@ class XGBMR(MovieRecommender[NDArray]):
             registered_name=registered_name,
             metric_name="val-mae"
         )
+        self.run_id = run_id
         return eval_results, run_id
 
     def log_artifacts(self):

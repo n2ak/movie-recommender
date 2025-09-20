@@ -37,13 +37,26 @@ class Recommender(Singleton):
     @classmethod
     def load_all_models(cls, exclude: list[ModelType] = []):
         instance = cls.get_instance()
-        for model in ["xgb_cpu", "xgb_cuda", "dlrm_cpu", "dlrm_cuda"]:
-            if model in exclude:
+        models: list[ModelType] = ["xgb_cpu",
+                                   "xgb_cuda", "dlrm_cpu", "dlrm_cuda"]
+        for model in models:
+            if model in exclude or (instance.models[model] is not None):
                 continue
             Logger.info(f"Preloading {model=}")
             instance.get_model(model)  # type: ignore
 
-    def get_model(self, modelname: ModelType, reload=False) -> MovieRecommender:
+    def get_best_model(self, metric="val-mae") -> MovieRecommender:
+        models: list[MovieRecommender] = list(
+            self.models.values())  # type: ignore
+        assert all([model is not None for model in models])
+        models = sorted(
+            models, key=lambda model: model.get_stats[metric], reverse=True)
+        return models[0]
+
+    def get_model(self, modelname: ModelType | Literal["best"], reload=False) -> MovieRecommender:
+        if modelname == "best":
+            self.load_all_models()
+            return self.get_best_model()
         model = self.models[modelname]
         if model is None or reload:
             match modelname:
@@ -98,7 +111,7 @@ class Recommender(Singleton):
 
     def recom(
         self, userIds: list[int], movieIds: list[list[int]],
-        model: ModelType, temps: list[float], counts: list[int],
+        model: ModelType | Literal["best"], temps: list[float], counts: list[int],
         starts: list[int],
     ):
         results = self.get_model(model).recommend_for_users_batched(
@@ -151,7 +164,7 @@ class Request(Schema):
     genres: list[str]
     start: int
     count: Optional[int]
-    model: ModelType
+    model: ModelType | Literal["best"]
     temp: float
 
 
@@ -160,5 +173,5 @@ class SimilarMoviesRequest(Schema):
     start: int
     count: Optional[int]
     movieIds: list[int]
-    model: ModelType
+    model: ModelType | Literal["best"]
     temp: float

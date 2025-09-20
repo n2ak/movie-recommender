@@ -1,15 +1,19 @@
+from functools import cached_property
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
 import torch
 import numpy as np
 from torch import nn
-from typing import Type, TypeVar, Generic
+from typing import Type, TypeVar, Generic, Optional
 from numpy.typing import NDArray
 from movie_recommender.utils import Timer
+from movie_recommender.workflow import get_run_metrics
 T = TypeVar('T')
 
 
 class MovieRecommender(ABC, Generic[T]):
+    run_id: Optional[str]
+
     def recommend_for_users_batched(
         self,
         userIds: list[int],
@@ -130,6 +134,14 @@ class MovieRecommender(ABC, Generic[T]):
             preds), (len(userIds), len(movieIds), len(preds))
         return [
             Recommendation(int(u), int(m), float(p)) for u, m, p in zip(userIds, movieIds, preds)]
+
+    @cached_property
+    def get_stats(
+        self,
+    ) -> dict:
+        run_id = self.run_id
+        assert run_id is not None
+        return get_run_metrics(run_id)
 
 
 @dataclass(eq=True)
