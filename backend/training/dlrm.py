@@ -2,14 +2,14 @@ import torch
 import numpy as np
 import pandas as pd
 import torch.nn.functional as F
-from movie_recommender.modeling.dlrm import DLRM, TrainableModule, DLRMParams
-from movie_recommender.workflow import download_parquet_from_s3, connect_minio, connect_mlflow
+
+from movie_recommender.logging import Logger
 from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.train_utils import mae, rmse, get_env
-import logging
-
-logger = logging.getLogger(__file__)
-logger.setLevel(logging.INFO)
+from movie_recommender.modeling.dlrm import DLRM, TrainableModule, DLRMParams
+from movie_recommender.workflow import (
+    download_parquet_from_s3, connect_minio, connect_mlflow, save_plots
+)
 
 
 def create_data_sampler(y_train: np.ndarray):
@@ -158,10 +158,10 @@ def train_dlrm(
     connect_minio()
     connect_mlflow()
 
-    logger.info("****************Starting dlrm training...**************")
-    logger.info("Train ds shape: %s", train.shape)
-    logger.info("Test ds shape: %s", test.shape)
-    logger.info("Epochs: %s", epochs)
+    Logger.info("****************Starting dlrm training...**************")
+    Logger.info("Train ds shape: %s", train.shape)
+    Logger.info("Test ds shape: %s", test.shape)
+    Logger.info("Epochs: %s", epochs)
 
     unique, cat_cols, num_cols, embds, nmovies, nusers = process_data(
         train, test
@@ -181,7 +181,15 @@ def train_dlrm(
         acc="gpu",
         exp_name=exp_name,
     )
-    logger.info("****************Training is done*******************")
+    Logger.info("****************Training is done*******************")
+
+    save_plots(
+        model,
+        prepare(train_ds[:], cat_cols),
+        prepare(test_ds[:], cat_cols),
+        max_rating=5,
+        run_id=run_id,
+    )
 
 
 def prepare(ds, cat_cols):
@@ -199,7 +207,7 @@ def test_dlrm_model():
         clamp=True,
         temps=[0.1, 0.3]
     )
-    logger.info("DLRM model test passed successfully")
+    Logger.info("DLRM model test passed successfully")
 
 
 if __name__ == "__main__":
@@ -222,5 +230,5 @@ if __name__ == "__main__":
     elif arg == "test":
         test_dlrm_model()
     else:
-        logger.error(f'Invalid arg {arg}')
+        Logger.error(f'Invalid arg {arg}')
         sys.exit(1)

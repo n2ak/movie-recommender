@@ -8,11 +8,11 @@ MAX_RATING = 5
 T = typing.TypeVar("T")
 
 
-def mae(logits, y) -> tuple[str, float]:
+def mae(pred, y) -> tuple[str, float]:
     max_rating = MAX_RATING
     y = y * max_rating
-    logits = logits * max_rating
-    return "mae", np.abs(logits - y).mean().item()
+    pred = pred * max_rating
+    return "mae", np.abs(pred - y).mean().item()
 
 
 def rmse(logits, y) -> tuple[str, float]:

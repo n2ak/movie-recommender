@@ -1,21 +1,15 @@
-from movie_recommender.workflow import save_plots
-from movie_recommender.train_utils import simple_split
 import optuna
 import pandas as pd
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from movie_recommender.data import movie_cols, user_cols
-from movie_recommender.modeling.xgbmr import XGBMR
-from movie_recommender.train_utils import fix_split
-from movie_recommender.workflow import read_parquet_from_s3
-from movie_recommender.logging import Logger
-import logging
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.metrics import mean_absolute_error
 
-logger = logging.getLogger(__file__)
-logger.setLevel(logging.INFO)
+from movie_recommender.logging import Logger
+from movie_recommender.modeling.xgbmr import XGBMR
+from movie_recommender.data import movie_cols, user_cols
+from movie_recommender.train_utils import fix_split, mae, simple_split
+from movie_recommender.workflow import read_parquet_from_s3, save_plots
 
 
 def split_genres(df):
@@ -201,7 +195,7 @@ def cv(df: pd.DataFrame, params, n_splits=3, seed=0, **training_params):
         )
         pred = booster.predict(xgb.DMatrix(X_val, y_val))
         Logger.debug(f"Pred mean: {pred.mean():.2f} , std: {pred.std():.2f}")
-        scores.append(mean_absolute_error(y_val, pred))
+        scores.append(mae(pred, y_val))
 
     scores = np.array(scores)
     return scores
@@ -216,6 +210,7 @@ def train_xgb(
     assert np.all((0 <= y_test) & (y_test <= 1))
     dtrain = xgb.DMatrix(X_train, y_train)
     dval = xgb.DMatrix(X_test, y_test)
+
     booster = xgb.train(
         params=params,
         dtrain=dtrain,
@@ -248,7 +243,7 @@ def test_xgb_model():
         clamp=True,
         temps=[0.1, 0.3]
     )
-    logger.info("XGB model test passed successfully")
+    Logger.info("XGB model test passed successfully")
 
 
 def main(
@@ -265,7 +260,7 @@ def main(
             'objective': trial.suggest_categorical('objective', ['reg:squarederror']),
             'device': trial.suggest_categorical('device', ["cuda"]),
             'random_state': trial.suggest_categorical('random_state', [0]),
-            'eval_metric': trial.suggest_categorical('eval_metric', ["mae"]),
+            'eval_metric': trial.suggest_categorical('eval_metric', ["rmse"]),
             'booster': trial.suggest_categorical('booster', ['gbtree']),
 
             'max_depth': trial.suggest_int('max_depth', 3, 10),
@@ -317,6 +312,11 @@ def main(
 
     Logger.info("Training XGBMR...")
     from movie_recommender.modeling.xgbmr import XGBMR
+
+    def mae_(predt: np.ndarray, dtrain: xgb.DMatrix):
+        y = dtrain.get_label()
+        return mae(predt, y)
+
     model = XGBMR(processor.user_data, processor.movie_data, cols=cols)
     _, run_id = model.fit(
         study.best_trial.params,
@@ -326,6 +326,7 @@ def main(
         verbose_eval=500,
         num_boost_round=num_boost_round,
         early_stopping_rounds=early_stopping_rounds,
+        custom_metric=mae_,
     )
     Logger.info("\n")
     Logger.info("Saving plots...")
@@ -354,5 +355,5 @@ if __name__ == "__main__":
     elif arg == "test":
         test_xgb_model()
     else:
-        logger.error(f'Invalid arg {arg}')
+        Logger.error(f'Invalid arg {arg}')
         sys.exit(1)

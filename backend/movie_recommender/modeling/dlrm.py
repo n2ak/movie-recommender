@@ -1,21 +1,15 @@
 import os
-import mlflow.pytorch
-import mlflow.pytorch
-from movie_recommender.logging import Logger
-from typing import Type, Literal, Optional, Callable
-from functools import cached_property
-from lightning.pytorch.callbacks import Callback
-import lightning as L
-import mlflow.pytorch
-import mlflow.pytorch
 import torch
 import numpy as np
 import pandas as pd
 from torch import nn
-from .base import MLP,  MovieRecommender
+import lightning as L
+from functools import cached_property
 from dataclasses import dataclass, asdict
-from dataclasses import dataclass
-from typing import Self, Type, Optional
+from typing import Self, Type, Optional, Type, Literal, Optional, Callable
+
+from .base import MLP,  MovieRecommender
+from ..logging import Logger
 from ..workflow import log_temp_artifacts, register_last_model_and_try_promote, model_uri
 
 registered_name = os.environ["DLRM_REGISTERED_NAME"]
@@ -209,15 +203,20 @@ class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
             self.users.to_parquet(f"{dir}/users.parquet")
         log_temp_artifacts(save, artifact_path="resources")
 
+    def _prepare_simple(self, user_ids, movie_ids):
+        movie_data = self.movies.iloc[movie_ids]
+        user_data = self.users.iloc[user_ids]
+        movie_data.reset_index(inplace=True, drop=True)
+        user_data.reset_index(inplace=True, drop=True)
 
-class MetricCollector(Callback):
-    def __init__(self):
-        super().__init__()
-        self.logged_metrics_history = []
+        batch = pd.concat([user_data, movie_data], axis=1)
 
-    def on_train_epoch_end(self, trainer, _):  # type: ignore
-        epoch_metrics = trainer.logged_metrics
-        self.logged_metrics_history.append(epoch_metrics.copy())
+        num_cols = self.params.num_cols
+        cat_cols = self.params.cat_cols
+
+        num = torch.from_numpy(batch[num_cols].values).float().to(self.device_)
+        cat = torch.from_numpy(batch[cat_cols].values).to(self.device_)
+        return dict(num=num, cat=cat)
 
 
 class TrainableModule(L.LightningModule):
