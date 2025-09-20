@@ -1,3 +1,6 @@
+from movie_recommender.workflow import save_plots
+from movie_recommender.train_utils import simple_split
+import optuna
 import pandas as pd
 import numpy as np
 import pandas as pd
@@ -5,106 +8,211 @@ import xgboost as xgb
 from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.utils import report
 from movie_recommender.modeling.xgbmr import XGBMR
-from movie_recommender.train_utils import mae as _mae, get_env
-from movie_recommender.workflow import download_parquet_from_s3, connect_minio, connect_mlflow
+from movie_recommender.train_utils import mae as _mae, get_env, fix_split
+from movie_recommender.workflow import read_parquet_from_s3, connect_minio, connect_mlflow
 import logging
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.metrics import mean_absolute_error
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
 
 
-def training(
-    experiment_name: str,
-    train_ds: pd.DataFrame, test_ds: pd.DataFrame,
-    users, movies,
-    booster,
-    max_depth,
-    lr,
-    max_rating,
-    num_boost_round=10_000,
-    verbose_eval=1000,
-    early_stopping_rounds=500,
+def split_genres(df):
+    df.movie_genres = df.movie_genres.apply(lambda x: x.split(","))
+    return df
+
+
+def get_genre_stats(df: pd.DataFrame):
+    from collections import defaultdict
+    genres_counts = defaultdict(int)
+    genres_avg_ratings = defaultdict(float)
+    for _, row in df.iterrows():
+        for g in row.movie_genres:
+            genres_counts[g] += 1
+            genres_avg_ratings[g] += row.rating
+    for k in genres_avg_ratings:
+        genres_avg_ratings[k] = genres_avg_ratings[k] / genres_counts[k]
+    return genres_counts, genres_avg_ratings
+
+
+def get_movies_data(train: pd.DataFrame, year_bins):
+    train.movie_year = pd.cut(
+        train["movie_year"], bins=year_bins, labels=False, include_lowest=True)
+    df = train[["movie_id", "movie_year"]].merge(
+        train.groupby("movie_id").agg(
+            movie_avg_rating=("rating", "mean"),
+            movie_total_rating=("rating", "count"),
+        ),
+        on="movie_id",
+        how="right"
+    ).drop_duplicates("movie_id")
+    df = pd.get_dummies(df, columns=[
+        "movie_year",
+    ])
+    return df.set_index("movie_id")
+
+
+def merge(df, movies_data, user_data):
+    df = df.merge(
+        movies_data,
+        on="movie_id",
+        how="left"
+    ).merge(
+        user_data,
+        on="user_id",
+        how="left"
+    )
+    return df
+
+
+def get_user_data(train):
+    # genres_counts, genres_avg_ratings = get_genre_stats(train)
+    genres = get_possible_genres(train)
+
+    genres_dummies = pd.DataFrame(
+        train.movie_genres.apply(lambda movie_genres: [
+                                 item in movie_genres for item in genres]).tolist(),
+        columns=genres
+    )
+    genres_dummies["user_id"] = train.user_id.tolist()
+    user_genres_mean = genres_dummies.copy()
+    user_genres_mean[genres] *= train.rating.values[:, None]
+    user_genres_mean = user_genres_mean.groupby("user_id").agg("mean")
+    user_genres_counts = genres_dummies.groupby("user_id").agg("sum")
+
+    user_data = pd.concat([
+        user_genres_mean.rename(columns={g: f"mean_{g}" for g in genres}),
+        user_genres_mean.idxmax(axis=1).rename("highly rated genre"),
+        user_genres_counts.rename(columns={g: f"total_{g}" for g in genres}),
+        user_genres_counts.idxmax(axis=1).rename("most rated genre")
+    ],
+        axis=1,
+    ).merge(
+        train.groupby("user_id").agg(
+            user_avg_rating=("rating", "mean"),
+            user_total_rating=("rating", "count"),
+        ),
+        on="user_id",
+        how="left"
+    )
+    user_data = pd.get_dummies(user_data, columns=[
+        "highly rated genre",
+        "most rated genre",
+    ])
+    user_data = user_data.loc[~user_data.index.duplicated(keep='first'), :]
+    return user_genres_counts, user_genres_mean, user_data
+
+
+def get_possible_genres(df):
+    from itertools import chain
+    return list(set(chain.from_iterable(df.movie_genres)))
+
+
+class MovieLensPreprocessor(BaseEstimator, TransformerMixin):
+    def __init__(self, n_year_bins=3):
+        self.n_year_bins = n_year_bins
+
+    def fit(self, train: pd.DataFrame, y=None):
+        self.year_bins = np.histogram_bin_edges(
+            train["movie_year"], bins=self.n_year_bins)
+        train = train.copy()
+        train = split_genres(train)
+        self.movie_data = get_movies_data(train.copy(), self.year_bins)
+        _, _, self.user_data = get_user_data(train)
+
+        return self
+
+    def transform(self, X: pd.DataFrame, y=None):
+        X = X[['rating', 'movie_id', 'user_id']]
+        X = X.merge(
+            self.movie_data,
+            on="movie_id",
+            how="left"
+        ).merge(
+            self.user_data,
+            on="user_id",
+            how="left"
+        )
+        X = X.set_index(["user_id", "movie_id"])
+        y = X.pop("rating") / 5
+        return X, y
+
+    def align(self, train, test):
+        train, test = train.align(test, join="outer", axis=1, fill_value=0)
+        return train, test
+
+    def scale(self, train, test):
+        from sklearn.preprocessing import StandardScaler, MinMaxScaler
+        scaler = MinMaxScaler().fit(train)
+        cols = train.columns
+        train[cols] = scaler.transform(train[cols])
+        test[cols] = scaler.transform(test[cols])
+        return train, test
+
+    def do_transform(self, train, test):
+        X_train, y_train = self.transform(train)
+        X_test, y_test = self.transform(test)
+        X_train, X_test = self.align(X_train, X_test)
+        X_train, X_test = self.scale(X_train, X_test)
+
+        assert X_train.columns.tolist() == X_test.columns.tolist()
+
+        assert X_train.isna().mean().mean() == 0
+        assert X_test.isna().mean().mean() == 0
+
+        return X_train, X_test, y_train, y_test
+
+
+def cv(df: pd.DataFrame, params, n_splits=3, seed=0, **training_params):
+    from sklearn.model_selection import KFold
+    scores = []
+    for train_idx, val_idx in KFold(n_splits=n_splits, shuffle=True, random_state=seed).split(df):
+        X_train = df.iloc[train_idx]
+        X_val = df.iloc[val_idx]
+        X_train, X_val = fix_split(df, X_train, X_val)
+
+        # print(X_train.shape,X_val.shape,
+        #     "Val new user ids :",np.setdiff1d(
+        #         X_val.user_id.unique(),
+        #         X_train.user_id.unique(),
+        #     ).shape,
+        #     "Val new movie ids:", np.setdiff1d(
+        #         X_val.movie_id.unique(),
+        #         X_train.movie_id.unique(),
+        #     ).shape,
+        # )
+
+        processor = MovieLensPreprocessor().fit(X_train)
+        X_train, X_val, y_train, y_val = processor.do_transform(X_train, X_val)
+
+        booster = train_xgb(
+            params,
+            X_train, y_train, X_val, y_val,
+            **training_params,
+            maximize=False,
+        )
+        scores.append(mean_absolute_error(
+            y_val, booster.predict(xgb.DMatrix(X_val, y_val))))
+
+    scores = np.array(scores)
+    return scores
+
+
+def train_xgb(
+    params,
+    X_train, y_train, X_test, y_test,
+    **kwargs,
 ):
-    assert "user_id" not in train_ds.columns
-    assert "movie_id" not in train_ds.columns
-
-    model = XGBMR(
-        eval_metric=["rmse"],
-        booster=booster,
-        max_depth=max_depth,
-        learning_rate=lr,
+    dtrain = xgb.DMatrix(X_train, y_train)
+    dval = xgb.DMatrix(X_test, y_test)
+    booster = xgb.train(
+        params=params,
+        dtrain=dtrain,
+        evals=[(dtrain, "train"), (dval, "val")],
+        **kwargs,
     )
-    model.set_data(users, movies)
-    # train_X, train_y = train_ds[model.cols], train_ds.rating
-    # test_X, test_y = test_ds[model.cols], test_ds.rating
-    result, run_id = model.fit(
-        train_ds[model.cols],
-        train_ds.rating,
-        eval_set=(test_ds[model.cols], test_ds.rating),
-        experiment_name=experiment_name,
-        num_boost_round=num_boost_round,
-        verbose_eval=verbose_eval,
-        early_stopping_rounds=early_stopping_rounds,
-        custom_metric=mae,
-        maximize=False,
-    )
-    from movie_recommender.workflow import save_plots
-    # save_plots(model, prepare, train_ds, test_ds, max_rating, run_id=run_id)
-    return result
-
-
-def train_xgb(train: pd.DataFrame, test: pd.DataFrame, max_rating: int, exp_name: str, optimize: bool,
-              num_boost_round: int):
-    connect_minio()
-    connect_mlflow()
-
-    train.set_index(["user_id", "movie_id"], inplace=True)
-    test.set_index(["user_id", "movie_id"], inplace=True)
-
-    users, movies = split_(pd.concat([train, test], axis=0))
-    logger.info("****************Starting xgb training...**************")
-    logger.info("Train ds shape: %s", train.shape)
-    logger.info("Test ds shape: %s", test.shape)
-    logger.info("num_boost_round: %s", num_boost_round)
-    logger.info("optimize: %s", optimize)
-
-    if optimize:
-        optimized(exp_name, train, test, users,
-                  movies, max_rating, num_boost_round)
-    else:
-        training(
-            exp_name,
-            train, test,
-            users, movies,
-            booster="gbtree",
-            lr=0.02,
-            max_rating=max_rating,
-            max_depth=6,
-            num_boost_round=num_boost_round
-        )
-    logger.info("****************Training is done*******************")
-
-
-def optimized(exp_name: str, train, test, users, movies, max_rating, num_boost_round):
-    import optuna
-
-    def objective_func(trial: optuna.Trial):
-        booster = trial.suggest_categorical("booster", ["gbtree"])
-        learning_rate = trial.suggest_float(
-            "learning_rate", low=0.001, high=0.3)
-        max_depth = trial.suggest_int("max_depth", low=3, high=6)
-        eval_results = training(
-            exp_name,
-            train, test,
-            users, movies,
-            max_rating=max_rating,
-            booster=booster, max_depth=max_depth, lr=learning_rate,
-            num_boost_round=num_boost_round,
-            verbose_eval=1000,
-        )
-        return eval_results["val"]["mae"][-1]
-    study = optuna.create_study(direction="minimize")
-    study.optimize(objective_func, n_trials=20, show_progress_bar=True)
+    return booster
 
 
 def split_(df: pd.DataFrame):
@@ -122,13 +230,8 @@ def prepare(X: pd.DataFrame):
     return np.array(user_ids), np.array(movie_ids), np.array(y)
 
 
-def mae(predt: np.ndarray, dtrain: xgb.DMatrix) -> tuple[str, float]:
-    y = dtrain.get_label()
-    return _mae(predt, y)
-
-
 def test_xgb_model():
-    XGBMR().load_model(champion=False, device="cuda").recommend_for_users_batched(
+    XGBMR.load_model(champion=False, device="cuda").recommend_for_users_batched(
         [0, 1],
         movieIds=[[0, 1], [10, 30]],
         max_rating=5,
@@ -138,6 +241,84 @@ def test_xgb_model():
     logger.info("XGB model test passed successfully")
 
 
+def main(
+    ratings: pd.DataFrame,
+    num_boost_round: int = 10_000,
+    early_stopping_rounds=500,
+    verbose_eval=False,
+    n_splits=3,
+    pct_thresh=0.10,
+    n_trials=10,
+):
+    def objective_func(trial: optuna.Trial):
+        params = {
+            'objective': trial.suggest_categorical('objective', ['reg:squarederror']),
+            'device': trial.suggest_categorical('device', ["cuda"]),
+            'random_state': trial.suggest_categorical('random_state', [0]),
+            'eval_metric': trial.suggest_categorical('eval_metric', ["mae"]),
+            'booster': trial.suggest_categorical('booster', ['gbtree']),
+
+            'max_depth': trial.suggest_int('max_depth', 3, 10),
+            'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, log=True),
+            'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
+            'gamma': trial.suggest_float('gamma', 0, 5),
+            'lambda': trial.suggest_float('lambda', 1e-3, 10, log=True),
+            'alpha': trial.suggest_float('alpha', 1e-3, 10, log=True)
+        }
+        scores = cv(
+            ratings, n_splits=n_splits, seed=0,
+            params=params,
+            num_boost_round=num_boost_round,
+            verbose_eval=verbose_eval,
+            early_stopping_rounds=early_stopping_rounds,
+        )
+        return np.mean(scores)
+
+    # Optimize
+    print("Running CV...")
+    study = optuna.create_study(direction='minimize')
+    study.optimize(objective_func, n_trials=n_trials,  # type: ignore
+                   show_progress_bar=True)
+    print("Found best params:", study.best_params)
+
+    # Retrain
+    train, test = simple_split(ratings, .8)
+    processor = MovieLensPreprocessor().fit(train)
+    X_train, X_test, y_train, y_test = processor.do_transform(train, test)
+    booster = train_xgb(
+        study.best_params,
+        X_train, y_train,
+        X_test, y_test,
+        num_boost_round=num_boost_round,
+        verbose_eval=1000,
+        early_stopping_rounds=early_stopping_rounds,
+        maximize=False,
+    )
+
+    importances = pd.DataFrame(booster.get_score(importance_type="gain"), index=[
+                               "importance"]).T.reset_index(names="feature")
+    cols = importances[importances.importance > (
+        importances.importance.max() * pct_thresh)].feature.tolist()
+
+    print("Found most impactful features:", cols)
+
+    print()
+    print("Training XGBMR...")
+    from movie_recommender.modeling.xgbmr import XGBMR
+    model = XGBMR(processor.user_data, processor.movie_data, cols=cols)
+    model.fit(
+        study.best_trial.params,
+        X_train[model.cols], y_train,
+        eval_set=(X_test[model.cols], y_test),
+        experiment_name="movie_recom",
+        verbose_eval=500,
+        num_boost_round=num_boost_round,
+        early_stopping_rounds=early_stopping_rounds,
+    )
+    # save_plots(model, prepare, X_train, X_test, max_rating, run_id=run_id)
+
+
 if __name__ == "__main__":
     import sys
     import os
@@ -145,16 +326,12 @@ if __name__ == "__main__":
     bucket = os.environ["DB_MINIO_BUCKET"]
 
     if arg == "train":
-        train, test = download_parquet_from_s3(bucket, "xgb_train", "xgb_test")
+        ratings = read_parquet_from_s3(bucket, "ratings.parquet")
+        movies = read_parquet_from_s3(bucket, "movies.parquet")
+        ratings = ratings.merge(movies, on="movie_id")
+        ratings.rating *= 5
 
-        train_xgb(
-            train,
-            test,
-            max_rating=5,
-            exp_name=get_env("EXP_NAME", "movie_recom"),
-            optimize=False,
-            num_boost_round=get_env("NUM_BOOST_ROUND", 500),
-        )
+        main(ratings)
     elif arg == "test":
         test_xgb_model()
     else:

@@ -18,23 +18,22 @@ minioClient: Optional[Minio] = None
 def connect_minio():
     global minioClient
     import os
-    if minioClient is not None:
-        return
-    endpoint = os.environ["MLFLOW_S3_ENDPOINT_URL"]
-    secure = endpoint.startswith("https://")
-    endpoint_stripped = endpoint.replace(
-        "http://", "").replace("https://", "")
-    print("Secure", secure)
-    minioClient = Minio(
-        endpoint=endpoint_stripped,
-        access_key=os.environ["AWS_ACCESS_KEY_ID"],
-        secret_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-        region=os.environ["AWS_DEFAULT_REGION"],
-        secure=secure,
-    )
-    print()
+    if minioClient is None:
+        endpoint = os.environ["MLFLOW_S3_ENDPOINT_URL"]
+        secure = endpoint.startswith("https://")
+        endpoint_stripped = endpoint.replace(
+            "http://", "").replace("https://", "")
+        print("Secure", secure)
+        print("endpoint", endpoint)
+        minioClient = Minio(
+            endpoint=endpoint_stripped,
+            access_key=os.environ["AWS_ACCESS_KEY_ID"],
+            secret_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+            region=os.environ["AWS_DEFAULT_REGION"],
+            secure=secure,
+        )
+        print("Connected to minio on:", endpoint)
     print("Available Buckets", minioClient.list_buckets())
-    print("Connected to minio on:", endpoint)
 
 
 def connect_mlflow():
@@ -107,10 +106,12 @@ def promote_model_to_champion(registered_name, version: str):
     print(f"Promoted {version=} of {registered_name=} to champion!")
 
 
-def get_champion_run_id(registered_name: str):
+def get_registered_model_run_id(registered_name: str, champion: bool):
     assert_mlflow_connection()
     assert _mlflowClient is not None
-    return _mlflowClient.get_model_version_by_alias(name=registered_name, alias="champion").run_id
+    if champion:
+        return _mlflowClient.get_model_version_by_alias(name=registered_name, alias="champion").run_id
+    return _mlflowClient.get_latest_versions(registered_name)[0].run_id
 
 
 def assert_mlflow_connection():
@@ -208,6 +209,24 @@ def save_plots(
     figures["test.png"] = plt.gcf()
     plt.close()
     save_figures(figures, run_id=run_id)
+
+
+def read_parquet_from_s3(bucket: str, filepath: str):
+    assert minioClient and minioClient._provider, minioClient
+    key = minioClient._provider.retrieve()._access_key
+    secret = minioClient._provider.retrieve()._secret_key
+    endpoint = os.environ["MLFLOW_S3_ENDPOINT_URL"]
+
+    return pd.read_parquet(
+        f"s3://{bucket}/{filepath}",
+        storage_options=dict(
+            key=key,
+            secret=secret,
+            client_kwargs=dict(
+                endpoint_url=endpoint
+            )
+        )
+    )
 
 
 def download_file_from_s3(bucket, object_name, path):

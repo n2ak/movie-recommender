@@ -54,10 +54,12 @@ class Recommender(Singleton):
                     model = DLRM.load(champion=self.champion, device="cuda")
                 case "xgb_cpu":
                     from movie_recommender.modeling.xgbmr import XGBMR
-                    model = XGBMR().load_model(champion=self.champion, device="cpu")
+                    model = XGBMR.load_model(
+                        champion=self.champion, device="cpu")
                 case "xgb_cuda":
                     from movie_recommender.modeling.xgbmr import XGBMR
-                    model = XGBMR().load_model(champion=self.champion, device="cuda")
+                    model = XGBMR.load_model(
+                        champion=self.champion, device="cuda")
                 case _:
                     raise Exception(f"{modelname}?")
         self.models[modelname] = model
@@ -111,11 +113,12 @@ class Recommender(Singleton):
 
     @classmethod
     def check_for_new_champions(cls):
-        from movie_recommender.workflow import get_champion_run_id
+        from movie_recommender.workflow import get_registered_model_run_id
         recommender = Recommender.get_instance()
 
         def check(full_name, name):
-            run_id = get_champion_run_id(cls.registered_names[name])
+            run_id = get_registered_model_run_id(
+                cls.registered_names[name], champion=True)
             old_run_id = cls.current_champions.get(full_name, run_id)
             new = old_run_id != run_id
             cls.current_champions[full_name] = run_id

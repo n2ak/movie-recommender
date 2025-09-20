@@ -11,7 +11,7 @@ if True:
     # for local testing
     dotenv.load_dotenv("../.env")
     from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse
-    from movie_recommender.workflow import connect_minio, connect_mlflow, get_champion_run_id
+    from movie_recommender.workflow import connect_minio, connect_mlflow
     # for models to load when testing!!!
     sys.path.append(os.path.abspath("./training"))
 
