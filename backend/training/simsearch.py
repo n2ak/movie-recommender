@@ -5,9 +5,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from sklearn.decomposition import PCA
+
 from movie_recommender.logging import Logger
 from movie_recommender.sim_search import SimilaritySearch
-from movie_recommender.workflow import connect_minio, connect_mlflow, download_parquet_from_s3
+from movie_recommender.workflow import connect_minio, connect_mlflow, read_parquet_from_s3, save_figures
 
 simsearch_exp_name = "SimilaritySearch".lower()
 
@@ -47,7 +48,7 @@ def test_simsearch():
     assert simsearch._get_movies(
         movie_ids)[["movie_genre_Romance"]].all().item()
 
-    # save_figures(figures, run_id=run_id)
+    save_figures(figures, run_id=simsearch.run_id)
     Logger.info("Similarity Search test passed successfully")
 
 
@@ -107,8 +108,7 @@ if __name__ == "__main__":
     bucket = os.environ["DB_MINIO_BUCKET"]
 
     if arg == "train":
-        train, = download_parquet_from_s3(bucket, "simsearch_train")
-
+        train = read_parquet_from_s3(bucket, "simsearch_train.parquet")
         train_simsearch(train)
     elif arg == "test":
         test_simsearch()

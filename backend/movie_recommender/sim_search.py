@@ -6,7 +6,7 @@ from sklearn.neighbors import KNeighborsTransformer
 from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.logging import Logger
 from movie_recommender.workflow import (
-    register_last_model, promote_model_to_champion, model_uri
+    register_last_model, promote_model_to_champion, model_uri, get_registered_model_run_id
 )
 import functools
 import os
@@ -19,6 +19,7 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
     Useful for suggesting movies to be ran through a DNN, to reduce the input to the DNN
     from millions to thousands or so. 
     """
+    run_id: str
 
     def __init__(self, n_neighbors_user=5, n_neighbors_movie=5) -> None:
         n_neighbors_movie = int(n_neighbors_movie)
@@ -53,9 +54,12 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
 
     @classmethod
     def load_from_disk(cls, champion=True) -> Self:
-        return mlflow.pyfunc.load_model(
+        model = mlflow.pyfunc.load_model(
             model_uri(registered_name, champion)
-        ).unwrap_python_model()  # type: ignore
+        ).unwrap_python_model()
+        model.run_id = get_registered_model_run_id(
+            registered_name, champion=champion)
+        return model  # type: ignore
 
     def __movies_data(self, movies: pd.DataFrame):
         return movies.drop(columns=["movie_id"])
