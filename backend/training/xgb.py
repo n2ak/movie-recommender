@@ -9,7 +9,7 @@ from movie_recommender.logging import Logger
 from movie_recommender.modeling.xgbmr import XGBMR
 from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.train_utils import fix_split, mae, simple_split
-from movie_recommender.workflow import read_parquet_from_s3, save_plots
+from movie_recommender.workflow import read_parquet_from_s3, save_plots, connect_minio, connect_mlflow
 
 
 def split_genres(df):
@@ -250,7 +250,7 @@ def main(
     ratings: pd.DataFrame,
     num_boost_round: int = 10_000,
     early_stopping_rounds=500,
-    verbose_eval=False,
+    verbose_eval: int | bool = False,
     n_splits=3,
     pct_thresh=0.10,
     n_trials=10,
@@ -344,14 +344,18 @@ if __name__ == "__main__":
     import os
     arg = sys.argv[1]
     bucket = os.environ["DB_MINIO_BUCKET"]
-
+    connect_minio()
+    connect_mlflow()
     if arg == "train":
         ratings = read_parquet_from_s3(bucket, "ratings.parquet")
         movies = read_parquet_from_s3(bucket, "movies.parquet")
         ratings = ratings.merge(movies, on="movie_id")
         ratings.rating *= 5
 
-        main(ratings)
+        main(
+            ratings,
+            verbose_eval=1000
+        )
     elif arg == "test":
         test_xgb_model()
     else:

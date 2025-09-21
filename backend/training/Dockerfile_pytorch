@@ -8,6 +8,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir lightning==2.5.0
 RUN pip install --no-cache-dir psycopg2-binary sqlalchemy
+RUN pip install --no-cache-dir minio s3fs
+RUN pip install --no-cache-dir boto3
 
 COPY movie_recommender movie_recommender
 COPY training/dlrm.py train_dlrm.py

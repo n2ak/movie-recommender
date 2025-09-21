@@ -1,5 +1,6 @@
 import os
 import torch
+import mlflow
 import numpy as np
 import pandas as pd
 from torch import nn
@@ -293,7 +294,6 @@ class TrainableModule(L.LightningModule):
         acc: Literal["gpu", "cpu", "auto"] = "gpu"
     ):
         L.seed_everything(seed)
-        import mlflow
         from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor, TQDMProgressBar
         callbacks: list = [
             ModelCheckpoint(

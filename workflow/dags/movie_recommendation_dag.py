@@ -1,11 +1,9 @@
-from airflow.sdk import Variable
 from airflow import DAG  # type: ignore
+from pendulum import datetime
+from docker.types import DeviceRequest
+from airflow.sdk import Variable
 from airflow.decorators import task  # type: ignore
 from airflow.providers.docker.operators.docker import DockerOperator  # type: ignore
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook  # type: ignore
-# from airflow.operators.python import PythonOperator
-from docker.types import DeviceRequest
-from pendulum import datetime
 
 default_args = {
     'owner': 'movie_recommender',
@@ -18,7 +16,7 @@ def get_docker_operator(task_id, image, command, environment, gpu=True, **kwargs
         container_name=task_id,
         task_id=task_id,
         image=image,
-        auto_remove='force',
+        auto_remove='success',
         docker_url='unix://var/run/docker.sock',
         command=command,
         device_requests=[
@@ -70,15 +68,23 @@ with DAG(
         return extract_data(db_url)
 
     @task
-    def process_data_task(dir, model_type, max_rating: int, train_size: float):
+    def process_data_task_for_dlrm(dir):
         try:
             from .transform import process_data
         except ImportError:
             from transform import process_data  # type: ignore
-        return process_data(dir, model_type, max_rating, train_size)
+        return process_data(dir, "dlrm", int(DLRM_MAX_RATING), float(DLRM_TRAIN_SIZE))
 
     @task
-    def upload_folder_to_s3(s3_bucket: str, directory: str):
+    def process_data_task_for_simsearch(dir):
+        try:
+            from .transform import process_data
+        except ImportError:
+            from transform import process_data  # type: ignore
+        return process_data(dir, "simsearch", 5, 1)
+
+    @task
+    def upload_result_to_s3(s3_bucket: str, directory: str):
         try:
             from .utils import upload_folder_to_s3 as upload
         except ImportError:
@@ -91,15 +97,21 @@ with DAG(
 
     train_dlrm_task = get_docker_operator(
         task_id='train_dlrm_task',
-        image='pytorch_tr   ain',
+        image='pytorch_train',
         command=["python", "train_dlrm.py", "train"],
         environment=dict(
             EPOCHS=DLRM_EPOCHS,
             EXP_NAME=EXP_NAME,
             MLFLOW_TRACKING_URI=MLFLOW_TRACKING_URI,
             DB_URL=DB_URL,
+            DLRM_REGISTERED_NAME="dlrm",
+            DB_MINIO_BUCKET=DB_MINIO_BUCKET,
+            MLFLOW_S3_ENDPOINT_URL=MINIO_S3_ENDPOINT,
+            AWS_ACCESS_KEY_ID=MINIO_USER,
+            AWS_SECRET_ACCESS_KEY=MINIO_PASSWORD,
+            AWS_DEFAULT_REGION="us-east-1",
         ),
-        pool="apool",  # must be set in Admin -> pools with 1 slot
+        pool="one_task_pool",  # must be set in Admin -> pools with 1 slot
     )
     train_xgb_task = get_docker_operator(
         task_id='train_xgb_task',
@@ -110,8 +122,14 @@ with DAG(
             EXP_NAME=EXP_NAME,
             MLFLOW_TRACKING_URI=MLFLOW_TRACKING_URI,
             DB_URL=DB_URL,
+            XGB_REGISTERED_NAME="xgb",
+            DB_MINIO_BUCKET=DB_MINIO_BUCKET,
+            MLFLOW_S3_ENDPOINT_URL=MINIO_S3_ENDPOINT,
+            AWS_ACCESS_KEY_ID=MINIO_USER,
+            AWS_SECRET_ACCESS_KEY=MINIO_PASSWORD,
+            AWS_DEFAULT_REGION="us-east-1",
         ),
-        pool="apool",
+        pool="one_task_pool",
     )
     test_dlrm_task = get_docker_operator(
         task_id='test_dlrm_task',
@@ -120,8 +138,14 @@ with DAG(
         environment=dict(
             EXP_NAME=EXP_NAME,
             MLFLOW_TRACKING_URI=MLFLOW_TRACKING_URI,
+            DLRM_REGISTERED_NAME="dlrm",
+            DB_MINIO_BUCKET=DB_MINIO_BUCKET,
+            MLFLOW_S3_ENDPOINT_URL=MINIO_S3_ENDPOINT,
+            AWS_ACCESS_KEY_ID=MINIO_USER,
+            AWS_SECRET_ACCESS_KEY=MINIO_PASSWORD,
+            AWS_DEFAULT_REGION="us-east-1",
         ),
-        pool="apool",
+        pool="one_task_pool",
     )
     test_xgb_task = get_docker_operator(
         task_id='test_xgb_task',
@@ -130,33 +154,31 @@ with DAG(
         environment=dict(
             EXP_NAME=EXP_NAME,
             MLFLOW_TRACKING_URI=MLFLOW_TRACKING_URI,
+            XGB_REGISTERED_NAME="xgb",
+            DB_MINIO_BUCKET=DB_MINIO_BUCKET,
+            MLFLOW_S3_ENDPOINT_URL=MINIO_S3_ENDPOINT,
+            AWS_ACCESS_KEY_ID=MINIO_USER,
+            AWS_SECRET_ACCESS_KEY=MINIO_PASSWORD,
+            AWS_DEFAULT_REGION="us-east-1",
         ),
-        pool="apool",
+        pool="one_task_pool",
     )
 
     data_dir = extract_data_task(DB_URL)
-
-    dlrm_dir = process_data_task(
-        data_dir, "dlrm", int(DLRM_MAX_RATING), float(DLRM_TRAIN_SIZE)
-    )
-    xgb_dir = process_data_task(
-        data_dir, "xgb", int(XGB_MAX_RATING), float(XGB_TRAIN_SIZE)
-    )
-    simsearch_dir = process_data_task(
-        data_dir, "simsearch", 5, 1
-    )
+    dlrm_dir = process_data_task_for_dlrm(data_dir)
+    simsearch_dir = process_data_task_for_simsearch(data_dir)
 
     (
-        upload_folder_to_s3(DB_MINIO_BUCKET, dlrm_dir)
+        upload_result_to_s3(DB_MINIO_BUCKET, dlrm_dir)
         >> train_dlrm_task
         >> test_dlrm_task
     )  # type: ignore
     (
-        upload_folder_to_s3(DB_MINIO_BUCKET, xgb_dir)
+        upload_result_to_s3(DB_MINIO_BUCKET, data_dir)
         >> train_xgb_task
         >> test_xgb_task
     )  # type: ignore
     (
-        upload_folder_to_s3(DB_MINIO_BUCKET, simsearch_dir)
+        upload_result_to_s3(DB_MINIO_BUCKET, simsearch_dir)
         # >> train_simsearch
     )  # type: ignore

@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -u
 
 if [ -n "$DB_USERS" ] && [ -n "$DB_PASSWORDS" ] && [ -n "$DB_DBS" ]; then
   USERS=($DB_USERS)
@@ -13,7 +14,7 @@ if [ -n "$DB_USERS" ] && [ -n "$DB_PASSWORDS" ] && [ -n "$DB_DBS" ]; then
 
     echo "Creating user '$user' with database '$db'"
 
-    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
       CREATE USER $user WITH PASSWORD '$pass';
       CREATE DATABASE $db OWNER $user;
       GRANT ALL PRIVILEGES ON DATABASE $db TO $user;

@@ -155,8 +155,6 @@ def train_dlrm(
     epochs: int,
     exp_name: str,
 ):
-    connect_minio()
-    connect_mlflow()
 
     Logger.info("****************Starting dlrm training...**************")
     Logger.info("Train ds shape: %s", train.shape)
@@ -184,7 +182,7 @@ def train_dlrm(
     Logger.info("****************Training is done*******************")
 
     save_plots(
-        model,
+        model.model,
         prepare(train_ds[:], cat_cols),
         prepare(test_ds[:], cat_cols),
         max_rating=5,
@@ -214,8 +212,10 @@ if __name__ == "__main__":
     import sys
     import os
     arg = sys.argv[1]
-
     bucket = os.environ["DB_MINIO_BUCKET"]
+
+    connect_minio()
+    connect_mlflow()
 
     if arg == "train":
         train, test = download_parquet_from_s3(
