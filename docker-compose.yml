@@ -4,16 +4,16 @@ services:
     container_name: db
     image: postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: admin
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DB}
       PGDATA: /data/postgres
       PGPORT: ${DB_PORT}
 
       # multi users
-      DB_USERS: "${DB_USER} ${AF_PG_USER}$ ${MLFLOW_PG_USER}"
-      DB_PASSWORDS: "${DB_PASSWORD} ${AF_PG_PASSWORD} ${MLFLOW_PG_PASSWORD}"
-      DB_DBS: "${DB_DB} ${AF_PG_DB} ${MLFLOW_PG_DB}"
+      DB_USERS: "${AF_PG_USER} ${MLFLOW_PG_USER}"
+      DB_PASSWORDS: "${AF_PG_PASSWORD} ${MLFLOW_PG_PASSWORD}"
+      DB_DBS: "${AF_PG_DB} ${MLFLOW_PG_DB}"
     depends_on: 
       - adminer
     volumes:
@@ -185,14 +185,21 @@ services:
     ports:
       - 8080:8080
     environment:
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AF_PG_USER}:${AF_PG_PASSWORD}@db:5432/${AF_PG_DB}
+      AIRFLOW__API__WORKERS: 1
+      AIRFLOW__CORE__PARALLELISM: 2
+      AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: 1
       AIRFLOW__CORE__TEST_CONNECTION: Enabled
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      # AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AF_PG_USER}:${AF_PG_PASSWORD}@db:5432/${AF_PG_DB}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////airflowdb/airflow.db
+
     volumes:
       - ./workflow/dags:/opt/airflow/dags
       - ./workflow/logs:/opt/airflow/logs
       - ./workflow/config:/opt/airflow/config
       - ./workflow/plugins:/opt/airflow/plugins
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./vlms/airflowdb:/airflowdb
     depends_on:
       - db
       - mlflow
