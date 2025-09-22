@@ -44,7 +44,7 @@ export function TemperatureInput() {
       min={0}
       max={1}
       step={0.01}
-      className="border-2 border-neutral-900 rounded px-2 py-1 w-24"
+      className="dark:border-white border-2 border-neutral-900 rounded px-2 py-1 w-24"
       placeholder="0 - 1"
       value={t}
       onChange={(e) => setT(Number(e.target.value))}

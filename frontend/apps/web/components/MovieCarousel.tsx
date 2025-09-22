@@ -73,7 +73,7 @@ function MovieCard({ movie }: { movie: MovieWithPredictedRating }) {
         </div>
         <ColStack className="absolute rounded-b-lg bottom-0 left-0 w-full pl-[10px] truncate backdrop-blur-sm bg-black/[1%] hidden group-hover:block text-shadow-2xs text-shadow-black">
           <div className="w-full inline-block text-ellipsis overflow-hidden whitespace-nowrap text-left">
-            <span className="font-bold text-whit">{movie.title}</span>
+            <span className="font-bold text-white">{movie.title}</span>
           </div>
           <div className="text-white">
             <FixedRating
