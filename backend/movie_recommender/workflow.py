@@ -107,9 +107,8 @@ def promote_model_to_champion(registered_name, version: str):
 def get_registered_model_run_id(registered_name: str, champion: bool):
     assert_mlflow_connection()
     assert _mlflowClient is not None
-    if champion:
-        return _mlflowClient.get_model_version_by_alias(name=registered_name, alias="champion").run_id
-    return _mlflowClient.get_latest_versions(registered_name)[0].run_id
+    alias = "champion" if champion else "latest"
+    return _mlflowClient.get_model_version_by_alias(name=registered_name, alias=alias).run_id
 
 
 def assert_mlflow_connection():
@@ -152,7 +151,7 @@ def log_temp_artifacts(save_fn, artifact_path=None, run_id=None):
     import mlflow
     with tempfile.TemporaryDirectory() as f:
         save_fn(f)
-        Logger.debug("Logging folder %s")
+        Logger.debug("Logging folder %s", f)
         mlflow.log_artifacts(f, artifact_path, run_id=run_id)
 
 
@@ -182,7 +181,6 @@ def save_plots(
     from movie_recommender.workflow import save_figures
     from .utils import report
     user_ids, movie_ids, train_y = train_data
-    Logger.info("Training")
     report(
         model,
         user_ids,
@@ -256,3 +254,21 @@ def upload_folder_to_s3(dir: str, bucket):
         minioClient.fput_object(
             bucket, object_name=object_name, file_path=filepath
         )
+
+
+def upload_file_to_s3(bucket: str, filepath: str):
+    assert minioClient is not None
+    object_name = filepath.split("/")[-1]
+
+    Logger.debug(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
+    minioClient.fput_object(
+        bucket, object_name=object_name, file_path=filepath
+    )
+
+
+def upload_parquet_to_s3(bucket, **dfs: pd.DataFrame):
+    import tempfile
+    with tempfile.TemporaryDirectory() as path:
+        for name, df in dfs.items():
+            df.to_parquet(f"{path}/{name}.parquet")
+        upload_folder_to_s3(path, bucket)

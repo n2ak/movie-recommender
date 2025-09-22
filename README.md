@@ -74,6 +74,8 @@ A simple web application to help demonstrate the project. The project is split i
 - Data preprocessing.
 - ML model training/testing and tracking using MLflow.
 
+![DAG](assets/movie_recommender-dag-graph.png)
+
 #### Features:
 
 - A `DAG` combining multiple tasks to be run in a  periodically (i.e. daily).

@@ -327,6 +327,7 @@ class TrainableModule(L.LightningModule):
                 train_dataloaders=dataloader,
                 val_dataloaders=valloader,
             )
+            Logger.info("Done training.")
 
         register_last_model_and_try_promote(
             registered_name=registered_name,

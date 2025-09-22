@@ -1,3 +1,4 @@
+from movie_recommender.data import preprocess_data
 import torch
 import numpy as np
 import pandas as pd
@@ -8,7 +9,7 @@ from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.train_utils import mae, rmse, get_env
 from movie_recommender.modeling.dlrm import DLRM, TrainableModule, DLRMParams
 from movie_recommender.workflow import (
-    download_parquet_from_s3, connect_minio, connect_mlflow, save_plots
+    download_parquet_from_s3, connect_minio, connect_mlflow, save_plots, upload_parquet_to_s3
 )
 
 
@@ -51,8 +52,8 @@ def create_data_loaders(
     cat_cols: list[str],
     num_cols: list[str],
     unique: pd.Series,
+    batch_size=64 * 4,
 ):
-    batch_size = 64 * 4
 
     for c, u in zip(cat_cols, unique):
         assert train[c].max() < u, (c, train[c].max(), u)
@@ -154,18 +155,20 @@ def train_dlrm(
     test: pd.DataFrame,
     epochs: int,
     exp_name: str,
+    batch_size: int,
 ):
-
     Logger.info("****************Starting dlrm training...**************")
     Logger.info("Train ds shape: %s", train.shape)
     Logger.info("Test ds shape: %s", test.shape)
     Logger.info("Epochs: %s", epochs)
+    Logger.info("Batch size: %s", batch_size)
 
     unique, cat_cols, num_cols, embds, nmovies, nusers = process_data(
         train, test
     )
     train_dl, valid_dl, train_ds, test_ds = create_data_loaders(
-        train, test, cat_cols, num_cols, unique
+        train, test, cat_cols, num_cols, unique,
+        batch_size=batch_size
     )
     model = create_model(
         cat_cols, num_cols, nusers, nmovies, unique, embds
@@ -180,7 +183,7 @@ def train_dlrm(
         exp_name=exp_name,
     )
     Logger.info("****************Training is done*******************")
-
+    model.model.eval()
     save_plots(
         model.model,
         prepare(train_ds[:], cat_cols),
@@ -188,6 +191,7 @@ def train_dlrm(
         max_rating=5,
         run_id=run_id,
     )
+    Logger.info("****************Saved plots*******************")
 
 
 def prepare(ds, cat_cols):
@@ -226,9 +230,21 @@ if __name__ == "__main__":
             test,
             epochs=get_env("EPOCHS", 2),
             exp_name=get_env("EXP_NAME", "movie_recom"),
+            batch_size=get_env("BATCH_SIZE", 64 * 4)
         )
     elif arg == "test":
         test_dlrm_model()
+    elif arg == "preprocess":
+        ratings, movies = download_parquet_from_s3(bucket, "ratings", "movies")
+        train, test = preprocess_data(
+            ratings,
+            movies,
+            max_rating=int(os.environ["MAX_RATING"]),
+            train_size=float(os.environ["TRAIN_SIZE"]),
+        )
+        upload_parquet_to_s3(
+            bucket, dlrm_train=train, dlrm_test=test
+        )
     else:
         Logger.error(f'Invalid arg {arg}')
         sys.exit(1)

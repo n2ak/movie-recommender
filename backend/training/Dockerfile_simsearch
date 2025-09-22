@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir boto3
 RUN pip install --no-cache-dir --upgrade aiobotocore botocore boto3
 
 COPY movie_recommender movie_recommender
-COPY training/xgb.py train_xgb.py
+COPY training/simsearch.py train_simsearch.py
 
 
 ENV CUDA_VISIBLE_DEVICES=0

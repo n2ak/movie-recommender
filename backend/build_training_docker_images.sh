@@ -4,3 +4,4 @@ set -e
 
 docker build -t pytorch_train -f training/Dockerfile_pytorch .
 docker build -t xgb_train -f training/Dockerfile_xgb .
+docker build -t simsearch_train -f training/Dockerfile_simsearch .

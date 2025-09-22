@@ -146,10 +146,6 @@ class XGBMR(MovieRecommender[NDArray]):
         with mlflow.start_run(tags={"model_type": "XGBMR"}) as run:
             run_id = run.info.run_id
             Logger.info("Run id: %s", run_id)
-            mlflow.log_param("custom_params", json.dumps(dict(
-                training_config=training_config,
-                cols=self.cols
-            )))
 
             eval_results = {}
             self.model = xgb.train(
@@ -159,7 +155,12 @@ class XGBMR(MovieRecommender[NDArray]):
                 evals_result=eval_results,
                 **training_config
             )
-
+            if "custom_metric" in training_config:
+                del training_config["custom_metric"]
+            mlflow.log_param("custom_params", json.dumps(dict(
+                training_config=training_config,
+                cols=self.cols
+            )))
             self.log_artifacts()
             Logger.info("Done training.")
 

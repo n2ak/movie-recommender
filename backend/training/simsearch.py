@@ -8,15 +8,14 @@ from sklearn.decomposition import PCA
 
 from movie_recommender.logging import Logger
 from movie_recommender.sim_search import SimilaritySearch
-from movie_recommender.workflow import connect_minio, connect_mlflow, read_parquet_from_s3, save_figures
+from movie_recommender.data import process_data_for_simsearch
+from movie_recommender.workflow import (
+    connect_minio, connect_mlflow, read_parquet_from_s3, save_figures, download_parquet_from_s3, upload_parquet_to_s3)
 
 simsearch_exp_name = "SimilaritySearch".lower()
 
 
 def train_simsearch(train: pd.DataFrame, exp_name=simsearch_exp_name):
-    connect_minio()
-    connect_mlflow()
-
     simsearch = SimilaritySearch().fit(train)
     run_id = simsearch.save(exp_name)
     return run_id
@@ -107,11 +106,25 @@ if __name__ == "__main__":
     arg = sys.argv[1]
     bucket = os.environ["DB_MINIO_BUCKET"]
 
+    connect_minio()
+    connect_mlflow()
+
     if arg == "train":
         train = read_parquet_from_s3(bucket, "simsearch_train.parquet")
         train_simsearch(train)
     elif arg == "test":
         test_simsearch()
+    elif arg == "preprocess":
+        ratings, movies = download_parquet_from_s3(bucket, "ratings", "movies")
+        train = process_data_for_simsearch(
+            ratings,
+            movies,
+            1,
+        )
+        upload_parquet_to_s3(
+            bucket,
+            simsearch_train=train,
+        )
     else:
         Logger.error(f'Invalid arg {arg}')
         sys.exit(1)

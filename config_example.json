@@ -7,7 +7,7 @@
     "dlrm": {
         "max_rating": "5",
         "train_size": "0.9",
-        "epochs": "3"
+        "epochs": "2"
     },
     "global": {
         "db_url": "postgresql://admin:password@host.docker.internal:5432/mydb",

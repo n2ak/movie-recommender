@@ -195,9 +195,9 @@ def cv(df: pd.DataFrame, params, n_splits=3, seed=0, **training_params):
         )
         pred = booster.predict(xgb.DMatrix(X_val, y_val))
         Logger.debug(f"Pred mean: {pred.mean():.2f} , std: {pred.std():.2f}")
-        scores.append(mae(pred, y_val))
+        scores.append(mae(pred, y_val)[1])
 
-    scores = np.array(scores)
+    scores = np.array(scores, dtype=np.float32)
     return scores
 
 
@@ -278,7 +278,7 @@ def main(
             verbose_eval=verbose_eval,
             early_stopping_rounds=early_stopping_rounds,
         )
-        return np.mean(scores)
+        return scores.mean()
 
     # Optimize
     Logger.info("Running CV...")
