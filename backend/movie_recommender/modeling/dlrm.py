@@ -11,7 +11,10 @@ from typing import Self, Type, Optional, Type, Literal, Optional, Callable
 
 from .base import MLP,  MovieRecommender
 from ..logging import Logger
-from ..workflow import log_temp_artifacts, register_last_model_and_try_promote, model_uri
+from ..workflow import (
+    log_temp_artifacts, register_last_model_and_try_promote, model_uri,
+    make_run_name
+)
 
 registered_name = os.environ["DLRM_REGISTERED_NAME"]
 
@@ -317,7 +320,10 @@ class TrainableModule(L.LightningModule):
         )
         mlflow.set_experiment(exp_name)
         mlflow.pytorch.autolog(log_every_n_step=1)  # type: ignore
-        with mlflow.start_run(tags={"model_type": "DLRM"}) as run:
+        with mlflow.start_run(
+            run_name=make_run_name("dlrm"),
+            tags={"model_type": "DLRM"}
+        ) as run:
             import json
             run_id: str = run.info.run_id
             Logger.info("Run id: %s", run_id)

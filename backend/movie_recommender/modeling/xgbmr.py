@@ -10,7 +10,8 @@ import mlflow
 from numpy.typing import NDArray
 from typing import Optional
 from movie_recommender.workflow import (
-    download_artifacts, register_last_model_and_try_promote, log_temp_artifacts, get_registered_model_run_id, model_uri, get_run_metrics
+    download_artifacts, register_last_model_and_try_promote, log_temp_artifacts,
+    get_registered_model_run_id, model_uri, make_run_name
 )
 
 
@@ -143,7 +144,10 @@ class XGBMR(MovieRecommender[NDArray]):
         evals = [(train_matrix, "train")]
         if eval_set:
             evals.append((xgb.DMatrix(*eval_set), "val"))
-        with mlflow.start_run(tags={"model_type": "XGBMR"}) as run:
+        with mlflow.start_run(
+            run_name=make_run_name("xgb"),
+            tags={"model_type": "XGBMR"}
+        ) as run:
             run_id = run.info.run_id
             Logger.info("Run id: %s", run_id)
 

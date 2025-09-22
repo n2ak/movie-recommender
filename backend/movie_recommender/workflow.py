@@ -1,15 +1,18 @@
 
 import os
-import mlflow
 import functools
+from typing import Optional
+from datetime import datetime
+
+import mlflow
 import pandas as pd
 import mlflow.artifacts
 from minio import Minio
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from typing import Optional
 from numpy.typing import NDArray
 from .logging import Logger
+
 _mlflowClient: Optional[mlflow.MlflowClient] = None
 minioClient: Optional[Minio] = None
 
@@ -272,3 +275,8 @@ def upload_parquet_to_s3(bucket, **dfs: pd.DataFrame):
         for name, df in dfs.items():
             df.to_parquet(f"{path}/{name}.parquet")
         upload_folder_to_s3(path, bucket)
+
+
+def make_run_name(prefix: str):
+    now = datetime.now().strftime('%Y_%m_%d_%Hh_%Mm_%Ss')
+    return f"{prefix.lower()}_{now}"

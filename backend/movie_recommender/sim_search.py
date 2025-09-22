@@ -6,7 +6,8 @@ from sklearn.neighbors import KNeighborsTransformer
 from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.logging import Logger
 from movie_recommender.workflow import (
-    register_last_model, promote_model_to_champion, model_uri, get_registered_model_run_id
+    register_last_model, promote_model_to_champion, model_uri, get_registered_model_run_id,
+    make_run_name
 )
 import functools
 import os
@@ -204,7 +205,10 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
     def save(self, exp_name):
         mlflow.set_experiment(exp_name)
 
-        with mlflow.start_run(tags={"model_type": "SimilaritySearch"}) as run:
+        with mlflow.start_run(
+            run_name=make_run_name("simsearch"),
+            tags={"model_type": "SimilaritySearch"}
+        ) as run:
             mlflow.log_params(self._params)
             run_id: str = run.info.run_id
             Logger.info("Run id: %s", run_id)
