@@ -16,7 +16,7 @@ const { auth, handlers } = NextAuth({
         const parsedCred = parseCredentials(cred);
         const user = await userDB.passwordMatchByUserNameOrEmail(
           parsedCred.usernameOrEmail,
-          parsedCred.password
+          parsedCred.password // NOTE: no password encryption for simplicity
         );
         if (!user) {
           throw new Error("Invalid credentials");

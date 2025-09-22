@@ -1,4 +1,5 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import { LoremIpsum } from "lorem-ipsum";
 import Papa from "papaparse";
@@ -83,7 +84,7 @@ async function createUsers(tx: TX, data: UserCSVType[]) {
       id: user_id,
       username,
       email: `${username}@email.com`,
-      password: username,
+      password: username, // NOTE: no password encryption for simplicity
     })),
     tx.userModel.createMany
   );
