@@ -252,7 +252,8 @@ class TrainableModule(L.LightningModule):
                 } | self.run_metrics_(logits, y, "train"),
                 prog_bar=True,
                 on_epoch=True,
-                on_step=True,
+                # on_step=True,
+                logger=True,
             )
         return loss
 
@@ -269,7 +270,8 @@ class TrainableModule(L.LightningModule):
         } | self.run_metrics_(logits, y, "val"),
             prog_bar=True,
             on_epoch=True,
-            on_step=False,
+            # on_step=False,
+            logger=True,
         )
 
     def configure_optimizers(self):  # type: ignore
