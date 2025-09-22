@@ -97,17 +97,17 @@ cd backend && ./build_training_docker_images.sh
 #### To run backend/frontend
 
 ```bash
-docker compose backend up -d
+docker compose up backend redis -d
 cd frontend && pnpm run dev
 
 # OR
 
-docker compose webapp up -d
+docker compose up webapp -d
 ```
 #### To start airflow
 
 ```bash
-docker compose airflow up -d
+docker compose up airflow -d
 ```
 
 #### To test backend api
