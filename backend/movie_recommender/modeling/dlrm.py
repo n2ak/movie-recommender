@@ -151,8 +151,8 @@ class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
         return out.squeeze(1)
 
     def set_data(self, movies: pd.DataFrame, users: pd.DataFrame):
-        self.movies = movies
-        self.users = users
+        self.movies = movies.sort_values("movie_id").reset_index(drop=True)
+        self.users = users.sort_values("user_id").reset_index(drop=True)
 
     @property
     def device_(self): return next(self.parameters()).device

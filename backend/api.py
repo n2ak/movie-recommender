@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 if True:
     # for local testing
     dotenv.load_dotenv("../.env")
-    from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse
+    from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse, SimilarMoviesRequest
     from movie_recommender.workflow import connect_minio, connect_mlflow
     from movie_recommender.logging import Logger
     # for models to load when testing!!!
@@ -18,7 +18,8 @@ if True:
 
 TIMEOUT = 0.1
 BATCH_SIZE = 64
-queue: asyncio.Queue[tuple[RecomRequest, asyncio.Future]] = asyncio.Queue()
+queue: asyncio.Queue[
+    tuple[RecomRequest | SimilarMoviesRequest, asyncio.Future]] = asyncio.Queue()
 
 
 @tasks.repeat_every(seconds=30)  # Run every 5 seconds
@@ -28,11 +29,13 @@ async def periodic_task():
 
 async def worker():
     while True:
-        requests: list[tuple[RecomRequest, asyncio.Future]] = []
+        requests: list[tuple[RecomRequest |
+                             SimilarMoviesRequest, asyncio.Future]] = []
 
         while len(requests) < BATCH_SIZE:
             try:
                 req, fut = await asyncio.wait_for(queue.get(), timeout=TIMEOUT)
+                # TODO filter by model type
                 requests.append((req, fut))
             except asyncio.TimeoutError:
                 break
@@ -75,6 +78,20 @@ app = FastAPI(lifespan=lifespan)
 
 @app.post("/movies-recom")
 async def movies_recom(data: RecomRequest):
+    loop = asyncio.get_running_loop()
+    future = loop.create_future()
+    await queue.put((data, future))
+    return RecomResponse(
+        userId=data.userId,
+        result=await future,
+        error=None,
+        status_code=200,
+        time=0
+    )
+
+
+@app.post("/similar-movies")
+async def similar_movies(data: SimilarMoviesRequest):
     loop = asyncio.get_running_loop()
     future = loop.create_future()
     await queue.put((data, future))

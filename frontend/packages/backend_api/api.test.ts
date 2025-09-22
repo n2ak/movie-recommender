@@ -1,6 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
-import { movieDB, type MovieGenre,MAX_RATING } from "@repo/database";
-import { type BackendResponse, getMoviesRecom } from "./src/index";
+import { MAX_RATING, movieDB, type MovieGenre } from "@repo/database";
+import { type BackendResponse, getMoviesRecom, getSimilarMovies } from "./src/index";
 
 
 describe("Backend Api", () => {
@@ -14,23 +14,39 @@ describe("Backend Api", () => {
       expect(pred.predicted_rating).toBeLessThanOrEqual(MAX_RATING);
     });
   }
+
   test("movies-recom", async () => {
     const userId = 1;
     const count = 10;
     const predictions = await getMoviesRecom({
       userId,
-      count
+      count,
+      temp: 0,
     });
     checkPred(userId, predictions, count);
   });
+
+  test("similar-movies", async () => {
+    const userId = 1;
+    const count = 10;
+    const movieIds = [10, 12];
+    const predictions = await getSimilarMovies({
+      userId,
+      count,
+      movieIds,
+      temp: 0,
+    });
+    checkPred(userId, predictions, count);
+  });
+
   test("getGenreRecom", async () => {
     const userId = 1, count = 10;
-    movieDB;
     const genres: MovieGenre[] = ["Action", "Comedy"];
     const predictions = await getMoviesRecom({
       userId,
       genres,
-      count
+      count,
+      temp: 0
     }
     );
     checkPred(userId, predictions, count);

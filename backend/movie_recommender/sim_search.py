@@ -106,6 +106,8 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
         assert isinstance(user_id, int)
         assert isinstance(genres, (list, tuple))
         assert self.is_fit
+        genres = list(genres)  # because of lru_cache
+
         # top movies that the user has already rated
         top_movie_ids = self.get_users_top_movies_ids(
             [user_id], genres=genres,
@@ -143,6 +145,35 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
             if genres:
                 movies = self.movies[self.movies.genres.isin(genres)]
             ret = movies.movie_id.values
+        return ret
+
+    @functools.lru_cache(maxsize=256)
+    def suggest_similar_movies(
+        self,
+        user_id: int,
+        movie_ids: list[int],
+        n_neighbor_movies=100,
+        filter_watched=True
+    ):
+        """
+        Get most relevant movies to user, and users close to the user.
+        """
+        assert isinstance(user_id, int)
+        assert isinstance(movie_ids, (list, tuple))
+        assert self.is_fit
+        movie_ids = list(movie_ids)  # because of lru_cache
+
+        ret = self.get_closest_movies(
+            movie_ids,
+            n_neighbor_movies,
+        )[:300]
+
+        if filter_watched:
+            already_watched = self.ratings[self.ratings.user_id.isin(
+                [user_id])].movie_id.unique()
+            diff = self.setdiff(ret, already_watched)
+            if len(diff) > 0:
+                ret = diff
         return ret
 
     def get_users_top_movies_ids(self, user_ids, genres=[]) -> np.ndarray:

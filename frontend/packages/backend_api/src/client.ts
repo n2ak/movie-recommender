@@ -1,5 +1,6 @@
-import axios, { AxiosError, AxiosResponse } from "axios";
-import type { BackendRequest, BackendResponse, Prediction } from "./types";
+import type { AxiosResponse } from "axios";
+import axios, { AxiosError } from "axios";
+import type { BackendRequest, BackendResponse, Prediction, SimilarMoviesRequest } from "./types";
 
 const createClient = () => {
   const baseURL = process.env.BACKEND_URL || "http://127.0.0.1:8000"
@@ -58,7 +59,6 @@ const handleErrors = async <P>(
 };
 
 
-
 export const recommendMovies = async ({
   userId, count, genres, model, start, temp
 }: BackendRequest) => {
@@ -72,14 +72,18 @@ export const recommendMovies = async ({
   );
   return result;
 };
-export const recommendSimilarMovies = async (data: {
-  userId: number;
-  movieIds: number[];
-  start: number;
-  count: number | null;
-}) => {
+
+export const recommendSimilarMovies = async (req: SimilarMoviesRequest) => {
+  const data: Required<SimilarMoviesRequest> = {
+    userId: req.userId,
+    count: req.count,
+    model: req.model || "xgb_cuda",
+    start: req.start || 0,
+    temp: req.temp || 0,
+    movieIds: req.movieIds
+  };
   const result = await handleErrors<Prediction>(
-    apiClient.post("/recom-similar-movies", data)
+    apiClient.post("/similar-movies", data)
   );
   return result;
 };

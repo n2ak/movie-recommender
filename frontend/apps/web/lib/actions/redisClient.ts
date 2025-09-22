@@ -3,13 +3,15 @@ import { CACHING, DEFAULT_TTL } from "../constants";
 import logger from "../logger";
 
 const create = () => {
-  const options = {
-    host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
-    password: process.env.REDIS_PASSWORD,
-  };
-  logger.debug(options, "Redis options:");
-  const redis = new Redis(options);
+  const host = process.env.REDIS_HOST;
+  const port = Number(process.env.REDIS_PORT);
+  logger.debug({ endpoint: `${host}:${port}` }, "Redis options:");
+  const redis = new Redis({
+    host,
+    port,
+    // Redis server's `default` user does not require a password
+    // password: process.env.REDIS_PASSWORD,
+  });
   return redis;
 };
 declare const globalThis: {

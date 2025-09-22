@@ -45,6 +45,8 @@ def connect_mlflow():
     uri = os.environ["MLFLOW_TRACKING_URI"]
     mlflow.set_tracking_uri(uri)
     _mlflowClient = mlflow.MlflowClient(uri)
+    # as a health check
+    mlflow.search_experiments()
     Logger.info("Connected to mlflow on: %s", uri)
 
 

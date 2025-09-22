@@ -76,7 +76,7 @@ export function MoviePage({
 
       <div className="mt-12">
         <h2 className="text-2xl font-semibold mb-4">Similar Movies</h2>
-        <MovieCarousel movies={similarMovies} />
+        <MovieCarousel movies={similarMovies} scroll />
       </div>
     </div>
   );

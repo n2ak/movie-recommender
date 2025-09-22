@@ -24,7 +24,7 @@ export function MovieCarousel({
       )}
       {scroll ? (
         <div className="overflow-y-scroll scroll h-full px-1 py-5 scrollbar-hidden">
-          <div className="flex justify-between gap-1">
+          <div className="flex justify-between gap-0.5 z-50">
             {movies.map((movie, i) => (
               <div key={i} className="inline-flex min-w-[200px] h-[300px]">
                 <MovieCard movie={movie} />
@@ -37,7 +37,7 @@ export function MovieCarousel({
           opts={{
             align: "start",
           }}
-          className="w-full max-w-5xl mx-auto"
+          className="w-full mx-auto"
         >
           <Carousel.CarouselContent>
             {movies.map((movie) => (
@@ -67,11 +67,13 @@ function MovieCard({ movie }: { movie: MovieWithPredictedRating }) {
         width: "100%",
       }}
     >
-      <div className="group relative h-full w-full shadow-xl hover:scale-[110%] duration-[.2s] hover:z-10">
-        <img className="rounded-lg h-full" src={movie.href} alt={movie.title} />
-        <ColStack className="absolute rounded-b-lg bottom-0 left-0 w-full pl-[10px] truncate backdrop-blur-xs bg-black/[1%] hidden group-hover:block">
-          <div className="w-full  shadow-2xl inline-block text-ellipsis overflow-hidden whitespace-nowrap text-left">
-            <span className="font-bold text-white">{movie.title}</span>
+      <div className="group relative h-full w-full shadow-xl hover:scale-[110%] duration-[.2s] hover:z-50">
+        <div className="rounded-md !h-full !w-full bg-black">
+          <img className="rounded-md !h-full !w-full" src={movie.href} alt={movie.title} />
+        </div>
+        <ColStack className="absolute rounded-b-lg bottom-0 left-0 w-full pl-[10px] truncate backdrop-blur-sm bg-black/[1%] hidden group-hover:block text-shadow-2xs text-shadow-black">
+          <div className="w-full inline-block text-ellipsis overflow-hidden whitespace-nowrap text-left">
+            <span className="font-bold text-whit">{movie.title}</span>
           </div>
           <div className="text-white">
             <FixedRating

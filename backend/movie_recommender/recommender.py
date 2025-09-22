@@ -15,6 +15,32 @@ if True:
 ModelType = Literal["xgb_cpu", "xgb_cuda", "dlrm_cpu", "dlrm_cuda"]
 
 
+class Response(Schema):
+    userId: int
+    result: list[Recommendation]  # Recommendation
+    time: float
+    status_code: int
+    error: Optional[str] = None
+
+
+class Request(Schema):
+    userId: int
+    genres: list[str]
+    start: int
+    count: Optional[int]
+    model: ModelType | Literal["best"]
+    temp: float
+
+
+class SimilarMoviesRequest(Schema):
+    userId: int
+    start: int
+    count: Optional[int]
+    movieIds: list[int]
+    model: ModelType | Literal["best"]
+    temp: float
+
+
 class Recommender(Singleton):
     max_rating = 5
     champion = True
@@ -33,6 +59,30 @@ class Recommender(Singleton):
             "xgb_cpu": None,
             "xgb_cuda": None,
         }
+
+    @staticmethod
+    def single(requests: "Request"):
+        return Recommender.batched([requests])
+
+    @staticmethod
+    def batched(requests: list[Request | SimilarMoviesRequest]):
+        self = Recommender.get_instance()
+        resp = []
+
+        with Timer(f"simsearch"):
+            for i, request in enumerate(requests):
+                movieIds = self._preprcoss_request(request)
+                assert len(movieIds) > 0
+                resp.append(movieIds)
+
+        return self._recom(
+            userIds=[r.userId for r in requests],
+            movieIds=resp,
+            model=requests[0].model,
+            temps=[r.temp for r in requests],
+            counts=[(r.count or 999999999) for r in requests],
+            starts=[r.start for r in requests],
+        )
 
     @classmethod
     def load_all_models(cls, exclude: list[ModelType] = []):
@@ -79,37 +129,24 @@ class Recommender(Singleton):
         self.models[modelname] = model
         return model
 
-    @staticmethod
-    def single(requests: "Request"):
-        return Recommender.batched([requests])
+    def _preprcoss_request(self, request: Request | SimilarMoviesRequest):
+        if isinstance(request, Request):
+            return self.simsearch.suggest(
+                request.userId,
+                n_neighbor_users=10,
+                n_neighbor_movies=10,
+                genres=tuple(request.genres),
+            )
+        elif isinstance(request, SimilarMoviesRequest):
+            return self.simsearch.suggest_similar_movies(
+                request.userId,
+                movie_ids=tuple(request.movieIds),
+                n_neighbor_movies=10,
+            )
+        else:
+            raise Exception(f"Invalid request type '{type(request)}'")
 
-    @staticmethod
-    def batched(requests: list["Request"]):
-        self = Recommender.get_instance()
-        resp = []
-        import time
-        s = time.monotonic()
-        with Timer(f"simsearch"):
-            for i, request in enumerate(requests):
-                movieIds = self.simsearch.suggest(
-                    request.userId,
-                    n_neighbor_users=10,
-                    n_neighbor_movies=10,
-                    genres=tuple(request.genres),
-                )
-                assert len(movieIds) > 0
-                resp.append(movieIds)
-        e = time.monotonic()
-        return self.recom(
-            userIds=[r.userId for r in requests],
-            movieIds=resp,
-            model=requests[0].model,
-            temps=[r.temp for r in requests],
-            counts=[(r.count or 999999999) for r in requests],
-            starts=[r.start for r in requests],
-        )
-
-    def recom(
+    def _recom(
         self, userIds: list[int], movieIds: list[list[int]],
         model: ModelType | Literal["best"], temps: list[float], counts: list[int],
         starts: list[int],
@@ -149,29 +186,3 @@ class Recommender(Singleton):
 
         if check("simsearch", "simsearch"):
             recommender.simsearch = SimilaritySearch.load_from_disk()
-
-
-class Response(Schema):
-    userId: int
-    result: list[Recommendation]  # Recommendation
-    time: float
-    status_code: int
-    error: Optional[str] = None
-
-
-class Request(Schema):
-    userId: int
-    genres: list[str]
-    start: int
-    count: Optional[int]
-    model: ModelType | Literal["best"]
-    temp: float
-
-
-class SimilarMoviesRequest(Schema):
-    userId: int
-    start: int
-    count: Optional[int]
-    movieIds: list[int]
-    model: ModelType | Literal["best"]
-    temp: float

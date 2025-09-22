@@ -25,6 +25,8 @@ export function Recommended() {
 }
 
 function RecommendedGenre({ genre }: { genre: MovieGenre }) {
+  console.log("recommending", genre);
+
   const store = useTemperatureStore();
   if (!store || store.temp === null)
     return null;
@@ -71,6 +73,11 @@ function Recommendation({
     initialData: []
   });
   return (
-    <>{q.data!.length > 0 && <MovieCarousel title={title} movies={q.data} />}</>
+    <>
+      {
+        q.data!.length > 0 &&
+        <MovieCarousel title={title} movies={q.data} scroll />
+      }
+    </>
   );
 }

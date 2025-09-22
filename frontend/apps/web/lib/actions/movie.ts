@@ -49,7 +49,7 @@ export const getRecommendedMoviesForUser = action(
 
   async ({ count, userId, temp }: { count: number; userId: number, temp: number }) =>
     handleBackendResponse(
-      await Backend.getMoviesRecom({ userId, count, temp }),
+      await Backend.recommendMovies({ userId, count, temp }),
       userId
     )
 );
@@ -58,7 +58,7 @@ export const getRecommendedGenreMovies = action(
   "getRecommendedGenreMovies",
   async ({ genre, userId, temp }: { genre: MovieGenre; userId: number, temp: number }) =>
     handleBackendResponse(
-      await Backend.getMoviesRecom({ userId, count: 10, genres: [genre], temp }),
+      await Backend.recommendMovies({ userId, count: 10, genres: [genre], temp }),
       userId
     )
 );
@@ -68,7 +68,7 @@ export const getSimilarMovies = action(
   async ({ movieIds, count }: { movieIds: number[]; count: number }) => {
     const userId = await getUserId();
     return handleBackendResponse(
-      await Backend.getSimilarMovies(userId, movieIds, count),
+      await Backend.recommendSimilarMovies({ userId, movieIds, count, temp: 0 }),
       userId
     );
   }

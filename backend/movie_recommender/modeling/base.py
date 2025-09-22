@@ -21,7 +21,7 @@ class MovieRecommender(ABC, Generic[T]):
         max_rating: int,
         temps: list[float],
         clamp=True,
-    ) -> list[list["Recommendation"]] | list[list[float]]:
+    ) -> list[list["Recommendation"]]:
         from ..utils import is_array
         assert is_array(userIds)
         assert is_array(movieIds)
@@ -61,6 +61,7 @@ class MovieRecommender(ABC, Generic[T]):
         assert len(ratings) == len(userIds) == len(
             movieIds), (len(ratings), len(userIds), len(movieIds))
         if temp == 0:
+            # TODO: sort
             return ratings, userIds, movieIds
         assert 0 < temp <= 1
 

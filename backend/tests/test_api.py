@@ -2,7 +2,7 @@ import pytest_asyncio
 import pytest
 from typing import TypeVar
 from httpx import ASGITransport, AsyncClient
-from api import app, RecomResponse, RecomRequest
+from api import app, RecomResponse, RecomRequest, SimilarMoviesRequest
 from movie_recommender.recommender import ModelType
 from movie_recommender.logging import Logger
 from asgi_lifespan import LifespanManager  # pip install 'asgi-lifespan==2.*'
@@ -13,12 +13,12 @@ MAX_RATING = 5
 T = TypeVar("T")
 
 
-async def recomend_movies(aclient: AsyncClient, data: RecomRequest):
+async def recomend_movies(aclient: AsyncClient, data: RecomRequest | SimilarMoviesRequest):
     json = data.model_dump()
     return await aclient.post('/movies-recom', json=json)
 
 
-async def check_response(resp_json, data):
+async def check_response(resp_json, data: RecomRequest | SimilarMoviesRequest):
     assert resp_json.status_code == 200, resp_json.status_code
     result = RecomResponse(**resp_json.json())
     assert result.status_code == 200, result.error
@@ -71,5 +71,15 @@ async def test_genres(aclient: AsyncClient):
             count=None,
             model=model,
             temp=0.5,
+        )
+        await check_response(await recomend_movies(aclient, data),  data)
+    for model in MODELS:
+        data = SimilarMoviesRequest(
+            count=10,
+            model=model,
+            temp=.3,
+            movieIds=[10, 23],
+            userId=1,
+            start=0
         )
         await check_response(await recomend_movies(aclient, data),  data)
