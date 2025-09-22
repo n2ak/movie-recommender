@@ -51,6 +51,8 @@ The recommendation process is split into 2 phases:
 
 A simple web application to help demonstrate the project. The project is split into subpackages ans apps using [Turborepo](http://turborepo.com/) to help organize the codebase.
 
+![website screenshot](assets/website-screenshot.png)
+
 #### Features:
 
 - App is built with [NextJs15](https://nextjs.org/) and [TailwindCss](https://tailwindcss.com/).
