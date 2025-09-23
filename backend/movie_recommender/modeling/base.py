@@ -60,27 +60,28 @@ class MovieRecommender(ABC, Generic[T]):
     ):
         assert len(ratings) == len(userIds) == len(
             movieIds), (len(ratings), len(userIds), len(movieIds))
-        if temp == 0:
-            # TODO: sort
-            return ratings, userIds, movieIds
-        assert 0 < temp <= 1
+        ratings = np.asarray(ratings, dtype=np.float32)
+        userIds = np.asarray(userIds, dtype=np.int32)
+        movieIds = np.asarray(movieIds, dtype=np.int32)
 
-        def multinomial(*arrs: NDArray, count, nexp=1):
-            count = min(count, len(arrs[0]))
-            array = torch.softmax(torch.from_numpy(arrs[0]), -1)
-            array /= temp
-            indices = torch.multinomial(array, count).tolist()
-            return [arr[indices] for arr in arrs]
+        if temp != 0:
+            assert 0 < temp <= 1
 
-        ratings, userIds, movieIds = multinomial(
-            np.array(ratings, dtype=np.float32),
-            np.array(userIds, dtype=np.int32),
-            np.array(movieIds, dtype=np.int32),
-            count=count,  # TODO use counts
-        )
+            def multinomial(*arrs: NDArray, count) -> list[NDArray]:
+                # TODO use numpy
+                count = min(count, len(arrs[0]))
+                array = torch.softmax(torch.from_numpy(arrs[0]), -1)
+                array /= temp
+                indices = torch.multinomial(array, count).tolist()
+                return [arr[indices] for arr in arrs]
+
+            ratings, userIds, movieIds = multinomial(
+                ratings, userIds, movieIds,
+                count=count,  # TODO use counts
+            )
+
         ratings, userIds, movieIds = self.sort(
-            ratings, userIds, movieIds)  # type: ignore
-
+            ratings, userIds, movieIds)
         return ratings, userIds, movieIds
 
     def sort(self, *arrs: NDArray):
