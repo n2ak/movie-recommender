@@ -10,9 +10,7 @@ from movie_recommender.workflow import (
     make_run_name
 )
 import functools
-import os
-
-registered_name = os.environ["SS_REGISTERED_NAME"]
+from movie_recommender.env import SS_REGISTERED_NAME
 
 
 class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
@@ -56,10 +54,10 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
     @classmethod
     def load_from_disk(cls, champion=True) -> Self:
         model = mlflow.pyfunc.load_model(
-            model_uri(registered_name, champion)
+            model_uri(SS_REGISTERED_NAME, champion)
         ).unwrap_python_model()
         model.run_id = get_registered_model_run_id(
-            registered_name, champion=champion)
+            SS_REGISTERED_NAME, champion=champion)
         return model  # type: ignore
 
     def __movies_data(self, movies: pd.DataFrame):
@@ -245,8 +243,9 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
             Logger.info("Run id: %s", run_id)
             info = mlflow.pyfunc.log_model(python_model=self)
 
-        version = register_last_model(registered_name=registered_name).version
-        promote_model_to_champion(registered_name, version)
+        version = register_last_model(
+            registered_name=SS_REGISTERED_NAME).version
+        promote_model_to_champion(SS_REGISTERED_NAME, version)
         return run_id
 
 

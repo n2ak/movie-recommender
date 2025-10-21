@@ -10,7 +10,7 @@ from movie_recommender.logging import Logger
 from movie_recommender.sim_search import SimilaritySearch
 from movie_recommender.data import process_data_for_simsearch
 from movie_recommender.workflow import (
-    connect_minio, connect_mlflow, read_parquet_from_s3, save_figures, download_parquet_from_s3, upload_parquet_to_s3)
+    connect_storage_client, connect_mlflow, read_parquet_from_s3, save_figures, download_parquet_from_s3, upload_parquet_to_s3)
 
 simsearch_exp_name = "SimilaritySearch".lower()
 
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     arg = sys.argv[1]
     bucket = os.environ["DB_MINIO_BUCKET"]
 
-    connect_minio()
+    connect_storage_client()
     connect_mlflow()
 
     if arg == "train":

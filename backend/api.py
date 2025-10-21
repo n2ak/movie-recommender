@@ -11,8 +11,9 @@ if True:
     # for local testing
     dotenv.load_dotenv("../.env")
     from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse, SimilarMoviesRequest
-    from movie_recommender.workflow import connect_minio, connect_mlflow
+    from movie_recommender.workflow import connect_storage_client, connect_mlflow
     from movie_recommender.logging import Logger
+    from movie_recommender.env import BACKEND_PORT
     # for models to load when testing!!!
     sys.path.append(os.path.abspath("./training"))
 
@@ -59,7 +60,7 @@ async def worker():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    connect_minio()
+    connect_storage_client()
     connect_mlflow()
     Logger.info("Starting up...")
 
@@ -113,6 +114,6 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=int(os.getenv("BACKEND_PORT", 8000)),
+        port=int(BACKEND_PORT),
         # log_config=None,
     )

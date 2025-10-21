@@ -15,8 +15,7 @@ from ..workflow import (
     log_temp_artifacts, register_last_model_and_try_promote, model_uri,
     make_run_name
 )
-
-registered_name = os.environ["DLRM_REGISTERED_NAME"]
+from ..env import DLRM_REGISTERED_NAME
 
 
 @dataclass(eq=True)
@@ -338,7 +337,7 @@ class TrainableModule(L.LightningModule):
             Logger.info("Done training.")
 
         register_last_model_and_try_promote(
-            registered_name=registered_name,
+            registered_name=DLRM_REGISTERED_NAME,
             metric_name="val-mae",
         )
         return run_id
@@ -347,5 +346,5 @@ class TrainableModule(L.LightningModule):
     def load(cls, champion=True) -> Self:
         # mlflow.artifacts.list_artifacts(f"models:/{model_name}@champion")
         return mlflow.pytorch.load_model(  # type: ignore
-            model_uri(registered_name, champion)
+            model_uri(DLRM_REGISTERED_NAME, champion)
         )

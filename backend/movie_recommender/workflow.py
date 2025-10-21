@@ -1,58 +1,141 @@
 
-import os
 import functools
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 
 import mlflow
 import pandas as pd
 import mlflow.artifacts
-from minio import Minio
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from numpy.typing import NDArray
 from .logging import Logger
+from .env import MLFLOW_TRACKING_URI, STORAGE_PROVIDER, config
+_mlflow_client: Optional[mlflow.MlflowClient] = None
+_storage_client: Optional["StorageClient"] = None
 
-_mlflowClient: Optional[mlflow.MlflowClient] = None
-minioClient: Optional[Minio] = None
+
+class StorageClient:
+    def __init__(
+        self,
+        provider: Literal["gcp", "aws", "minio"],
+        config: dict,
+    ):
+        self.provider = provider
+
+        if provider == "aws":
+            import boto3
+            self.client = boto3.client(
+                "s3",
+                aws_access_key_id=config["access_key"],
+                aws_secret_access_key=config["secret_key"],
+                region_name=config.get("region", "us-east-1"),
+            )
+
+        elif provider == "gcp":
+            from google.cloud import storage
+            self.client = storage.Client()
+
+        elif provider == "minio":
+            import boto3
+            self.client = boto3.client(
+                "s3",
+                # e.g. http://localhost:9000
+                endpoint_url=config["endpoint"],
+                aws_access_key_id=config["access_key"],
+                aws_secret_access_key=config["secret_key"],
+                region_name=config.get("region", "us-east-1"),
+            )
+
+        else:
+            raise ValueError(
+                "Unknown provider: must be 'aws', 'gcp', or 'minio'")
+
+    def upload_file(self, bucket_name, file_path, dest_path):
+        if self.provider in ("aws", "minio"):
+            self.client.upload_file(  # type: ignore
+                file_path, bucket_name, dest_path)
+        elif self.provider == "gcp":
+            bucket = self.client.bucket(bucket_name)
+            blob = bucket.blob(dest_path)
+            blob.upload_from_filename(file_path)
+
+    def download_file(self, bucket_name, src_path, dest_path):
+        if self.provider in ("aws", "minio"):
+            self.client.download_file(  # type: ignore
+                bucket_name, src_path, dest_path)
+        elif self.provider == "gcp":
+            bucket = self.client.bucket(bucket_name)
+            blob = bucket.blob(src_path)
+            blob.download_to_filename(dest_path)
+
+    def list_files(self, bucket_name, prefix=""):
+        if self.provider in ("aws", "minio"):
+            resp = self.client.list_objects_v2(  # type: ignore
+                Bucket=bucket_name, Prefix=prefix)
+            return [item["Key"] for item in resp.get("Contents", [])]
+        elif self.provider == "gcp":
+            bucket = self.client.bucket(bucket_name)
+            return [blob.name for blob in bucket.list_blobs(prefix=prefix)]
+
+    def delete_file(self, bucket_name, path):
+        if self.provider in ("aws", "minio"):
+            self.client.delete_object(  # type: ignore
+                Bucket=bucket_name, Key=path)
+        elif self.provider == "gcp":
+            bucket = self.client.bucket(bucket_name)
+            blob = bucket.blob(path)
+            blob.delete()
+
+    def get_uri(self, bucket_name, object_path):
+        """
+          Return the canonical/public URI for a given object path.
+        """
+        if self.provider in ["aws", "minio"]:
+            # S3 public URL
+            return f"s3://{bucket_name}/{object_path}"
+        elif self.provider == "gcp":
+            # GCS public URL
+            return f"gs://{bucket_name}/{object_path}"
+        else:
+            raise ValueError("Unknown provider")
+
+    def list_buckets(self):
+        if self.provider in ("aws", "minio"):
+            resp = self.client.list_buckets()
+            return [bucket["Name"] for bucket in
+                    resp.get("Buckets", [])]  # type: ignore
+        elif self.provider == "gcp":
+            return [bucket.name for bucket in self.client.list_buckets()]
+        else:
+            raise ValueError("Unknown provider")
 
 
-def connect_minio():
-    global minioClient
-    import os
-    if minioClient is None:
-        endpoint = os.environ["MLFLOW_S3_ENDPOINT_URL"]
-        secure = endpoint.startswith("https://")
-        endpoint_stripped = endpoint.replace(
-            "http://", "").replace("https://", "")
-        Logger.debug("Secure %s", secure)
-        Logger.debug("endpoint %s", endpoint)
-        minioClient = Minio(
-            endpoint=endpoint_stripped,
-            access_key=os.environ["AWS_ACCESS_KEY_ID"],
-            secret_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-            region=os.environ["AWS_DEFAULT_REGION"],
-            secure=secure,
+def connect_storage_client():
+    global _storage_client
+    if _storage_client is None:
+        _storage_client = StorageClient(
+            provider=STORAGE_PROVIDER,
+            config=config,
         )
-        Logger.info("Connected to minio on: %s", endpoint)
-    Logger.debug("Available Buckets %s", minioClient.list_buckets())
+    Logger.debug("Available Buckets %s", _storage_client.list_buckets())
 
 
 def connect_mlflow():
-    global _mlflowClient
-    if _mlflowClient is not None:
+    global _mlflow_client
+    if _mlflow_client is not None:
         return
-    uri = os.environ["MLFLOW_TRACKING_URI"]
+    uri = MLFLOW_TRACKING_URI
     mlflow.set_tracking_uri(uri)
-    _mlflowClient = mlflow.MlflowClient(uri)
+    _mlflow_client = mlflow.MlflowClient(uri)
     # as a health check
     mlflow.search_experiments()
     Logger.info("Connected to mlflow on: %s", uri)
 
 
 def get_mlflow_client():
-    assert _mlflowClient is not None
-    return _mlflowClient
+    assert _mlflow_client is not None
+    return _mlflow_client
 
 
 def model_uri(registered_name: str, champion=True):
@@ -62,22 +145,22 @@ def model_uri(registered_name: str, champion=True):
 
 
 def get_run_metrics(run_id: str):
-    assert _mlflowClient is not None
-    return _mlflowClient.get_run(run_id).data.metrics
+    assert _mlflow_client is not None
+    return _mlflow_client.get_run(run_id).data.metrics
 
 
 def try_promote_model(model_name: str, metric: str, minimum=True):
     import mlflow.exceptions
     assert_mlflow_connection()
-    assert _mlflowClient is not None
+    assert _mlflow_client is not None
 
-    latest_registered = _mlflowClient.get_registered_model(
+    latest_registered = _mlflow_client.get_registered_model(
         model_name).latest_versions[-1]  # type: ignore
 
     last_version = latest_registered.version
 
     try:
-        champion = _mlflowClient.get_model_version_by_alias(
+        champion = _mlflow_client.get_model_version_by_alias(
             model_name, "champion")
         assert champion.run_id is not None
 
@@ -103,21 +186,21 @@ def try_promote_model(model_name: str, metric: str, minimum=True):
 
 
 def promote_model_to_champion(registered_name, version: str):
-    assert _mlflowClient is not None
-    _mlflowClient.set_registered_model_alias(
+    assert _mlflow_client is not None
+    _mlflow_client.set_registered_model_alias(
         registered_name, "champion", version)
     Logger.debug(f"Promoted {version=} of {registered_name=} to champion!")
 
 
 def get_registered_model_run_id(registered_name: str, champion: bool):
     assert_mlflow_connection()
-    assert _mlflowClient is not None
+    assert _mlflow_client is not None
     alias = "champion" if champion else "latest"
-    return _mlflowClient.get_model_version_by_alias(name=registered_name, alias=alias).run_id
+    return _mlflow_client.get_model_version_by_alias(name=registered_name, alias=alias).run_id
 
 
 def assert_mlflow_connection():
-    assert _mlflowClient is not None
+    assert _mlflow_client is not None
     assert mlflow.is_tracking_uri_set()
 
 
@@ -213,32 +296,19 @@ def save_plots(
 
 
 def read_parquet_from_s3(bucket: str, filepath: str):
-    assert minioClient and minioClient._provider, minioClient
-    key = minioClient._provider.retrieve()._access_key
-    secret = minioClient._provider.retrieve()._secret_key
-    endpoint = os.environ["MLFLOW_S3_ENDPOINT_URL"]
-
-    return pd.read_parquet(
-        f"s3://{bucket}/{filepath}",
-        storage_options=dict(
-            key=key,
-            secret=secret,
-            client_kwargs=dict(
-                endpoint_url=endpoint
-            )
-        )
-    )
+    df, = download_parquet_from_s3(bucket, filepath)
+    return df
 
 
 def download_file_from_s3(bucket, object_name, path):
-    assert minioClient is not None
-    minioClient.fget_object(bucket, object_name, path)
+    assert _storage_client is not None
+    _storage_client.download_file(bucket, object_name, path)
     return path
 
 
 def download_parquet_from_s3(bucket: str, *filenames: str):
     import tempfile
-    connect_minio()
+    connect_storage_client()
     with tempfile.TemporaryDirectory() as dir:
         dfs = [pd.read_parquet(download_file_from_s3(
             bucket, f'{filename}.parquet', f"{dir}/{filename}.parquet")
@@ -248,7 +318,7 @@ def download_parquet_from_s3(bucket: str, *filenames: str):
 
 def upload_folder_to_s3(dir: str, bucket):
     import pathlib
-    assert minioClient is not None
+    assert _storage_client is not None
     Logger.debug(f"Uploading {dir=} to s3 {bucket=}")
     for file in pathlib.Path(dir).glob("*"):
         filepath = str(file)
@@ -256,18 +326,18 @@ def upload_folder_to_s3(dir: str, bucket):
 
         Logger.debug(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
 
-        minioClient.fput_object(
-            bucket, object_name=object_name, file_path=filepath
+        _storage_client.upload_file(
+            bucket, filepath, object_name
         )
 
 
 def upload_file_to_s3(bucket: str, filepath: str):
-    assert minioClient is not None
+    assert _storage_client is not None
     object_name = filepath.split("/")[-1]
 
     Logger.debug(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
-    minioClient.fput_object(
-        bucket, object_name=object_name, file_path=filepath
+    _storage_client.upload_file(
+        bucket, filepath, object_name
     )
 
 

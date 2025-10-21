@@ -1,5 +1,4 @@
 from movie_recommender.utils import Timer
-import os
 from typing import Optional, Literal
 from pydantic import BaseModel as Schema
 if True:
@@ -11,7 +10,7 @@ if True:
     from movie_recommender.utils import Singleton
     from movie_recommender.sim_search import SimilaritySearch
     from movie_recommender.logging import Logger
-
+    from movie_recommender.env import SS_REGISTERED_NAME, XGB_REGISTERED_NAME, DLRM_REGISTERED_NAME
 ModelType = Literal["xgb_cpu", "xgb_cuda", "dlrm_cpu", "dlrm_cuda"]
 
 
@@ -46,9 +45,9 @@ class Recommender(Singleton):
     champion = True
     current_champions = {}
     registered_names = {
-        "dlrm": os.environ["DLRM_REGISTERED_NAME"],
-        "xgb": os.environ["XGB_REGISTERED_NAME"],
-        "simsearch": os.environ["SS_REGISTERED_NAME"],
+        "dlrm": DLRM_REGISTERED_NAME,
+        "xgb": XGB_REGISTERED_NAME,
+        "simsearch": SS_REGISTERED_NAME,
     }
 
     def init(self):

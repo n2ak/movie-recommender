@@ -1,6 +1,4 @@
 import json
-import os
-
 import mlflow.xgboost
 from movie_recommender.logging import Logger
 import pandas as pd
@@ -14,8 +12,7 @@ from movie_recommender.workflow import (
     get_registered_model_run_id, model_uri, make_run_name
 )
 
-
-registered_name = os.environ["XGB_REGISTERED_NAME"]
+from ..env import XGB_REGISTERED_NAME
 
 
 class XGBMR(MovieRecommender[NDArray]):
@@ -37,13 +34,13 @@ class XGBMR(MovieRecommender[NDArray]):
     def load_model(cls, champion=True, device="cpu"):
         import pathlib
         best_model: xgb.Booster = mlflow.xgboost.load_model(  # type: ignore
-            model_uri(registered_name, champion)
+            model_uri(XGB_REGISTERED_NAME, champion)
         )
         best_model.set_param({"device": device})
         Logger.info("XGB loaded on device: %s", device)
 
         run_id = get_registered_model_run_id(
-            registered_name, champion=champion
+            XGB_REGISTERED_NAME, champion=champion
         )
         assert run_id is not None
 
@@ -67,7 +64,7 @@ class XGBMR(MovieRecommender[NDArray]):
 
         model.model = best_model
         Logger.info(
-            f"Loaded champion model, {registered_name=}"
+            f"Loaded champion model, {XGB_REGISTERED_NAME=}"
         )
         model.run_id = run_id
         return model
@@ -169,7 +166,7 @@ class XGBMR(MovieRecommender[NDArray]):
             Logger.info("Done training.")
 
         register_last_model_and_try_promote(
-            registered_name=registered_name,
+            registered_name=XGB_REGISTERED_NAME,
             metric_name="val-mae"
         )
         self.run_id = run_id

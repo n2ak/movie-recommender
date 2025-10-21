@@ -9,7 +9,7 @@ from movie_recommender.data import movie_cols, user_cols
 from movie_recommender.train_utils import mae, rmse, get_env
 from movie_recommender.modeling.dlrm import DLRM, TrainableModule, DLRMParams
 from movie_recommender.workflow import (
-    download_parquet_from_s3, connect_minio, connect_mlflow, save_plots, upload_parquet_to_s3
+    download_parquet_from_s3, connect_storage_client, connect_mlflow, save_plots, upload_parquet_to_s3
 )
 
 
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     arg = sys.argv[1]
     bucket = os.environ["DB_MINIO_BUCKET"]
 
-    connect_minio()
+    connect_storage_client()
     connect_mlflow()
 
     if arg == "train":
