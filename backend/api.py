@@ -60,14 +60,14 @@ async def worker():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    connect_storage_client()
-    connect_mlflow()
-    Logger.info("Starting up...")
+    # connect_storage_client()
+    # connect_mlflow()
+    # Logger.info("Starting up...")
 
-    Recommender.load_all_models(exclude=["dlrm_cpu", "xgb_cpu"])
-    Logger.info("Loaded models")
+    # Recommender.load_all_models(exclude=["dlrm_cpu", "xgb_cpu"])
+    # Logger.info("Loaded models")
 
-    asyncio.create_task(periodic_task())
+    # asyncio.create_task(periodic_task())
     asyncio.create_task(worker())
 
     Logger.info("\n\nServer is up...\n\n")
