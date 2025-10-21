@@ -9,9 +9,13 @@ splits = {
 
 
 def read_ds(limit=None):
-    df_train = pd.read_parquet(ds_path + splits["train"])
-    df_val = pd.read_parquet(ds_path + splits["val"])
-    df = pd.concat([df_train, df_val], axis=0)
+    # df = pd.concat([
+    #     pd.read_parquet(ds_path + splits["train"]),
+    #     pd.read_parquet(ds_path + splits["val"]),
+    # ],
+    #     axis=0
+    # )
+    df = pd.read_parquet(ds_path + splits["val"])
     if limit is not None:
         df = df[:limit]
     return df
@@ -78,5 +82,5 @@ def main(limit):
 
 if __name__ == "__main__":
     import sys
-    limit = int(sys.argv[1]) if len(sys.argv) > 1 else None
+    limit = int(sys.argv[1]) if len(sys.argv) > 1 else 1000
     main(limit)
