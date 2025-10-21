@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir psycopg2-binary sqlalchemy
 RUN pip install --no-cache-dir fastapi uvicorn
 RUN pip install --no-cache-dir minio boto3 python-dotenv
 RUN pip install --no-cache-dir fastapi-utils typing-inspect
+RUN pip install --no-cache-dir google-cloud-storage
 
 
 COPY movie_recommender movie_recommender
