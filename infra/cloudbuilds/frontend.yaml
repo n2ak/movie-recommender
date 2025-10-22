@@ -44,7 +44,7 @@ steps:
         --region $LOCATION \
         --platform managed \
         --allow-unauthenticated \
-        --set-env-vars "$_ENV_VARS,BACKEND"
+        --set-env-vars "$_ENV_VARS,BACKEND_URL=$BACKEND_URL"
 
 images:
   - "gcr.io/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA"
