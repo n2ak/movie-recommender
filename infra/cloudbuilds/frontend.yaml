@@ -8,7 +8,7 @@ steps:
       [
         "build",
         "-t",
-        "$LOCATION-docker.pkg.dev/$PROJECT_ID/app-images/$_IMAGE_NAME:$SHORT_SHA",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA",
         "./frontend",
       ]
 
@@ -16,7 +16,7 @@ steps:
     args:
       [
         "push",
-        "$LOCATION-docker.pkg.dev/$PROJECT_ID/app-images/$_IMAGE_NAME:$SHORT_SHA",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA",
       ]
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
@@ -26,7 +26,7 @@ steps:
         "deploy",
         "$_SERVICE_NAME",
         "--image",
-        "$LOCATION-docker.pkg.dev/$PROJECT_ID/app-images/$_IMAGE_NAME:$SHORT_SHA",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA",
         "--region",
         "$LOCATION",
         "--platform",
@@ -37,6 +37,6 @@ steps:
       ]
 
 images:
-  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/app-images/$_IMAGE_NAME:$SHORT_SHA"
+  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA"
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
