@@ -1,0 +1,40 @@
+substitutions:
+  _SERVICE_NAME: frontend-service
+  _IMAGE_NAME: frontend-image
+
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/app-images/$_IMAGE_NAME:$SHORT_SHA",
+        "./frontend",
+      ]
+
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "push",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/app-images/$_IMAGE_NAME:$SHORT_SHA",
+      ]
+
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    args:
+      [
+        "run",
+        "deploy",
+        "$_SERVICE_NAME",
+        "--image",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/app-images/$_IMAGE_NAME:$SHORT_SHA",
+        "--region",
+        "$LOCATION",
+        "--platform",
+        "managed",
+        "--allow-unauthenticated",
+        "--set-env-vars",
+        "$_ENV_VARS",
+      ]
+
+images:
+  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/app-images/$_IMAGE_NAME:$SHORT_SHA"
