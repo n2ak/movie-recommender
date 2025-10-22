@@ -3,41 +3,50 @@ substitutions:
   _IMAGE_NAME: frontend-image
 
 steps:
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: "check backend health"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        BACKEND_URL=$(gcloud run services describe $_BACKEND_SERIVCE_NAME --region=$LOCATION --format='value(status.url)')
+        echo "Checking backend health at $BACKEND_URL/health"
+        if ! curl -fs "$BACKEND_URL/health"; then
+          echo "Backend is not up"
+          exit 1
+        fi
+        echo "Backend healthy"
+        echo "BACKEND_URL=$BACKEND_URL" > /workspace/env_vars.txt
+
   - name: "gcr.io/cloud-builders/docker"
+    id: "build webapp"
     args:
       [
         "build",
         "-t",
-        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA",
+        "gcr.io/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA",
         "./frontend",
       ]
 
   - name: "gcr.io/cloud-builders/docker"
-    args:
-      [
-        "push",
-        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA",
-      ]
+    id: "push to gcr"
+    args: ["push", "gcr.io/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA"]
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-    entrypoint: gcloud
+    id: "deploy cloud run"
+    entrypoint: bash
     args:
-      [
-        "run",
-        "deploy",
-        "$_SERVICE_NAME",
-        "--image",
-        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA",
-        "--region",
-        "$LOCATION",
-        "--platform",
-        "managed",
-        "--allow-unauthenticated",
-        "--set-env-vars",
-        "$_ENV_VARS",
-      ]
+      - "-c"
+      - |
+        source /workspace/env_vars.txt
+        gcloud run deploy $_SERVICE_NAME \
+        --image gcr.io/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA \
+        --region $LOCATION \
+        --platform managed \
+        --allow-unauthenticated \
+        --set-env-vars "$_ENV_VARS,BACKEND"
 
 images:
-  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA"
+  - "gcr.io/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:$SHORT_SHA"
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
