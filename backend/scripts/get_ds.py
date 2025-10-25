@@ -60,12 +60,12 @@ def process(df: pd.DataFrame):
 def save(**ds: pd.DataFrame):
     import pathlib
     import tempfile
-    with tempfile.TemporaryDirectory(delete=False) as dir:
-        paths = []
-        for name, d in ds.items():
-            p = pathlib.Path(dir) / f"{name}.csv"
-            d.to_csv(p, index=False)
-            paths.append(str(p))
+    dir = tempfile.mkdtemp()
+    paths = []
+    for name, d in ds.items():
+        p = pathlib.Path(dir) / f"{name}.csv"
+        d.to_csv(p, index=False)
+        paths.append(str(p))
     return paths
 
 
