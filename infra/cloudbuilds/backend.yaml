@@ -1,5 +1,4 @@
 substitutions:
-  _SERVICE_NAME: backend
   _IMAGE_NAME: backend-image
 steps:
   - name: "gcr.io/cloud-builders/docker"
@@ -33,5 +32,6 @@ steps:
 
 images:
   - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest"
+
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
