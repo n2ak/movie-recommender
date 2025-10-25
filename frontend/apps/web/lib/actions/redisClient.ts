@@ -10,7 +10,7 @@ const create = () => {
     host,
     port,
     // Redis server's `default` user does not require a password
-    // password: process.env.REDIS_PASSWORD,
+    password: process.env.REDIS_PASSWORD,
   });
   return redis;
 };
