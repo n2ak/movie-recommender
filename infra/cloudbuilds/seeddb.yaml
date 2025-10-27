@@ -30,6 +30,9 @@ steps:
           --region=$LOCATION \
           --set-env-vars "DATABASE_URL=$_DATABASE_URL" \
           --set-cloudsql-instances=$_INSTANCE_CONNECTION_NAME \
+          --network=$_VPC \
+          --subnet=$_SUBNET \
+          --memory=1G \
           --max-retries=0
 
 images:
