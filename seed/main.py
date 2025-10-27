@@ -1,7 +1,5 @@
-import pathlib
 import asyncio
 import random
-import sys
 from datetime import datetime
 from lorem_text import lorem
 import pandas as pd
@@ -28,7 +26,7 @@ async def chunked_insert(data, fn):
     return total
 
 
-def parse_csv(path: pathlib.Path):
+def parse_csv(path: str):
     print(f"Parsing CSV file: {path}")
     df = pd.read_csv(path)
     return df
@@ -97,17 +95,10 @@ async def create_reviews(data, db):
     print(f"Created {n} reviews.")
 
 
-async def main(dir):
-    if len(sys.argv) < 2:
-        raise ValueError(f"Usage: {sys.argv[0]} dir")
-
-    dir = pathlib.Path(sys.argv[1].strip())
-    assert dir.exists()
-    assert dir.is_dir()
-
-    users_csv = parse_csv(dir / "users.csv")
-    movies_csv = parse_csv(dir / "movies.csv")
-    ratings_csv = parse_csv(dir / "ratings.csv")
+async def main():
+    users_csv = parse_csv("users.csv")
+    movies_csv = parse_csv("movies.csv")
+    ratings_csv = parse_csv("ratings.csv")
 
     print("Connecting to database...")
     db = Prisma()
@@ -126,4 +117,4 @@ async def main(dir):
 
 
 if __name__ == "__main__":
-    asyncio.run(main(dir))
+    asyncio.run(main())

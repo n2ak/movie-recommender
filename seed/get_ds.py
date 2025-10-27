@@ -58,26 +58,19 @@ def process(df: pd.DataFrame):
 
 
 def save(**ds: pd.DataFrame):
-    import pathlib
-    import tempfile
-    dir = tempfile.mkdtemp()
-    paths = []
     for name, d in ds.items():
-        p = pathlib.Path(dir) / f"{name}.csv"
+        p = f"{name}.csv"
         d.to_csv(p, index=False)
-        paths.append(str(p))
-    return dir
 
 
 def main(limit):
     df = read_ds(limit)
     ratings, movies, users = process(df)
-    paths = save(
+    save(
         ratings=ratings,
         movies=movies,
         users=users,
     )
-    print(paths)
 
 
 if __name__ == "__main__":
