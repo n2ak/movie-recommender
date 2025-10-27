@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// generator client2 {
+//   provider = "prisma-client-py"
+// }
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserModel {
+  id       Int     @id @unique
+  username String
+  email    String  @unique
+  password String
+  active   Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  movieRatings    UserMovieRating[]
+  movieReviews    MovieReview[]
+  reviewReactions ReviewReaction[]
+
+  @@map("user")
+}
+
+model MovieModel {
+  id            Int      @id @unique
+  imdbId        String   @unique
+  title         String
+  genres        String[]
+  avg_rating    Float
+  href          String
+  total_ratings Int
+  year          Int
+  desc          String
+
+  createdAt  DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime          @default(now()) @updatedAt
+  userRating UserMovieRating[]
+  reviews    MovieReview[]
+
+  @@map("movie")
+}
+
+model UserMovieRating {
+  id     Int   @id @default(autoincrement())
+  rating Float
+
+  timestamp DateTime
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  movieModelId Int
+  userModelId  Int
+
+  movie MovieModel @relation(fields: [movieModelId], references: [id], onDelete: Cascade)
+  user  UserModel  @relation(fields: [userModelId], references: [id], onDelete: Cascade)
+
+  @@unique([movieModelId, userModelId])
+  @@map("movie_rating")
+}
+
+model MovieReview {
+  id           Int      @id @default(autoincrement())
+  movieModelId Int
+  userModelId  Int
+  title        String
+  text         String
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @default(now()) @updatedAt
+  nlikes       Int
+  ndislikes    Int
+
+  reactions ReviewReaction[]
+  movie     MovieModel       @relation(fields: [movieModelId], references: [id], onDelete: Cascade)
+  user      UserModel        @relation(fields: [userModelId], references: [id], onDelete: Cascade)
+
+  @@unique([movieModelId, userModelId])
+}
+
+model ReviewReaction {
+  id            Int                @id @default(autoincrement())
+  movieReviewId Int
+  userModelId   Int
+  createdAt     DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime           @default(now()) @updatedAt
+  type          ReviewReactionType
+
+  movie_review MovieReview @relation(fields: [movieReviewId], references: [id], onDelete: Cascade)
+  user         UserModel   @relation(fields: [userModelId], references: [id], onDelete: Cascade)
+
+  @@unique([movieReviewId, userModelId])
+}
+
+enum ReviewReactionType {
+  LIKE
+  DISLIKE
+}
