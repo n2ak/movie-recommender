@@ -12,6 +12,6 @@ COPY seed/requirements.txt .
 RUN pip install --upgrade --no-cache-dir -r requirements.txt
 
 COPY seed/ ./
-RUN npx prisma@5.17.0 generate
+RUN chmod +x script.sh
 
-ENTRYPOINT ["bash", "-c", "npx prisma@5.17.0 migrate dev --name init && python get_ds.py && python main.py"]
+ENTRYPOINT ["./script.sh"]
