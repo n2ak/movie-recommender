@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN npm install -g prisma
 
-COPY schema.prisma prisma/schema.prisma
+COPY frontend/packages/database/prisma/schema.prisma prisma/schema.prisma
 
 RUN npx prisma generate
 
@@ -15,10 +15,10 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y openssl curl && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY seed/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY seed/* ./
 COPY --from=builder /app/prisma /app/prisma
 
 WORKDIR /app
