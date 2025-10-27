@@ -1,4 +1,5 @@
 import pandas as pd
+from datasets import load_dataset
 
 
 ds_path = "hf://datasets/ashraq/movielens_ratings/"
@@ -16,6 +17,8 @@ def read_ds(limit=None):
     #     axis=0
     # )
     df = pd.read_parquet(ds_path + splits["val"])
+    ds = load_dataset("ashraq/movielens_ratings", split="validation")
+    df = ds.to_pandas()
     if limit is not None:
         df = df[:limit]
     return df
