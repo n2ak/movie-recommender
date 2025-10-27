@@ -14,4 +14,4 @@ RUN pip install --upgrade --no-cache-dir -r requirements.txt
 COPY seed/ ./
 RUN npx prisma@5.17.0 generate
 
-ENTRYPOINT ["bash", "-c", "python get_ds.py && python main.py"]
+ENTRYPOINT ["bash", "-c", "npx prisma@5.17.0 migrate dev --name init && python get_ds.py && python main.py"]
