@@ -5,4 +5,3 @@ fsspec
 huggingface_hub
 fastparquet
 pyarrow
-datasets
