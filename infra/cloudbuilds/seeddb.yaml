@@ -1,0 +1,36 @@
+substitutions:
+  _IMAGE_NAME: seed-db-job
+
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest",
+        ".",
+      ]
+
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "push",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest",
+      ]
+
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud run jobs deploy $_JOB_NAME \
+          --image $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest \
+          --region=$REGION \
+          --set-env-vars "DATABASE_URL=$_DATABASE_URL" \
+          --add-cloudsql-instances=$_INSTANCE_CONNECTION_NAME \
+          --max-retries=0
+
+images:
+  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest"
+
+timeout: "1200s"

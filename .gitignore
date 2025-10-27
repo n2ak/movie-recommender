@@ -1,4 +1,8 @@
 infra/gcp
+*.tfvars
+*.tfstate
+.terraform*
+*.backup
 
 scraping/data
 scraping/output
