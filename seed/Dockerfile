@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN npm install -g prisma
 
-COPY ../frontend/packages/database/prisma/schema.prisma prisma/schema.prisma
+COPY schema.prisma prisma/schema.prisma
 
 RUN npx prisma generate
 
