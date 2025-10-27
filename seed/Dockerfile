@@ -1,26 +1,26 @@
-FROM node:20-slim AS builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-RUN npm install -g prisma
+RUN apt-get update && \
+    apt-get install -y curl openssl && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY frontend/packages/database/prisma/schema.prisma prisma/schema.prisma
+COPY seed/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN npx prisma generate
-
+COPY seed/ ./
+RUN npx prisma@5.17.0 generate
 
 FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y openssl curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-COPY seed/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY seed/* ./
-COPY --from=builder /app/prisma /app/prisma
-
-WORKDIR /app
+COPY --from=builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
+COPY --from=builder /app /app
 
 ENTRYPOINT ["bash", "-c", "python get_ds.py | python main.py"]
