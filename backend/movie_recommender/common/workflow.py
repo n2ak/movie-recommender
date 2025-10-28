@@ -17,18 +17,7 @@ from .env import MLFLOW_TRACKING_URI, STORAGE_PROVIDER, config
 
 class StorageClient(Singleton):
     def init(self):
-        self._storage_client = StorageClient(
-            provider=STORAGE_PROVIDER,
-            config=config,
-        )
-        Logger.debug("Available Buckets %s",
-                     self._storage_client.list_buckets())
-
-    def __init__(
-        self,
-        provider: Literal["gcp", "aws", "minio"],
-        config: dict,
-    ):
+        provider = STORAGE_PROVIDER
         self.provider = provider
 
         if provider == "aws":
@@ -58,6 +47,8 @@ class StorageClient(Singleton):
         else:
             raise ValueError(
                 "Unknown provider: must be 'aws', 'gcp', or 'minio'")
+        Logger.debug("Available Buckets %s",
+                     self.client.list_buckets())
 
     def upload_file(self, bucket_name, file_path, dest_path):
         if self.provider in ("aws", "minio"):
