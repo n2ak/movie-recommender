@@ -33,17 +33,21 @@ class API(LitAPI):
             raise Exception(f"Invalid request {type=}")
         return user_id, list(movie_ids)
 
-    def decode_request(self, request):
+    def decode_request(self, request, context):
         user_id, movie_ids = self._suggest(request)
+        context["meta"] = user_id, movie_ids
         movies = self.feature_store.get_movies_features(
             movie_ids)  # type: ignore
         users = self.feature_store.get_user_features(user_id)
         input = self._prepare(users, movies)
         return input
 
-    def encode_response(self, output):
+    def encode_response(self, output, context):
+        user_id, movie_ids = context["meta"]
         return {
-            "output": output
+            "pred": output,
+            "user_id": user_id,
+            "movie_ids": movie_ids,
         }
 
     def _prepare(self, users, movies):

@@ -17,6 +17,8 @@ class DLRMLitAPI(API):
         self.cat_cols = self.model.params.cat_cols
 
     def _prepare(self, users, movies):
+        users = users.reset_index()
+        movies = movies.reset_index()
         all = users.merge(movies, how="cross")
         num = torch.from_numpy(all[self.num_cols].values).float()
         cat = torch.from_numpy(all[self.cat_cols].values)
@@ -26,4 +28,4 @@ class DLRMLitAPI(API):
         }
 
     def predict(self, input):
-        return self.model.predict(input)
+        return self.model.predict(input).tolist()
