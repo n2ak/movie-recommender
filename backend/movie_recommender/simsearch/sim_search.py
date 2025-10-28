@@ -12,6 +12,14 @@ import functools
 from movie_recommender.common.env import SS_REGISTERED_NAME
 
 
+def movie_cols(df: pd.DataFrame):
+    return list(filter(lambda c: c.startswith("movie"), df.columns))
+
+
+def user_cols(df: pd.DataFrame):
+    return list(filter(lambda c: c.startswith("user"), df.columns))
+
+
 class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
     run_id: str
 
@@ -28,10 +36,15 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
         )
 
     def fit(self, ratings: pd.DataFrame):
-
+        def split(ratings: pd.DataFrame):
+            movies = ratings[movie_cols(ratings)].drop_duplicates(
+                "movie_id").sort_values("movie_id").set_index("movie_id", drop=False)
+            users = ratings[user_cols(ratings)].drop_duplicates(
+                "user_id").sort_values("user_id").set_index("user_id", drop=False)
+            return movies, users
         self.ratings = ratings
-        self.users = FeatureStore.users
-        self.movies = FeatureStore.movies
+        self.movies, self.users = split(ratings)
+
         self.all_genres = [c.removeprefix("movie_genre_")
                            for c in self.movies.columns if c.startswith("movie_genre_")]
 
