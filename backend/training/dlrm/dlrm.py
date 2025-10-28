@@ -177,18 +177,18 @@ def train_dlrm(
         train_dl,
         valid_dl,
         epochs=epochs,
-        acc="gpu",
+        acc="auto",
         exp_name=exp_name,
     )
     Logger.info("****************Training is done*******************")
     model.model.eval()
-    save_plots(
-        model.model,
-        prepare(train_ds[:], cat_cols),
-        prepare(test_ds[:], cat_cols),
-        max_rating=5,
-        run_id=run_id,
-    )
+    # save_plots(
+    #     model.model,
+    #     prepare(train_ds[:], cat_cols),
+    #     prepare(test_ds[:], cat_cols),
+    #     max_rating=5,
+    #     run_id=run_id,
+    # )
     Logger.info("****************Saved plots*******************")
 
 

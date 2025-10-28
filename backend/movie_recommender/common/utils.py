@@ -2,7 +2,6 @@ from collections import defaultdict
 import time
 from contextlib import contextmanager
 from sklearn.metrics import mean_absolute_error
-from typing import Self
 import numpy as np
 import pandas as pd
 import seaborn as sns
