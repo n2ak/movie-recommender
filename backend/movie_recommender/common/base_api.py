@@ -35,17 +35,25 @@ class API(LitAPI):
 
     def decode_request(self, request, context):
         user_id, movie_ids = self._suggest(request)
-        context["meta"] = user_id, movie_ids
+        context["meta"] = user_id, movie_ids, request.get("temp", 0)
+
         movies = self.feature_store.get_movies_features(
             movie_ids)  # type: ignore
         users = self.feature_store.get_user_features(user_id)
         input = self._prepare(users, movies)
         return input
 
-    def encode_response(self, output, context):
-        user_id, movie_ids = context["meta"]
+    def encode_response(self, output, context: dict):
+        user_id, movie_ids, temp = context["meta"]
+        ratings, _, movie_ids = self.apply_temp(
+            ratings=output,
+            userIds=[user_id]*len(movie_ids),
+            movieIds=movie_ids,
+            temp=temp
+        )
+
         return {
-            "pred": output,
+            "pred": ratings,
             "user_id": user_id,
             "movie_ids": movie_ids,
         }
@@ -83,6 +91,5 @@ class API(LitAPI):
                 count=count,  # TODO use counts
             )
 
-        ratings, userIds, movieIds = self.sort(
-            ratings, userIds, movieIds)
+        ratings, userIds, movieIds = self.sort(ratings, userIds, movieIds)
         return ratings, userIds, movieIds
