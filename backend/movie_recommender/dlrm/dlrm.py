@@ -11,10 +11,7 @@ from typing import Type, Optional, Type, Literal, Optional, Callable
 
 from ..common.base import MLP
 from ..common.logging import Logger
-from ..common.workflow import (
-    log_temp_artifacts, register_last_model_and_try_promote, model_uri,
-    make_run_name
-)
+from ..common.workflow import (MlflowClient, make_run_name)
 from ..common.env import DLRM_REGISTERED_NAME
 
 
@@ -274,7 +271,7 @@ class TrainableModule(L.LightningModule):
             )
             Logger.info("Done training.")
 
-        register_last_model_and_try_promote(
+        MlflowClient.get_instance().register_last_model_and_try_promote(
             registered_name=DLRM_REGISTERED_NAME,
             metric_name="val-mae",
         )
@@ -283,5 +280,5 @@ class TrainableModule(L.LightningModule):
     @classmethod
     def load(cls, champion=True) -> "TrainableModule":
         return mlflow.pytorch.load_model(  # type: ignore
-            model_uri(DLRM_REGISTERED_NAME, champion)
+            MlflowClient.model_uri(DLRM_REGISTERED_NAME, champion)
         )

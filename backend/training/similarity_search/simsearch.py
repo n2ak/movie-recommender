@@ -9,8 +9,8 @@ from sklearn.decomposition import PCA
 from movie_recommender.common.logging import Logger
 from movie_recommender.simsearch.sim_search import SimilaritySearch
 from training.data import process_data_for_simsearch
-from movie_recommender.common.workflow import (
-    connect_storage_client, connect_mlflow, read_parquet_from_s3, save_figures, download_parquet_from_s3, upload_parquet_to_s3)
+from movie_recommender.common.workflow import (MlflowClient,
+                                               connect_storage_client, read_parquet_from_s3, download_parquet_from_s3, upload_parquet_to_s3)
 
 simsearch_exp_name = "SimilaritySearch".lower()
 
@@ -47,7 +47,7 @@ def test_simsearch():
     assert simsearch._get_movies(
         movie_ids)[["movie_genre_Romance"]].all().item()
 
-    save_figures(figures, run_id=simsearch.run_id)
+    MlflowClient.get_instance().save_figures(figures, run_id=simsearch.run_id)
     Logger.info("Similarity Search test passed successfully")
 
 
@@ -107,7 +107,6 @@ if __name__ == "__main__":
     bucket = os.environ["DB_MINIO_BUCKET"]
 
     connect_storage_client()
-    connect_mlflow()
 
     if arg == "train":
         train = read_parquet_from_s3(bucket, "simsearch_train.parquet")

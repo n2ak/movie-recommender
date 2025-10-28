@@ -4,10 +4,8 @@ import pandas as pd
 from sklearn.neighbors import KNeighborsTransformer
 from movie_recommender.common.feature_store import FeatureStore
 from movie_recommender.common.logging import Logger
-from movie_recommender.common.workflow import (
-    register_last_model, promote_model_to_champion, model_uri, get_registered_model_run_id,
-    make_run_name
-)
+from movie_recommender.common.workflow import MlflowClient, make_run_name
+
 import functools
 from movie_recommender.common.env import SS_REGISTERED_NAME
 
@@ -57,9 +55,9 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
     @classmethod
     def load_from_disk(cls, champion=True) -> "SimilaritySearch":
         model = mlflow.pyfunc.load_model(
-            model_uri(SS_REGISTERED_NAME, champion)
+            MlflowClient.model_uri(SS_REGISTERED_NAME, champion)
         ).unwrap_python_model()
-        model.run_id = get_registered_model_run_id(
+        model.run_id = MlflowClient.get_instance().get_registered_model_run_id(
             SS_REGISTERED_NAME, champion=champion)
         return model  # type: ignore
 
@@ -246,9 +244,9 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
             Logger.info("Run id: %s", run_id)
             info = mlflow.pyfunc.log_model(python_model=self)
 
-        version = register_last_model(
+        version = MlflowClient.get_instance().register_last_model(
             registered_name=SS_REGISTERED_NAME).version
-        promote_model_to_champion(SS_REGISTERED_NAME, version)
+        MlflowClient.get_instance().promote_model_to_champion(SS_REGISTERED_NAME, version)
         return run_id
 
 

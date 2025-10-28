@@ -9,9 +9,10 @@ import mlflow.artifacts
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from numpy.typing import NDArray
+
+from backend.movie_recommender.common.utils import Singleton
 from .logging import Logger
 from .env import MLFLOW_TRACKING_URI, STORAGE_PROVIDER, config
-_mlflow_client: Optional[mlflow.MlflowClient] = None
 _storage_client: Optional["StorageClient"] = None
 
 
@@ -111,6 +112,114 @@ class StorageClient:
             raise ValueError("Unknown provider")
 
 
+class MlflowClient(Singleton):
+    def init(self):
+        uri = MLFLOW_TRACKING_URI
+        mlflow.set_tracking_uri(uri)
+        self._mlflow_client = mlflow.MlflowClient(uri)
+        mlflow.search_experiments()
+        Logger.info("Connected to mlflow on: %s", uri)
+
+    @staticmethod
+    def model_uri(registered_name: str, champion=True):
+        if champion:
+            return f"models:/{registered_name}@champion"
+        return f"models:/{registered_name}/latest"
+
+    def get_run_metrics(self, run_id: str):
+        return self._mlflow_client.get_run(run_id).data.metrics
+
+    def try_promote_model(self, model_name: str, metric: str, minimum=True):
+        import mlflow.exceptions
+        latest_registered = self._mlflow_client.get_registered_model(
+            model_name).latest_versions[-1]  # type: ignore
+
+        last_version = latest_registered.version
+
+        try:
+            champion = self._mlflow_client.get_model_version_by_alias(
+                model_name, "champion")
+            assert champion.run_id is not None
+
+            champion_loss = self.get_run_metrics(champion.run_id)[metric]
+            latest_loss = self.get_run_metrics(
+                latest_registered.run_id)[metric]
+
+            Logger.debug(
+                f"Champion '{metric}': {champion_loss:.4f}," +
+                f" Latest '{metric}': {latest_loss:.4f}"
+            )
+
+            condition = latest_loss < champion_loss if minimum else latest_loss > champion_loss
+
+            if condition:
+                self.promote_model_to_champion(model_name, last_version)
+                Logger.debug(f"'{model_name}' has new champion")
+            else:
+                Logger.debug(f"No new champion for '{model_name}'")
+
+        except mlflow.exceptions.RestException:
+            self.promote_model_to_champion(model_name, last_version)
+            Logger.debug(f"{model_name}'s first model")
+
+    def promote_model_to_champion(self, registered_name, version: str):
+        self._mlflow_client.set_registered_model_alias(
+            registered_name, "champion", version)
+        Logger.debug(f"Promoted {version=} of {registered_name=} to champion!")
+
+    def get_registered_model_run_id(self, registered_name: str, champion: bool):
+        alias = "champion" if champion else "latest"
+        return self._mlflow_client.get_model_version_by_alias(name=registered_name, alias=alias).run_id
+
+    def assert_mlflow_connection(self,):
+        assert self._mlflow_client is not None
+        assert mlflow.is_tracking_uri_set()
+
+    def register_last_model(self, registered_name: str):
+        info = mlflow.last_logged_model()
+        if info is None:
+            raise Exception("No last logged model")
+        return mlflow.register_model(f"models:/{info.model_id}", name=registered_name)
+
+    def register_last_model_and_try_promote(self, registered_name: str, metric_name: str):
+        self.register_last_model(registered_name)
+        self.try_promote_model(registered_name, metric_name)
+
+    def log_txt(self, val: str, name: str):
+        from tempfile import NamedTemporaryFile
+        with NamedTemporaryFile(prefix=f"{name}_", suffix=".txt", mode="r+t") as file:
+            file.write(val)
+            file.flush()
+            mlflow.log_artifact(file.name)
+
+    def log_temp_artifacts(self, save_fn, artifact_path=None, run_id=None):
+        import tempfile
+        with tempfile.TemporaryDirectory() as f:
+            save_fn(f)
+            Logger.debug("Logging folder %s", f)
+            mlflow.log_artifacts(f, artifact_path, run_id=run_id)
+
+    def save_figures(self, figures: dict[str, Figure], run_id, artifact_path=None):
+        def savefn(d):
+            for name, fig in figures.items():
+                fig.savefig(f"{d}/{name}")
+        self.log_temp_artifacts(savefn, run_id=run_id,
+                                artifact_path=artifact_path)
+
+    @functools.lru_cache(maxsize=16)
+    def download_artifacts(self, run_id: str, artifact_path: str):
+        Logger.debug(f"Getting artifacts, {run_id=}, {artifact_path=}")
+        files = mlflow.artifacts.list_artifacts(
+            run_id=run_id)
+        if not len(files):
+            raise Exception(f"No files! {run_id=}, {artifact_path=}")
+
+        return mlflow.artifacts.download_artifacts(  # type: ignore
+            run_id=run_id,
+            artifact_path=artifact_path,
+        )
+
+
 def connect_storage_client():
     global _storage_client
     if _storage_client is None:
@@ -121,141 +230,6 @@ def connect_storage_client():
     Logger.debug("Available Buckets %s", _storage_client.list_buckets())
 
 
-def connect_mlflow():
-    global _mlflow_client
-    uri = MLFLOW_TRACKING_URI
-    mlflow.set_tracking_uri(uri)
-    _mlflow_client = mlflow.MlflowClient(uri)
-    # as a health check
-    mlflow.search_experiments()
-    Logger.info("Connected to mlflow on: %s", uri)
-
-
-def get_mlflow_client():
-    assert _mlflow_client is not None
-    return _mlflow_client
-
-
-def model_uri(registered_name: str, champion=True):
-    if champion:
-        return f"models:/{registered_name}@champion"
-    return f"models:/{registered_name}/latest"
-
-
-def get_run_metrics(run_id: str):
-    assert _mlflow_client is not None
-    return _mlflow_client.get_run(run_id).data.metrics
-
-
-def try_promote_model(model_name: str, metric: str, minimum=True):
-    import mlflow.exceptions
-    assert_mlflow_connection()
-    assert _mlflow_client is not None
-
-    latest_registered = _mlflow_client.get_registered_model(
-        model_name).latest_versions[-1]  # type: ignore
-
-    last_version = latest_registered.version
-
-    try:
-        champion = _mlflow_client.get_model_version_by_alias(
-            model_name, "champion")
-        assert champion.run_id is not None
-
-        champion_loss = get_run_metrics(champion.run_id)[metric]
-        latest_loss = get_run_metrics(latest_registered.run_id)[metric]
-
-        Logger.debug(
-            f"Champion '{metric}': {champion_loss:.4f}," +
-            f" Latest '{metric}': {latest_loss:.4f}"
-        )
-
-        condition = latest_loss < champion_loss if minimum else latest_loss > champion_loss
-
-        if condition:
-            promote_model_to_champion(model_name, last_version)
-            Logger.debug(f"'{model_name}' has new champion")
-        else:
-            Logger.debug(f"No new champion for '{model_name}'")
-
-    except mlflow.exceptions.RestException:
-        promote_model_to_champion(model_name, last_version)
-        Logger.debug(f"{model_name}'s first model")
-
-
-def promote_model_to_champion(registered_name, version: str):
-    assert _mlflow_client is not None
-    _mlflow_client.set_registered_model_alias(
-        registered_name, "champion", version)
-    Logger.debug(f"Promoted {version=} of {registered_name=} to champion!")
-
-
-def get_registered_model_run_id(registered_name: str, champion: bool):
-    assert_mlflow_connection()
-    assert _mlflow_client is not None
-    alias = "champion" if champion else "latest"
-    return _mlflow_client.get_model_version_by_alias(name=registered_name, alias=alias).run_id
-
-
-def assert_mlflow_connection():
-    assert _mlflow_client is not None
-    assert mlflow.is_tracking_uri_set()
-
-
-def register_last_model(registered_name: str):
-    info = mlflow.last_logged_model()
-    if info is None:
-        raise Exception("No last logged model")
-    return mlflow.register_model(f"models:/{info.model_id}", name=registered_name)
-
-
-def register_last_model_and_try_promote(registered_name: str, metric_name: str):
-    assert_mlflow_connection()
-    register_last_model(registered_name)
-    try_promote_model(registered_name, metric_name)
-
-
-def log_txt(val: str, name: str):
-    assert_mlflow_connection()
-    from tempfile import NamedTemporaryFile
-    with NamedTemporaryFile(prefix=f"{name}_", suffix=".txt", mode="r+t") as file:
-        file.write(val)
-        file.flush()
-        mlflow.log_artifact(file.name)
-
-
-def save_figures(figures: dict[str, Figure], run_id, artifact_path=None):
-    def savefn(d):
-        for name, fig in figures.items():
-            fig.savefig(f"{d}/{name}")
-    log_temp_artifacts(savefn, run_id=run_id, artifact_path=artifact_path)
-
-
-def log_temp_artifacts(save_fn, artifact_path=None, run_id=None):
-    assert_mlflow_connection()
-    import tempfile
-    import mlflow
-    with tempfile.TemporaryDirectory() as f:
-        save_fn(f)
-        Logger.debug("Logging folder %s", f)
-        mlflow.log_artifacts(f, artifact_path, run_id=run_id)
-
-
-@functools.lru_cache(maxsize=16)
-def download_artifacts(run_id: str, artifact_path: str):
-    assert_mlflow_connection()
-    Logger.debug(f"Getting artifacts, {run_id=}, {artifact_path=}")
-    files = mlflow.artifacts.list_artifacts(
-        run_id=run_id)
-    if not len(files):
-        raise Exception(f"No files! {run_id=}, {artifact_path=}")
-
-    return mlflow.artifacts.download_artifacts(  # type: ignore
-        run_id=run_id,
-        artifact_path=artifact_path,
-    )
-
-
 def save_plots(
     model,
     train_data:  tuple[NDArray, NDArray, NDArray],
@@ -264,7 +238,6 @@ def save_plots(
     run_id: str
 ):
     figures = {}
-    from movie_recommender.common.workflow import save_figures
     from .utils import report
     user_ids, movie_ids, train_y = train_data
     report(
@@ -290,7 +263,7 @@ def save_plots(
     )
     figures["test.png"] = plt.gcf()
     plt.close()
-    save_figures(figures, run_id=run_id)
+    MlflowClient().get_instance().save_figures(figures, run_id=run_id)
 
 
 def read_parquet_from_s3(bucket: str, filepath: str):
