@@ -1,6 +1,9 @@
 import os
+import sys
 import argparse
 import litserve
+
+sys.path.append(os.path.abspath(__file__))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
