@@ -93,3 +93,7 @@ class API(LitAPI):
 
         ratings, userIds, movieIds = self.sort(ratings, userIds, movieIds)
         return ratings, userIds, movieIds
+
+    def sort(self, *arrs: NDArray):
+        sorted_indices = np.argsort(arrs[0])[::-1]
+        return [arr[sorted_indices] for arr in arrs]
