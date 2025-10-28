@@ -4,8 +4,9 @@ set -e
 echo "Generating Prisma client..."
 npx prisma@5.17.0 generate
 
-echo "Applying migrations..."
-npx prisma@5.17.0 migrate deploy
+echo "Pushing schema..."
+npx prisma@5.17.0 db push
+
 
 echo "Fetching data..."
 python get_ds.py
