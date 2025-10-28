@@ -47,15 +47,15 @@ class API(LitAPI):
         user_id, movie_ids, temp = context["meta"]
         ratings, _, movie_ids = self.apply_temp(
             ratings=output,
-            userIds=[user_id]*len(movie_ids),
-            movieIds=movie_ids,
+            user_ids=[user_id]*len(movie_ids),
+            movie_ids=movie_ids,
             temp=temp
         )
 
         return {
-            "pred": ratings,
+            "pred": ratings.tolist(),
             "user_id": user_id,
-            "movie_ids": movie_ids,
+            "movie_ids": movie_ids.tolist(),
         }
 
     def _prepare(self, users, movies):
@@ -64,16 +64,16 @@ class API(LitAPI):
     def apply_temp(
         self,
         ratings: list[float] | NDArray[np.float32],
-        userIds: list[int] | NDArray[np.int32],
-        movieIds: list[int] | NDArray[np.int32],
+        user_ids: list[int] | NDArray[np.int32],
+        movie_ids: list[int] | NDArray[np.int32],
         temp: float,
         count=10,
     ):
-        assert len(ratings) == len(userIds) == len(
-            movieIds), (len(ratings), len(userIds), len(movieIds))
+        assert len(ratings) == len(user_ids) == len(
+            movie_ids), (len(ratings), len(user_ids), len(movie_ids))
         ratings = np.asarray(ratings, dtype=np.float32)
-        userIds = np.asarray(userIds, dtype=np.int32)
-        movieIds = np.asarray(movieIds, dtype=np.int32)
+        user_ids = np.asarray(user_ids, dtype=np.int32)
+        movie_ids = np.asarray(movie_ids, dtype=np.int32)
 
         if temp != 0:
             assert 0 < temp <= 1
@@ -86,13 +86,13 @@ class API(LitAPI):
                 indices = torch.multinomial(array, count).tolist()
                 return [arr[indices] for arr in arrs]
 
-            ratings, userIds, movieIds = multinomial(
-                ratings, userIds, movieIds,
+            ratings, user_ids, movie_ids = multinomial(
+                ratings, user_ids, movie_ids,
                 count=count,  # TODO use counts
             )
 
-        ratings, userIds, movieIds = self.sort(ratings, userIds, movieIds)
-        return ratings, userIds, movieIds
+        ratings, user_ids, movie_ids = self.sort(ratings, user_ids, movie_ids)
+        return ratings, user_ids, movie_ids
 
     def sort(self, *arrs: NDArray):
         sorted_indices = np.argsort(arrs[0])[::-1]
