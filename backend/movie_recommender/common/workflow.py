@@ -123,8 +123,6 @@ def connect_storage_client():
 
 def connect_mlflow():
     global _mlflow_client
-    if _mlflow_client is not None:
-        return
     uri = MLFLOW_TRACKING_URI
     mlflow.set_tracking_uri(uri)
     _mlflow_client = mlflow.MlflowClient(uri)
