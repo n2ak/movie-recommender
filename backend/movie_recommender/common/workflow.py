@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from numpy.typing import NDArray
 
-from backend.movie_recommender.common.utils import Singleton
+from .utils import Singleton
 from .logging import Logger
 from .env import MLFLOW_TRACKING_URI, STORAGE_PROVIDER, config
 _storage_client: Optional["StorageClient"] = None
