@@ -5,9 +5,9 @@ import torch.nn.functional as F
 
 from movie_recommender.common.logging import Logger
 from training.data import movie_cols, user_cols, preprocess_data, movie_cols, user_cols
-from backend.training.train_utils import mae, rmse, get_env
+from training.train_utils import mae, rmse, get_env
 from movie_recommender.dlrm.dlrm import DLRM, TrainableModule, DLRMParams
-from backend.movie_recommender.common.workflow import (
+from movie_recommender.common.workflow import (
     download_parquet_from_s3, connect_storage_client, connect_mlflow, save_plots, upload_parquet_to_s3
 )
 

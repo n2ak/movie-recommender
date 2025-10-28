@@ -8,8 +8,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from movie_recommender.common.logging import Logger
 from movie_recommender.xgb.xgbmr import XGBMR
 from training.data import movie_cols, user_cols
-from backend.training.train_utils import fix_split, mae, simple_split
-from backend.movie_recommender.common.workflow import read_parquet_from_s3, save_plots, connect_storage_client, connect_mlflow
+from training.train_utils import fix_split, mae, simple_split
+from movie_recommender.common.workflow import read_parquet_from_s3, save_plots, connect_storage_client, connect_mlflow
 
 
 def split_genres(df):

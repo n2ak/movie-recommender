@@ -3,14 +3,14 @@ from typing import Self
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import KNeighborsTransformer
-from backend.movie_recommender.common.feature_store import FeatureStore
-from backend.movie_recommender.common.logging import Logger
-from backend.movie_recommender.common.workflow import (
+from movie_recommender.common.feature_store import FeatureStore
+from movie_recommender.common.logging import Logger
+from movie_recommender.common.workflow import (
     register_last_model, promote_model_to_champion, model_uri, get_registered_model_run_id,
     make_run_name
 )
 import functools
-from backend.movie_recommender.common.env import SS_REGISTERED_NAME
+from movie_recommender.common.env import SS_REGISTERED_NAME
 
 
 class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore

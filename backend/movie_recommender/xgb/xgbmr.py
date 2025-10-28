@@ -6,7 +6,7 @@ import xgboost as xgb
 import mlflow
 from numpy.typing import NDArray
 from typing import Optional
-from backend.movie_recommender.common.workflow import (
+from movie_recommender.common.workflow import (
     download_artifacts, register_last_model_and_try_promote, log_temp_artifacts,
     get_registered_model_run_id, model_uri, make_run_name
 )

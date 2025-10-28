@@ -4,7 +4,7 @@ from litserve import LitAPI
 from numpy.typing import NDArray
 
 from movie_recommender.simsearch.sim_search import SimilaritySearch
-from backend.movie_recommender.common.feature_store import FeatureStore
+from movie_recommender.common.feature_store import FeatureStore
 
 
 class API(LitAPI):
