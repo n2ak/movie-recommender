@@ -27,3 +27,5 @@ match STORAGE_PROVIDER:
             "secret_key": os.environ["AWS_SECRET_ACCESS_KEY"],
             "region": os.environ["AWS_REGION"],
         }
+    case _:
+        raise Exception(f"Invalid provider: {STORAGE_PROVIDER}")

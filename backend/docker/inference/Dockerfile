@@ -14,4 +14,4 @@ COPY api.py .
 
 ENV CUDA_VISIBLE_DEVICES=0
 
-CMD ["python","api.py"]
+CMD ["python","api.py","pytorch"]
