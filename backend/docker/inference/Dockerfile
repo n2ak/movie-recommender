@@ -10,6 +10,8 @@ COPY docker/inference/torch_requirements.txt .
 RUN pip install --no-cache-dir -r torch_requirements.txt
 
 COPY movie_recommender movie_recommender
+# for the loading/pickle to work
+COPY training training
 COPY api.py .
 
 ENV CUDA_VISIBLE_DEVICES=0
