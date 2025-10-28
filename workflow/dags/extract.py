@@ -30,9 +30,9 @@ def extract_data(db_url: str):
 
     movies.movie_genres = movies.movie_genres.apply(lambda x: ",".join(x))
 
-    with tempfile.TemporaryDirectory(delete=False) as path:
-        movies_path = f"{path}/movies.parquet"
-        ratings_path = f"{path}/ratings.parquet"
-        ratings.to_parquet(ratings_path)
-        movies.to_parquet(movies_path)
+    path = tempfile.mkdtemp()
+    movies_path = f"{path}/movies.parquet"
+    ratings_path = f"{path}/ratings.parquet"
+    ratings.to_parquet(ratings_path)
+    movies.to_parquet(movies_path)
     return path

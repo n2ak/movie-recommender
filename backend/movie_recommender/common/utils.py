@@ -16,7 +16,7 @@ class Singleton:
     instance = None
 
     @classmethod
-    def get_instance(cls, **kwargs) -> Self:
+    def get_instance(cls, **kwargs):
         if cls.instance is None:
             instance = cls()
             instance.init(**kwargs)

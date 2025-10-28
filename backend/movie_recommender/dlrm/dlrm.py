@@ -7,7 +7,7 @@ from torch import nn
 import lightning as L
 from functools import cached_property
 from dataclasses import dataclass, asdict
-from typing import Self, Type, Optional, Type, Literal, Optional, Callable
+from typing import Type, Optional, Type, Literal, Optional, Callable
 
 from ..common.base import MLP
 from ..common.logging import Logger
@@ -281,7 +281,7 @@ class TrainableModule(L.LightningModule):
         return run_id
 
     @classmethod
-    def load(cls, champion=True) -> Self:
+    def load(cls, champion=True) -> "TrainableModule":
         return mlflow.pytorch.load_model(  # type: ignore
             model_uri(DLRM_REGISTERED_NAME, champion)
         )

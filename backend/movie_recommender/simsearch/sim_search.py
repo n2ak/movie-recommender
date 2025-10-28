@@ -1,5 +1,4 @@
 import mlflow
-from typing import Self
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import KNeighborsTransformer
@@ -43,7 +42,7 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
         return self
 
     @classmethod
-    def load_from_disk(cls, champion=True) -> Self:
+    def load_from_disk(cls, champion=True) -> "SimilaritySearch":
         model = mlflow.pyfunc.load_model(
             model_uri(SS_REGISTERED_NAME, champion)
         ).unwrap_python_model()
