@@ -5,11 +5,9 @@ WORKDIR /app
 RUN pip install --no-cache-dir --upgrade pip
 
 COPY requirements.txt .
-
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir lightning==2.5.0
-RUN pip install --no-cache-dir fastapi uvicorn
-RUN pip install --no-cache-dir fastapi-utils typing-inspect
+COPY docker/inference/torch_requirements.txt .
+RUN pip install --no-cache-dir -r torch_requirements.txt
 
 COPY movie_recommender movie_recommender
 COPY api.py .

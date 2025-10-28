@@ -1,0 +1,6 @@
+lightning==2.5.0
+fastapi
+uvicorn
+fastapi-utils
+typing-inspect
+litserve
