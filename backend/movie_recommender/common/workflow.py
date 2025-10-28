@@ -13,10 +13,17 @@ from numpy.typing import NDArray
 from .utils import Singleton
 from .logging import Logger
 from .env import MLFLOW_TRACKING_URI, STORAGE_PROVIDER, config
-_storage_client: Optional["StorageClient"] = None
 
 
-class StorageClient:
+class StorageClient(Singleton):
+    def init(self):
+        self._storage_client = StorageClient(
+            provider=STORAGE_PROVIDER,
+            config=config,
+        )
+        Logger.debug("Available Buckets %s",
+                     self._storage_client.list_buckets())
+
     def __init__(
         self,
         provider: Literal["gcp", "aws", "minio"],
@@ -89,14 +96,9 @@ class StorageClient:
             blob.delete()
 
     def get_uri(self, bucket_name, object_path):
-        """
-          Return the canonical/public URI for a given object path.
-        """
         if self.provider in ["aws", "minio"]:
-            # S3 public URL
             return f"s3://{bucket_name}/{object_path}"
         elif self.provider == "gcp":
-            # GCS public URL
             return f"gs://{bucket_name}/{object_path}"
         else:
             raise ValueError("Unknown provider")
@@ -110,6 +112,51 @@ class StorageClient:
             return [bucket.name for bucket in self.client.list_buckets()]
         else:
             raise ValueError("Unknown provider")
+
+    def read_parquet_from_bucket(self, bucket: str, filepath: str):
+        df, = self.download_parquet_from_bucket(bucket, filepath)
+        return df
+
+    def download_file_from_bucket(self, bucket, object_name, path):
+        self.download_file(bucket, object_name, path)
+        return path
+
+    def download_parquet_from_bucket(self, bucket: str, *filenames: str):
+        import tempfile
+        with tempfile.TemporaryDirectory() as dir:
+            dfs = [pd.read_parquet(self.download_file_from_bucket(
+                bucket, f'{filename}.parquet', f"{dir}/{filename}.parquet")
+            ) for filename in filenames]
+        return dfs
+
+    def upload_folder_to_bucket(self, dir: str, bucket):
+        import pathlib
+        Logger.debug(f"Uploading {dir=} to s3 {bucket=}")
+        for file in pathlib.Path(dir).glob("*"):
+            filepath = str(file)
+            object_name = filepath.split("/")[-1]
+
+            Logger.debug(
+                f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
+
+            self.upload_file(
+                bucket, filepath, object_name
+            )
+
+    def upload_file_to_bucket(self, bucket: str, filepath: str):
+        object_name = filepath.split("/")[-1]
+
+        Logger.debug(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
+        self.upload_file(
+            bucket, filepath, object_name
+        )
+
+    def upload_parquet_to_bucket(self, bucket, **dfs: pd.DataFrame):
+        import tempfile
+        with tempfile.TemporaryDirectory() as path:
+            for name, df in dfs.items():
+                df.to_parquet(f"{path}/{name}.parquet")
+            self.upload_folder_to_bucket(path, bucket)
 
 
 class MlflowClient(Singleton):
@@ -220,16 +267,6 @@ class MlflowClient(Singleton):
         )
 
 
-def connect_storage_client():
-    global _storage_client
-    if _storage_client is None:
-        _storage_client = StorageClient(
-            provider=STORAGE_PROVIDER,
-            config=config,
-        )
-    Logger.debug("Available Buckets %s", _storage_client.list_buckets())
-
-
 def save_plots(
     model,
     train_data:  tuple[NDArray, NDArray, NDArray],
@@ -264,60 +301,6 @@ def save_plots(
     figures["test.png"] = plt.gcf()
     plt.close()
     MlflowClient().get_instance().save_figures(figures, run_id=run_id)
-
-
-def read_parquet_from_s3(bucket: str, filepath: str):
-    df, = download_parquet_from_s3(bucket, filepath)
-    return df
-
-
-def download_file_from_s3(bucket, object_name, path):
-    assert _storage_client is not None
-    _storage_client.download_file(bucket, object_name, path)
-    return path
-
-
-def download_parquet_from_s3(bucket: str, *filenames: str):
-    import tempfile
-    connect_storage_client()
-    with tempfile.TemporaryDirectory() as dir:
-        dfs = [pd.read_parquet(download_file_from_s3(
-            bucket, f'{filename}.parquet', f"{dir}/{filename}.parquet")
-        ) for filename in filenames]
-    return dfs
-
-
-def upload_folder_to_s3(dir: str, bucket):
-    import pathlib
-    assert _storage_client is not None
-    Logger.debug(f"Uploading {dir=} to s3 {bucket=}")
-    for file in pathlib.Path(dir).glob("*"):
-        filepath = str(file)
-        object_name = filepath.split("/")[-1]
-
-        Logger.debug(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
-
-        _storage_client.upload_file(
-            bucket, filepath, object_name
-        )
-
-
-def upload_file_to_s3(bucket: str, filepath: str):
-    assert _storage_client is not None
-    object_name = filepath.split("/")[-1]
-
-    Logger.debug(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
-    _storage_client.upload_file(
-        bucket, filepath, object_name
-    )
-
-
-def upload_parquet_to_s3(bucket, **dfs: pd.DataFrame):
-    import tempfile
-    with tempfile.TemporaryDirectory() as path:
-        for name, df in dfs.items():
-            df.to_parquet(f"{path}/{name}.parquet")
-        upload_folder_to_s3(path, bucket)
 
 
 def make_run_name(prefix: str):

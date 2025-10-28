@@ -9,8 +9,7 @@ from sklearn.decomposition import PCA
 from movie_recommender.common.logging import Logger
 from movie_recommender.simsearch.sim_search import SimilaritySearch
 from training.data import process_data_for_simsearch
-from movie_recommender.common.workflow import (MlflowClient,
-                                               connect_storage_client, read_parquet_from_s3, download_parquet_from_s3, upload_parquet_to_s3)
+from movie_recommender.common.workflow import MlflowClient, StorageClient
 
 simsearch_exp_name = "SimilaritySearch".lower()
 
@@ -106,21 +105,21 @@ if __name__ == "__main__":
     arg = sys.argv[1]
     bucket = os.environ["DB_MINIO_BUCKET"]
 
-    connect_storage_client()
-
     if arg == "train":
-        train = read_parquet_from_s3(bucket, "simsearch_train.parquet")
+        train = StorageClient.get_instance().read_parquet_from_bucket(
+            bucket, "simsearch_train.parquet")
         train_simsearch(train)
     elif arg == "test":
         test_simsearch()
     elif arg == "preprocess":
-        ratings, movies = download_parquet_from_s3(bucket, "ratings", "movies")
+        ratings, movies = StorageClient.get_instance().download_parquet_from_bucket(
+            bucket, "ratings", "movies")
         train = process_data_for_simsearch(
             ratings,
             movies,
             1,
         )
-        upload_parquet_to_s3(
+        StorageClient.get_instance().upload_parquet_to_bucket(
             bucket,
             simsearch_train=train,
         )

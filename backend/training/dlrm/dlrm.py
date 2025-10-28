@@ -7,9 +7,7 @@ from movie_recommender.common.logging import Logger
 from training.data import movie_cols, user_cols, preprocess_data, movie_cols, user_cols
 from training.train_utils import mae, rmse, get_env
 from movie_recommender.dlrm.dlrm import DLRM, TrainableModule, DLRMParams
-from movie_recommender.common.workflow import (
-    download_parquet_from_s3, connect_storage_client, upload_parquet_to_s3
-)
+from movie_recommender.common.workflow import StorageClient
 
 
 def create_data_sampler(y_train: np.ndarray):
@@ -215,10 +213,9 @@ if __name__ == "__main__":
     import os
     arg = sys.argv[1]
     bucket = os.environ["DB_MINIO_BUCKET"]
-    connect_storage_client()
 
     if arg == "train":
-        train, test = download_parquet_from_s3(
+        train, test = StorageClient.get_instance().download_parquet_from_bucket(
             bucket, "dlrm_train", "dlrm_test")
 
         train_dlrm(
@@ -232,14 +229,15 @@ if __name__ == "__main__":
         # test_dlrm_model()
         pass
     elif arg == "preprocess":
-        ratings, movies = download_parquet_from_s3(bucket, "ratings", "movies")
+        ratings, movies = StorageClient.get_instance().download_parquet_from_bucket(
+            bucket, "ratings", "movies")
         train, test = preprocess_data(
             ratings,
             movies,
             max_rating=int(os.environ["MAX_RATING"]),
             train_size=float(os.environ["TRAIN_SIZE"]),
         )
-        upload_parquet_to_s3(
+        StorageClient.get_instance().upload_parquet_to_bucket(
             bucket, dlrm_train=train, dlrm_test=test
         )
     else:

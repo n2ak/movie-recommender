@@ -9,7 +9,7 @@ from movie_recommender.common.logging import Logger
 from movie_recommender.xgb.xgbmr import XGBMR
 from training.data import movie_cols, user_cols
 from training.train_utils import fix_split, mae, simple_split
-from movie_recommender.common.workflow import read_parquet_from_s3, save_plots, connect_storage_client
+from movie_recommender.common.workflow import save_plots, StorageClient
 
 
 def split_genres(df):
@@ -343,10 +343,12 @@ if __name__ == "__main__":
     import os
     arg = sys.argv[1]
     bucket = os.environ["DB_MINIO_BUCKET"]
-    connect_storage_client()
+
     if arg == "train":
-        ratings = read_parquet_from_s3(bucket, "ratings.parquet")
-        movies = read_parquet_from_s3(bucket, "movies.parquet")
+        ratings = StorageClient.get_instance().read_parquet_from_bucket(
+            bucket, "ratings.parquet")
+        movies = StorageClient.get_instance().read_parquet_from_bucket(
+            bucket, "movies.parquet")
         ratings = ratings.merge(movies, on="movie_id")
         ratings.rating *= 5
 
