@@ -141,12 +141,6 @@ def create_model(
     return model
 
 
-def split_(df: pd.DataFrame):
-    movies = df[movie_cols(df)].drop_duplicates("movie_id")
-    users = df[user_cols(df)].drop_duplicates("user_id")
-    return users, movies
-
-
 def train_dlrm(
     train: pd.DataFrame,
     test: pd.DataFrame,
@@ -170,7 +164,6 @@ def train_dlrm(
     model = create_model(
         cat_cols, num_cols, nusers, nmovies, unique, embds
     )
-    users, movies = split_(pd.concat([train, test], axis=0))
     run_id = model.fit(
         train_dl,
         valid_dl,

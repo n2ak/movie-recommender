@@ -144,3 +144,11 @@ def Timer(name, mute=True):
         timers.clear()
     else:
         timers[name] += delta
+
+
+def movie_cols(df: pd.DataFrame):
+    return list(filter(lambda c: c.startswith("movie"), df.columns))
+
+
+def user_cols(df: pd.DataFrame):
+    return list(filter(lambda c: c.startswith("user"), df.columns))

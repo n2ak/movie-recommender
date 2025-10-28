@@ -3,11 +3,11 @@ import sys
 
 # Create a custom formatter
 formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    '%(asctime)s - %(levelname)s - %(message)s'
 )
 
 # Create a logger
-Logger = logging.getLogger('MovieRecommenderLogger')
+Logger = logging.getLogger('')
 Logger.setLevel(logging.DEBUG)
 
 # Create a handler for stdout

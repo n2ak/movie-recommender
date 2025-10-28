@@ -1,7 +1,7 @@
 import torch
 
 from movie_recommender.dlrm.dlrm import DLRM
-from movie_recommender.common.api import API
+from movie_recommender.common.base_api import API
 from movie_recommender.common.logging import Logger
 
 

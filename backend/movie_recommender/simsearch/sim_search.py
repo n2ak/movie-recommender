@@ -8,14 +8,7 @@ from movie_recommender.common.workflow import MlflowClient, make_run_name
 
 import functools
 from movie_recommender.common.env import SS_REGISTERED_NAME
-
-
-def movie_cols(df: pd.DataFrame):
-    return list(filter(lambda c: c.startswith("movie"), df.columns))
-
-
-def user_cols(df: pd.DataFrame):
-    return list(filter(lambda c: c.startswith("user"), df.columns))
+from movie_recommender.common.utils import movie_cols, user_cols
 
 
 class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore

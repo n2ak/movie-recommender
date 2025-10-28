@@ -13,24 +13,25 @@ class API(LitAPI):
         self.feature_store = FeatureStore
 
     def _suggest(self, request):
-        userId = request["userId"]
+        user_id = request["userId"]
         type = request["type"]
         if type == "recommend":
-            movieIds = self.simsearch.suggest(
-                request.userId,
+            movie_ids = self.simsearch.suggest(
+                user_id,
                 n_neighbor_users=10,
                 n_neighbor_movies=10,
-                genres=tuple(request.genres),
+                genres=tuple(),  # TODO
             )
         elif type == "similar":
-            movieIds = self.simsearch.suggest_similar_movies(
-                request.userId,
-                movie_ids=tuple(request.movieIds),
+            movie_ids = tuple(request["userId"])
+            movie_ids = self.simsearch.suggest_similar_movies(
+                user_id,
+                movie_ids=movie_ids,
                 n_neighbor_movies=10,
             )
         else:
             raise Exception(f"Invalid request {type=}")
-        return userId, list(movieIds)
+        return user_id, list(movie_ids)
 
     def decode_request(self, request):
         user_id, movie_ids = self._suggest(request)
