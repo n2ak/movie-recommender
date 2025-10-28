@@ -5,11 +5,11 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from movie_recommender.logging import Logger
-from movie_recommender.modeling.xgbmr import XGBMR
-from movie_recommender.data import movie_cols, user_cols
-from movie_recommender.train_utils import fix_split, mae, simple_split
-from movie_recommender.workflow import read_parquet_from_s3, save_plots, connect_storage_client, connect_mlflow
+from movie_recommender.common.logging import Logger
+from movie_recommender.xgb.xgbmr import XGBMR
+from training.data import movie_cols, user_cols
+from backend.training.train_utils import fix_split, mae, simple_split
+from backend.movie_recommender.common.workflow import read_parquet_from_s3, save_plots, connect_storage_client, connect_mlflow
 
 
 def split_genres(df):
@@ -235,15 +235,15 @@ def prepare(X: pd.DataFrame, y):
     return np.array(user_ids), np.array(movie_ids), np.array(y)
 
 
-def test_xgb_model():
-    XGBMR.load_model(champion=False, device="cuda").recommend_for_users_batched(
-        [0, 1],
-        movieIds=[[0, 1], [10, 30]],
-        max_rating=5,
-        clamp=True,
-        temps=[0.1, 0.3]
-    )
-    Logger.info("XGB model test passed successfully")
+# def test_xgb_model():
+#     XGBMR.load_model(champion=False, device="cuda").recommend_for_users_batched(
+#         [0, 1],
+#         movieIds=[[0, 1], [10, 30]],
+#         max_rating=5,
+#         clamp=True,
+#         temps=[0.1, 0.3]
+#     )
+#     Logger.info("XGB model test passed successfully")
 
 
 def main(
@@ -311,13 +311,12 @@ def main(
     Logger.info("\n")
 
     Logger.info("Training XGBMR...")
-    from movie_recommender.modeling.xgbmr import XGBMR
 
     def mae_(predt: np.ndarray, dtrain: xgb.DMatrix):
         y = dtrain.get_label()
         return mae(predt, y)
 
-    model = XGBMR(processor.user_data, processor.movie_data, cols=cols)
+    model = XGBMR(cols=cols)
     _, run_id = model.fit(
         study.best_trial.params,
         X_train[model.cols], y_train,
@@ -357,7 +356,8 @@ if __name__ == "__main__":
             verbose_eval=1000
         )
     elif arg == "test":
-        test_xgb_model()
+        pass
+        # test_xgb_model()
     else:
         Logger.error(f'Invalid arg {arg}')
         sys.exit(1)

@@ -1,25 +1,24 @@
 import json
 import mlflow.xgboost
-from movie_recommender.logging import Logger
+from movie_recommender.common.logging import Logger
 import pandas as pd
-from .base import MovieRecommender
 import xgboost as xgb
 import mlflow
 from numpy.typing import NDArray
 from typing import Optional
-from movie_recommender.workflow import (
+from backend.movie_recommender.common.workflow import (
     download_artifacts, register_last_model_and_try_promote, log_temp_artifacts,
     get_registered_model_run_id, model_uri, make_run_name
 )
 
-from ..env import XGB_REGISTERED_NAME
+from ..common.env import XGB_REGISTERED_NAME
 
 
-class XGBMR(MovieRecommender[NDArray]):
+class XGBMR():
     MAX_BATCH_SIZE = 256*8*4
 
-    def __init__(self, users: pd.DataFrame, movies: pd.DataFrame, cols: Optional[list[str]] = None):
-        self._set_data(users=users, movies=movies, cols=cols)
+    def __init__(self, cols: Optional[list[str]] = None):
+        self.cols = cols
 
     def predict(self, batch, max_rating):
         pred = self.model.predict(xgb.DMatrix(batch))
@@ -47,79 +46,15 @@ class XGBMR(MovieRecommender[NDArray]):
         custom_params = json.loads(mlflow.get_run(
             run_id).data.params["custom_params"])
         cols = custom_params["cols"]
-        assert isinstance(cols, list), type(cols)
-        artifact_path = download_artifacts(
-            run_id=run_id,
-            artifact_path="resources",
-        )
-
-        def read_file(name) -> pd.DataFrame:
-            return pd.read_parquet(pathlib.Path(artifact_path) / f"{name}.parquet")
-
         model = XGBMR(
-            read_file("users"),
-            read_file("movies"),
             cols=cols
         )
-
         model.model = best_model
         Logger.info(
             f"Loaded champion model, {XGB_REGISTERED_NAME=}"
         )
         model.run_id = run_id
         return model
-
-    def _prepare_batch(
-        self,
-        user_ids: list[int],
-        movie_ids_list: list[list[int]],
-    ) -> list[NDArray]:
-        datas = []
-        for user_id, movie_ids in zip(user_ids, movie_ids_list):
-            user_data = self.users.loc[[user_id]]
-            movie_data = self.movies.loc[movie_ids]
-            data = pd.merge(user_data, movie_data, how="cross")
-            datas.append(data)
-        batch = pd.concat(datas, axis=0)
-        # batch.drop(["user_id", "movie_id"], inplace=True)
-        batch = batch[self.cols]
-
-        def chunk_split(arr, n):
-            return [arr[i:i + n] for i in range(0, len(arr), n)]
-        batch_size = self.MAX_BATCH_SIZE
-        return chunk_split(batch, batch_size)  # type: ignore
-
-    def _prepare_simple(  # type: ignore
-        self,
-        user_ids: list[int],
-        movie_ids: list[int],
-    ):
-        user_data = self.users.loc[user_ids]
-        movie_data = self.movies.loc[movie_ids]
-
-        user_data.reset_index(drop=True, inplace=True)
-        movie_data.reset_index(drop=True, inplace=True)
-
-        batch = pd.concat([user_data, movie_data], axis=1)
-        batch = batch[self.cols]
-        return batch
-
-    def _set_data(self, users: pd.DataFrame, movies: pd.DataFrame, cols=None):
-
-        user_cols = users.columns.tolist()
-        movie_cols = movies.columns.tolist()
-        if cols is None:
-            cols = user_cols + movie_cols
-
-        assert users.index.name == "user_id"
-        assert users.index.nunique() == users.index.max()+1
-
-        assert movies.index.name == "movie_id"
-        assert movies.index.nunique() == movies.index.max()+1
-
-        self.movies = movies
-        self.users = users
-        self.cols = cols
 
     def fit(
         self,
@@ -162,7 +97,6 @@ class XGBMR(MovieRecommender[NDArray]):
                 training_config=training_config,
                 cols=self.cols
             )))
-            self.log_artifacts()
             Logger.info("Done training.")
 
         register_last_model_and_try_promote(
@@ -171,11 +105,3 @@ class XGBMR(MovieRecommender[NDArray]):
         )
         self.run_id = run_id
         return eval_results, run_id
-
-    def log_artifacts(self):
-        Logger.info("Logging artifacts.")
-
-        def save(dir):
-            self.movies.to_parquet(f"{dir}/movies.parquet")
-            self.users.to_parquet(f"{dir}/users.parquet")
-        log_temp_artifacts(save, artifact_path="resources")

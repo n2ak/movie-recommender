@@ -7,11 +7,7 @@ RUN pip install --no-cache-dir --upgrade pip
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir psycopg2-binary sqlalchemy
-RUN pip install --no-cache-dir xgboost
-RUN pip install --no-cache-dir minio optuna s3fs
-RUN pip install --no-cache-dir boto3
-RUN pip install --no-cache-dir --upgrade aiobotocore botocore boto3
+RUN pip install --no-cache-dir xgboost optuna
 
 COPY movie_recommender movie_recommender
 COPY training/xgb.py train_xgb.py

@@ -9,13 +9,13 @@ from functools import cached_property
 from dataclasses import dataclass, asdict
 from typing import Self, Type, Optional, Type, Literal, Optional, Callable
 
-from .base import MLP,  MovieRecommender
-from ..logging import Logger
-from ..workflow import (
+from ..common.base import MLP
+from ..common.logging import Logger
+from ..common.workflow import (
     log_temp_artifacts, register_last_model_and_try_promote, model_uri,
     make_run_name
 )
-from ..env import DLRM_REGISTERED_NAME
+from ..common.env import DLRM_REGISTERED_NAME
 
 
 @dataclass(eq=True)
@@ -53,7 +53,6 @@ class DLRMParams:
 
 
 class FeatureInteraction(nn.Module):
-
     def forward(self, dense: list[torch.Tensor], sparse: list[torch.Tensor]) -> torch.Tensor:
         # inputs.shape = b,n,embd
         inputs = torch.stack(dense + sparse, dim=1)
@@ -87,7 +86,7 @@ def str_to_act_class(name) -> Type[nn.Module]:
     }[name.lower()]
 
 
-class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
+class DLRM(nn.Module):
     """
     Deep Learning Recommendation Model.
     """
@@ -149,10 +148,6 @@ class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
         out = self.top_mlp.forward(out)
         return out.squeeze(1)
 
-    def set_data(self, movies: pd.DataFrame, users: pd.DataFrame):
-        self.movies = movies.sort_values("movie_id").reset_index(drop=True)
-        self.users = users.sort_values("user_id").reset_index(drop=True)
-
     @property
     def device_(self): return next(self.parameters()).device
 
@@ -161,65 +156,11 @@ class DLRM(nn.Module, MovieRecommender[dict[str, torch.Tensor]]):
         Logger.info("Loading dlrm on device: %s", device)
         return TrainableModule.load(champion=champion).model.to(device)
 
-    def predict(self, batch: dict[str, torch.Tensor], max_rating):
+    def predict(self, batch: dict[str, torch.Tensor]):
         self.eval()
-        # Logger.info("Dlrm batch length:", batch["num"].shape)
         with torch.no_grad():
-            res = self.forward(batch).cpu()
-            res *= max_rating
-        return res.numpy()
-
-    def _prepare_batch(
-        self,
-        user_ids: list[int],
-        movie_ids_list: list[list[int]],
-    ) -> list[dict[str, torch.Tensor]]:
-
-        def prepare(user_id: int, movieIds: list[int]) -> pd.DataFrame:
-            movie_data = self.movies.iloc[movieIds]
-            user_data = self.users.iloc[[user_id]]
-            movie_data.reset_index(inplace=True, drop=True)
-            user_data.reset_index(inplace=True, drop=True)
-            all = user_data.merge(movie_data, how="cross")
-            return all
-
-        num_cols = self.params.num_cols
-        cat_cols = self.params.cat_cols
-
-        datas = []
-        for i, (user_id, movie_ids) in enumerate(zip(user_ids, movie_ids_list)):
-            b = prepare(user_id, movie_ids)
-            datas.append(b)
-            # Logger.info(f"{i+1} request batch shape: {b.shape}")
-        batch = pd.concat(datas, axis=0)
-        num = torch.from_numpy(batch[num_cols].values).float()
-        cat = torch.from_numpy(batch[cat_cols].values)
-
-        batch_size = self.MAX_BATCH_SIZE
-        return [dict(num=n.to(self.device_), cat=c.to(self.device_)) for n, c in zip(num.split(batch_size), cat.split(batch_size))]
-
-    def log_artifacts(self):
-        Logger.info("Logging artifacts.")
-
-        def save(dir):
-            self.movies.to_parquet(f"{dir}/movies.parquet")
-            self.users.to_parquet(f"{dir}/users.parquet")
-        log_temp_artifacts(save, artifact_path="resources")
-
-    def _prepare_simple(self, user_ids, movie_ids):
-        movie_data = self.movies.iloc[movie_ids]
-        user_data = self.users.iloc[user_ids]
-        movie_data.reset_index(inplace=True, drop=True)
-        user_data.reset_index(inplace=True, drop=True)
-
-        batch = pd.concat([user_data, movie_data], axis=1)
-
-        num_cols = self.params.num_cols
-        cat_cols = self.params.cat_cols
-
-        num = torch.from_numpy(batch[num_cols].values).float().to(self.device_)
-        cat = torch.from_numpy(batch[cat_cols].values).to(self.device_)
-        return dict(num=num, cat=cat)
+            res = self.forward(batch)
+            return res
 
 
 class TrainableModule(L.LightningModule):
@@ -241,9 +182,6 @@ class TrainableModule(L.LightningModule):
         x, y = batch
         logits = self.model(x)
         loss = self.criterion(logits, y)
-        # self.log(
-        #     "train_loss",
-        # )
         with torch.no_grad():
             self.log_dict(
                 {
@@ -344,7 +282,6 @@ class TrainableModule(L.LightningModule):
 
     @classmethod
     def load(cls, champion=True) -> Self:
-        # mlflow.artifacts.list_artifacts(f"models:/{model_name}@champion")
         return mlflow.pytorch.load_model(  # type: ignore
             model_uri(DLRM_REGISTERED_NAME, champion)
         )

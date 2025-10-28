@@ -1,119 +1,21 @@
 import os
-import sys
-import time
-import asyncio
-import dotenv
-from fastapi import FastAPI, Response
-from fastapi_utils import tasks
-from contextlib import asynccontextmanager
-
-if True:
-    # for local testing
-    dotenv.load_dotenv("../.env")
-    from movie_recommender.recommender import Recommender, Request as RecomRequest, Response as RecomResponse, SimilarMoviesRequest
-    from movie_recommender.workflow import connect_storage_client, connect_mlflow
-    from movie_recommender.logging import Logger
-    from movie_recommender.env import BACKEND_PORT
-    # for models to load when testing!!!
-    sys.path.append(os.path.abspath("./training"))
-
-TIMEOUT = 0.1
-BATCH_SIZE = 64
-queue: asyncio.Queue[
-    tuple[RecomRequest | SimilarMoviesRequest, asyncio.Future]] = asyncio.Queue()
-
-
-@tasks.repeat_every(seconds=30)  # Run every 5 seconds
-async def periodic_task():
-    Recommender.check_for_new_champions()
-
-
-async def worker():
-    while True:
-        requests: list[tuple[RecomRequest |
-                             SimilarMoviesRequest, asyncio.Future]] = []
-
-        while len(requests) < BATCH_SIZE:
-            try:
-                req, fut = await asyncio.wait_for(queue.get(), timeout=TIMEOUT)
-                # TODO filter by model type
-                requests.append((req, fut))
-            except asyncio.TimeoutError:
-                break
-
-        if requests:
-            batch = [r for r, _ in requests]
-            Logger.info(f"Processing {len(batch)}/{BATCH_SIZE} requests")
-            start = time.time()
-            try:
-                preds = Recommender.batched(batch)
-                for pred, (_, fut) in zip(preds, requests):
-                    fut.set_result(pred)
-            except Exception as e:
-                Logger.error("Exception: %s", e)
-                for _, fut in requests:
-                    if not fut.done():
-                        fut.set_exception(e)
-            process_time = (time.time() - start) * 1000
-            Logger.info(f"Processing took {process_time:.0f}ms")
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # connect_storage_client()
-    # connect_mlflow()
-    # Logger.info("Starting up...")
-
-    # Recommender.load_all_models(exclude=["dlrm_cpu", "xgb_cpu"])
-    # Logger.info("Loaded models")
-
-    # asyncio.create_task(periodic_task())
-    asyncio.create_task(worker())
-
-    Logger.info("\n\nServer is up...\n\n")
-    yield
-    Logger.info("Shutting down...")
-
-app = FastAPI(lifespan=lifespan)
-
-
-@app.post("/movies-recom")
-async def movies_recom(data: RecomRequest):
-    loop = asyncio.get_running_loop()
-    future = loop.create_future()
-    await queue.put((data, future))
-    return RecomResponse(
-        userId=data.userId,
-        result=await future,
-        error=None,
-        status_code=200,
-        time=0
-    )
-
-
-@app.post("/similar-movies")
-async def similar_movies(data: SimilarMoviesRequest):
-    loop = asyncio.get_running_loop()
-    future = loop.create_future()
-    await queue.put((data, future))
-    return RecomResponse(
-        userId=data.userId,
-        result=await future,
-        error=None,
-        status_code=200,
-        time=0
-    )
-
-
-@app.get("/health")
-async def health():
-    return Response(status_code=200)
+import argparse
+import litserve
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=int(BACKEND_PORT),
-        # log_config=None,
-    )
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "model", type=str, help="The model type to serve.", choices=["pytorch", "xgb"])
+    args = parser.parse_args()
+
+    match args.model:
+        case "pytorch":
+            from movie_recommender.dlrm.dlrm_api import DLRMLitAPI
+            api = DLRMLitAPI()
+        case "xgb":
+            raise Exception(f"XGB not available for now.")
+        case _:
+            raise Exception(f"Invalid model type: {args.model}")
+
+    server = litserve.LitServer(api)
+    server.run(port=int(os.getenv("API_PORT", "8000")))

@@ -266,7 +266,7 @@ def save_plots(
     run_id: str
 ):
     figures = {}
-    from movie_recommender.workflow import save_figures
+    from backend.movie_recommender.common.workflow import save_figures
     from .utils import report
     user_ids, movie_ids, train_y = train_data
     report(

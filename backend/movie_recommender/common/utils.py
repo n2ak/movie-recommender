@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from movie_recommender.logging import Logger
+from movie_recommender.common.logging import Logger
 sns.set_theme(style="darkgrid")
 plt.style.use('dark_background')
 

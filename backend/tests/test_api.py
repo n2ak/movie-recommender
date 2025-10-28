@@ -4,7 +4,7 @@ from typing import TypeVar
 from httpx import ASGITransport, AsyncClient
 from api import app, RecomResponse, RecomRequest, SimilarMoviesRequest
 from movie_recommender.recommender import ModelType
-from movie_recommender.logging import Logger
+from movie_recommender.common.logging import Logger
 from asgi_lifespan import LifespanManager  # pip install 'asgi-lifespan==2.*'
 
 

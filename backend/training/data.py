@@ -12,7 +12,6 @@ def user_cols(df: pd.DataFrame):
 
 
 class MovieLens():
-
     def __init__(self, ratings: pd.DataFrame, movies: pd.DataFrame, max_rating):
         self.cat_cols, self.num_cols = get_cols(ratings)
         self.max_rating = max_rating

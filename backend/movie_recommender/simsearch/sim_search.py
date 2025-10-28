@@ -3,21 +3,17 @@ from typing import Self
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import KNeighborsTransformer
-from movie_recommender.data import movie_cols, user_cols
-from movie_recommender.logging import Logger
-from movie_recommender.workflow import (
+from backend.movie_recommender.common.feature_store import FeatureStore
+from backend.movie_recommender.common.logging import Logger
+from backend.movie_recommender.common.workflow import (
     register_last_model, promote_model_to_champion, model_uri, get_registered_model_run_id,
     make_run_name
 )
 import functools
-from movie_recommender.env import SS_REGISTERED_NAME
+from backend.movie_recommender.common.env import SS_REGISTERED_NAME
 
 
 class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
-    """
-    Useful for suggesting movies to be ran through a DNN, to reduce the input to the DNN
-    from millions to thousands or so. 
-    """
     run_id: str
 
     def __init__(self, n_neighbors_user=5, n_neighbors_movie=5) -> None:
@@ -33,15 +29,10 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
         )
 
     def fit(self, ratings: pd.DataFrame):
-        def split(ratings: pd.DataFrame):
-            movies = ratings[movie_cols(ratings)].drop_duplicates(
-                "movie_id").sort_values("movie_id").set_index("movie_id", drop=False)
-            users = ratings[user_cols(ratings)].drop_duplicates(
-                "user_id").sort_values("user_id").set_index("user_id", drop=False)
-            return movies, users
-        self.ratings = ratings
-        self.movies, self.users = split(ratings)
 
+        self.ratings = ratings
+        self.users = FeatureStore.users
+        self.movies = FeatureStore.movies
         self.all_genres = [c.removeprefix("movie_genre_")
                            for c in self.movies.columns if c.startswith("movie_genre_")]
 
