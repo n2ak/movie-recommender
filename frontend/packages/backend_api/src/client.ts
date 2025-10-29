@@ -68,7 +68,7 @@ export const recommendMovies = async ({
     genres: genres || [],
   };
   const result = await handleErrors(
-    apiClient.post("/movies-recom", data)
+    apiClient.post("/predict", data)
   );
   return result;
 };
@@ -83,7 +83,7 @@ export const recommendSimilarMovies = async (req: SimilarMoviesRequest) => {
     movieIds: req.movieIds
   };
   const result = await handleErrors(
-    apiClient.post("/similar-movies", data)
+    apiClient.post("/predict", data)
   );
   return result;
 };
