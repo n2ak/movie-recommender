@@ -43,8 +43,8 @@ class API(LitAPI):
             raise Exception(f"Invalid request {type=}")
         return list(movie_ids)
 
-    def decode_request(self, r, context):
-        request = PredictionRequest(**r)
+    def decode_request(self, request, context):
+        request = PredictionRequest(**request)
         movie_ids = self._suggest(request)
         context["meta"] = movie_ids, request
 
