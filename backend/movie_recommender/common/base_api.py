@@ -5,6 +5,18 @@ from numpy.typing import NDArray
 
 from movie_recommender.simsearch.sim_search import SimilaritySearch
 from movie_recommender.common.feature_store import FeatureStore
+from dataclasses import dataclass
+
+
+@dataclass
+class PredictionRequest:
+    userId: int
+    type: str
+    count: int = 10
+    temp: float = 0
+
+    genres: list[str] = []
+    movieIds: list[int] = []
 
 
 class API(LitAPI):
@@ -12,51 +24,51 @@ class API(LitAPI):
         self.simsearch = SimilaritySearch.load_from_disk()
         self.feature_store = FeatureStore
 
-    def _suggest(self, request):
-        # TODO: use count
-        user_id = request["userId"]
-        type = request["type"]
+    def _suggest(self, request: PredictionRequest):
         if type == "recommend":
             movie_ids = self.simsearch.suggest(
-                user_id,
+                request.userId,
                 n_neighbor_users=10,
                 n_neighbor_movies=10,
-                genres=tuple(),  # TODO
+                genres=tuple(request.genres),  # TODO
             )
         elif type == "similar":
-            movie_ids = tuple(request["userId"])
+            movie_ids = tuple(request.movieIds)
             movie_ids = self.simsearch.suggest_similar_movies(
-                user_id,
+                request.userId,
                 movie_ids=movie_ids,
                 n_neighbor_movies=10,
             )
         else:
             raise Exception(f"Invalid request {type=}")
-        return user_id, list(movie_ids)
+        return list(movie_ids)
 
-    def decode_request(self, request, context):
-        user_id, movie_ids = self._suggest(request)
-        context["meta"] = user_id, movie_ids, request.get("temp", 0)
+    def decode_request(self, r, context):
+        request = PredictionRequest(**r)
+        movie_ids = self._suggest(request)
+        context["meta"] = movie_ids, request
 
         movies = self.feature_store.get_movies_features(
             movie_ids)  # type: ignore
-        users = self.feature_store.get_user_features(user_id)
+        users = self.feature_store.get_user_features(request.userId)
         input = self._prepare(users, movies)
         return input
 
     def encode_response(self, output, context: dict):
-        user_id, movie_ids, temp = context["meta"]
+        # TODO: add count
+        movie_ids, request = context["meta"]
+        request: PredictionRequest = request
         ratings, _, movie_ids = self.apply_temp(
             ratings=output,
-            user_ids=[user_id]*len(movie_ids),
+            user_ids=[request.userId]*len(movie_ids),
             movie_ids=movie_ids,
-            temp=temp
+            temp=request.temp
         )
         return [
             {
                 'predictedRating': r,
                 'movieId': m,
-                'userId': user_id
+                'userId': request.userId
             }
             for r, m in zip(ratings.tolist(), movie_ids.tolist())
         ]

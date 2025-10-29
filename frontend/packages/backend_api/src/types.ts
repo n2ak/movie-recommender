@@ -2,20 +2,17 @@ import type { MovieGenre } from "@repo/database";
 
 export type AvailableModels = "xgb_cpu" | "dlrm_cpu" | "xgb_cuda" | "dlrm_cuda" | "best";
 
-export type BackendRequest = {
+export type BaseRequest = {
     userId: number
     type: "recommend" | "similar"
     temp?: number,
     count?: number,
+}
+export interface RecomRequest extends BaseRequest {
     genres?: MovieGenre[]
 }
-export type SimilarMoviesRequest = {
-    userId: number
-    start?: number
-    count: number
+export interface SimilarMoviesRequest extends BaseRequest {
     movieIds: number[]
-    model?: AvailableModels
-    temp: number
 }
 export type SinglePrediction = {
     predictedRating: number,
