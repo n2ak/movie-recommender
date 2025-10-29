@@ -14,7 +14,7 @@ async function handleBackendResponse(
   response: Backend.BackendResponse,
   userId: number
 ) {
-  const predictions = response.result.map((p) => p.predicted_rating);
+  const predictions = response.result.map((p) => p.predictedRating);
   const movies = await movieDB.getMovies(
     response.result.map((p) => p.movieId),
     userId

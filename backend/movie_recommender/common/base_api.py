@@ -13,6 +13,7 @@ class API(LitAPI):
         self.feature_store = FeatureStore
 
     def _suggest(self, request):
+        # TODO: use count
         user_id = request["userId"]
         type = request["type"]
         if type == "recommend":
@@ -51,12 +52,14 @@ class API(LitAPI):
             movie_ids=movie_ids,
             temp=temp
         )
-
-        return {
-            "pred": ratings.tolist(),
-            "user_id": user_id,
-            "movie_ids": movie_ids.tolist(),
-        }
+        return [
+            {
+                'predictedRating': r,
+                'movieId': m,
+                'userId': user_id
+            }
+            for r, m in zip(ratings.tolist(), movie_ids.tolist())
+        ]
 
     def _prepare(self, users, movies):
         raise NotImplementedError()

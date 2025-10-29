@@ -1,6 +1,6 @@
 import type { AxiosResponse } from "axios";
 import axios, { AxiosError } from "axios";
-import type { BackendRequest, BackendResponse, Prediction, SimilarMoviesRequest } from "./types";
+import type { BackendRequest, BackendResponse, SimilarMoviesRequest, SinglePrediction } from "./types";
 
 const createClient = () => {
   const baseURL = process.env.BACKEND_URL || "http://127.0.0.1:8000"
@@ -31,43 +31,43 @@ apiClient.interceptors.response.use(
   }
 );
 
-const handleErrors = async <P>(
+const handleErrors = async (
   promise: Promise<AxiosResponse>
-): Promise<BackendResponse<P>> => {
+): Promise<BackendResponse> => {
+  const resp: BackendResponse = {
+    result: [],
+  }
   try {
-    const a = (await promise).data;
-    return a;
+    resp.result = (await promise).data as SinglePrediction[];
+    resp.statusCode = 200
+
   } catch (e) {
-    let error = "Error";
-    let code: number | string = 404;
+    let error = "Error calling backend service";
+    // let code: number | string = 404;
     if (e instanceof AxiosError) {
       if (e.code === "ECONNREFUSED") {
         error = "Backend is down";
+        resp.statusCode = e.status || 404;
       }
-      code = e.status || 404;
-      console.log({ error: e.message });
+      console.error({ error: e.message });
     }
-    return {
-      status_code: code,
-      result: [],
-      time: 0,
-      error: {
-        error,
-      },
-    };
+    resp.error = error;
   }
+  return resp;
 };
 
 
 export const recommendMovies = async ({
-  userId, count, genres, model, start, temp
-}: BackendRequest) => {
+  userId, temp, count, genres
+}: Omit<BackendRequest, "type">) => {
   const data: Required<BackendRequest> = {
-    userId, count, genres: genres || [],
-    model: model || "xgb_cuda", start: start || 0,
-    temp: temp || 0
+    userId,
+    type: "recommend",
+    temp: temp || 0,
+    count: count || 10,
+    genres: genres || [],
   };
-  const result = await handleErrors<Prediction>(
+  const result = await handleErrors(
     apiClient.post("/movies-recom", data)
   );
   return result;
@@ -82,7 +82,7 @@ export const recommendSimilarMovies = async (req: SimilarMoviesRequest) => {
     temp: req.temp || 0,
     movieIds: req.movieIds
   };
-  const result = await handleErrors<Prediction>(
+  const result = await handleErrors(
     apiClient.post("/similar-movies", data)
   );
   return result;
