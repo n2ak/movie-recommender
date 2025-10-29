@@ -8,6 +8,8 @@ steps:
         "build",
         "-t",
         "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest",
+        "-f",
+        "./backend/docker/inference/Dockerfile",
         "./backend",
       ]
 
