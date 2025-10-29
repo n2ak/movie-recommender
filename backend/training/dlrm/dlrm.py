@@ -1,13 +1,18 @@
-import torch
-import numpy as np
-import pandas as pd
-import torch.nn.functional as F
+import sys
+import os
+sys.path.append(os.path.abspath("."))
+####
+if True:
+    import torch
+    import numpy as np
+    import pandas as pd
+    import torch.nn.functional as F
 
-from movie_recommender.common.logging import Logger
-from training.data import movie_cols, user_cols, preprocess_data, movie_cols, user_cols
-from training.train_utils import mae, rmse, get_env
-from movie_recommender.dlrm.dlrm import DLRM, TrainableModule, DLRMParams
-from movie_recommender.common.workflow import StorageClient
+    from movie_recommender.common.logging import Logger
+    from training.data import preprocess_data
+    from training.train_utils import mae, rmse, get_env
+    from movie_recommender.dlrm.dlrm import DLRM, TrainableModule, DLRMParams
+    from movie_recommender.common.workflow import StorageClient
 
 
 def create_data_sampler(y_train: np.ndarray):
@@ -256,3 +261,4 @@ if __name__ == "__main__":
     else:
         Logger.error(f'Invalid {task=}')
         sys.exit(1)
+    Logger.info("Done.")

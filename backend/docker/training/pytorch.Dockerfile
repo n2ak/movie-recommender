@@ -9,8 +9,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir lightning==2.5.0
 
 COPY movie_recommender movie_recommender
-COPY training/dlrm.py train_dlrm.py
+COPY training training
 
 ENV CUDA_VISIBLE_DEVICES=0
 
-CMD ["python","train_dlrm.py"]
+CMD ["python","training/dlrm/dlrm.py"]

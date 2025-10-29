@@ -1,39 +1,54 @@
 substitutions:
-  _IMAGE_NAME: backend-image
+  _BE_IMG_NAME: backend-image
+  _TRAIN_IMG_NAME: pytroch-training-image
 steps:
   - name: "gcr.io/cloud-builders/docker"
-    id: "build backend"
+    id: "Build backend image"
     args:
       [
         "build",
         "-t",
-        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_BE_IMG_NAME:latest",
         "-f",
         "./backend/docker/inference/Dockerfile",
         "./backend",
       ]
 
-  - name: "gcr.io/cloud-builders/docker"
-    id: "push to gcr"
-    args:
-      [
-        "push",
-        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest",
-      ]
-
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-    id: "deploy cloud run"
+    id: "Deploy cloud run"
     entrypoint: bash
     args:
       - "-c"
       - |
         gcloud run services update $_SERVICE_NAME \
-        --image $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest \
+        --image $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_BE_IMG_NAME:latest \
         --region $LOCATION \
         --set-env-vars "$_ENV_VARS"
 
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "Build training image"
+    args:
+      [
+        "build",
+        "-t",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_TRAIN_IMG_NAME:latest",
+        "-f",
+        "./backend/docker/training/pytorch.Dockerfile",
+        "./backend",
+      ]
+
+  - name: "gcr.io/cloud-builders/docker"
+    entrypoint: bash
+    id: "Push to gcr"
+    args:
+      - "-c"
+      - |
+        docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_BE_IMG_NAME:latest
+        docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_TRAIN_IMG_NAME:latest
+
 images:
-  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest"
+  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_BE_IMG_NAME:latest"
+  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_TRAIN_IMG_NAME:latest"
 
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
