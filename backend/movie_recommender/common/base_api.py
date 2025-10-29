@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 
 from movie_recommender.simsearch.sim_search import SimilaritySearch
 from movie_recommender.common.feature_store import FeatureStore
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -15,8 +15,8 @@ class PredictionRequest:
     count: int = 10
     temp: float = 0
 
-    genres: list[str] = []
-    movieIds: list[int] = []
+    genres: list[str] = field(default_factory=list)
+    movieIds: list[int] = field(default_factory=list)
 
 
 class API(LitAPI):
