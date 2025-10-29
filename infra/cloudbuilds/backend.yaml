@@ -25,7 +25,7 @@ steps:
         --region $LOCATION \
         --set-env-vars "$_ENV_VARS"
 
-  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+  - name: "gcr.io/cloud-builders/docker"
     id: "Build training image"
     args:
       [
