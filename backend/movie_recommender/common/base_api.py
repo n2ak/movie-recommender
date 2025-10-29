@@ -25,6 +25,7 @@ class API(LitAPI):
         self.feature_store = FeatureStore
 
     def _suggest(self, request: PredictionRequest):
+        type = request.type
         if type == "recommend":
             movie_ids = self.simsearch.suggest(
                 request.userId,
