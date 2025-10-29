@@ -1,6 +1,8 @@
 substitutions:
   _BE_IMG_NAME: backend-image
-  _TRAIN_IMG_NAME: pytroch-training-image
+  _DLRM_TRAIN_IMG_NAME: dlrm-training-image
+  _SS_TRAIN_IMG_NAME: ss-training-image
+
 steps:
   - name: "gcr.io/cloud-builders/docker"
     id: "Build backend image"
@@ -26,14 +28,26 @@ steps:
         --set-env-vars "$_ENV_VARS"
 
   - name: "gcr.io/cloud-builders/docker"
-    id: "Build training image"
+    id: "Build dlrm training image"
     args:
       [
         "build",
         "-t",
-        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_TRAIN_IMG_NAME:latest",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_DLRM_TRAIN_IMG_NAME:latest",
         "-f",
         "./backend/docker/training/pytorch.Dockerfile",
+        "./backend",
+      ]
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "Build similarity search training image"
+    args:
+      [
+        "build",
+        "-t",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_SS_TRAIN_IMG_NAME:latest",
+        "-f",
+        "./backend/docker/training/simsearch.Dockerfile",
         "./backend",
       ]
 
@@ -44,11 +58,13 @@ steps:
       - "-c"
       - |
         docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_BE_IMG_NAME:latest
-        docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_TRAIN_IMG_NAME:latest
+        docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_DLRM_TRAIN_IMG_NAME:latest
+        docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_SS_TRAIN_IMG_NAME:latest
 
 images:
   - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_BE_IMG_NAME:latest"
-  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_TRAIN_IMG_NAME:latest"
+  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_DLRM_TRAIN_IMG_NAME:latest"
+  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_SS_TRAIN_IMG_NAME:latest"
 
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET

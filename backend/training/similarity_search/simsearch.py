@@ -1,15 +1,16 @@
-
-
+import sys
 import os
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from sklearn.decomposition import PCA
+sys.path.append(os.path.abspath("."))
+if True:
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib.figure import Figure
+    from sklearn.decomposition import PCA
 
-from movie_recommender.common.logging import Logger
-from movie_recommender.simsearch.sim_search import SimilaritySearch
-from training.data import process_data_for_simsearch
-from movie_recommender.common.workflow import MlflowClient, StorageClient
+    from movie_recommender.common.logging import Logger
+    from movie_recommender.simsearch.sim_search import SimilaritySearch
+    from training.data import process_data_for_simsearch
+    from movie_recommender.common.workflow import MlflowClient, StorageClient
 
 simsearch_exp_name = "SimilaritySearch".lower()
 
@@ -52,7 +53,7 @@ def test_simsearch():
 
 def test_users(simsearch: SimilaritySearch, figures: dict[str, Figure]):
 
-    user_ids = [100, 200]
+    user_ids = [10, 4]
     closest_users = simsearch.get_closest_users(
         user_ids=user_ids,
         k=100,
@@ -76,7 +77,7 @@ def test_users(simsearch: SimilaritySearch, figures: dict[str, Figure]):
 
 
 def test_movies(simsearch: SimilaritySearch, figures: dict[str, Figure]):
-    movie_ids = [1000, 2000]
+    movie_ids = [3, 10]
 
     closest_movies = simsearch.get_closest_movies(
         movie_ids=movie_ids,
@@ -101,28 +102,17 @@ def test_movies(simsearch: SimilaritySearch, figures: dict[str, Figure]):
 
 
 if __name__ == "__main__":
-    import sys
-    arg = sys.argv[1]
     bucket = os.environ["DB_MINIO_BUCKET"]
 
-    if arg == "train":
-        train = StorageClient.get_instance().read_parquet_from_bucket(
-            bucket, "simsearch_train.parquet")
-        train_simsearch(train)
-    elif arg == "test":
-        test_simsearch()
-    elif arg == "preprocess":
-        ratings, movies = StorageClient.get_instance().download_parquet_from_bucket(
-            bucket, "ratings", "movies")
-        train = process_data_for_simsearch(
-            ratings,
-            movies,
-            1,
-        )
-        StorageClient.get_instance().upload_parquet_to_bucket(
-            bucket,
-            simsearch_train=train,
-        )
-    else:
-        Logger.error(f'Invalid arg {arg}')
-        sys.exit(1)
+    ratings, movies = StorageClient.get_instance().download_parquet_from_bucket(
+        bucket, "ratings", "movies"
+    )
+    train = process_data_for_simsearch(
+        ratings,
+        movies,
+        1,
+    )
+    train_simsearch(train)
+    test_simsearch()
+
+    Logger.info("Done.")
