@@ -200,14 +200,33 @@ def prepare(ds, cat_cols):
 #     )
 #     Logger.info("DLRM model test passed successfully")
 
+def store_features(bucket: str):
+    import pandas as pd
+    from movie_recommender.common.utils import user_cols, movie_cols
+
+    def split_(df: pd.DataFrame):
+        movies = df[movie_cols(df)].drop_duplicates(
+            "movie_id").set_index("movie_id")
+        users = df[user_cols(df)].drop_duplicates(
+            "user_id").set_index("user_id")
+        return users, movies
+
+    users_features, movies_features = split_(pd.concat([train, test], axis=0))
+    StorageClient.get_instance().upload_parquet_to_bucket(
+        bucket,
+        users_features=users_features,
+        movies_features=movies_features,
+    )
+
 
 if __name__ == "__main__":
     import sys
     import os
-    arg = sys.argv[1]
-    bucket = os.environ["DB_MINIO_BUCKET"]
 
-    if arg == "train":
+    bucket = os.environ["DB_MINIO_BUCKET"]
+    task = os.environ["TASK"]
+
+    if task == "train":
         train, test = StorageClient.get_instance().download_parquet_from_bucket(
             bucket, "dlrm_train", "dlrm_test")
 
@@ -218,10 +237,10 @@ if __name__ == "__main__":
             exp_name=get_env("EXP_NAME", "movie_recom"),
             batch_size=get_env("BATCH_SIZE", 64 * 4)
         )
-    elif arg == "test":
+    elif task == "test":
         # test_dlrm_model()
         pass
-    elif arg == "preprocess":
+    elif task == "preprocess":
         ratings, movies = StorageClient.get_instance().download_parquet_from_bucket(
             bucket, "ratings", "movies")
         train, test = preprocess_data(
@@ -233,6 +252,7 @@ if __name__ == "__main__":
         StorageClient.get_instance().upload_parquet_to_bucket(
             bucket, dlrm_train=train, dlrm_test=test
         )
+        store_features(bucket)
     else:
-        Logger.error(f'Invalid arg {arg}')
+        Logger.error(f'Invalid {task=}')
         sys.exit(1)
