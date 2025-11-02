@@ -1,6 +1,14 @@
 import os
 import typing
 
+
+DATABASE_URL = os.environ["DATABASE_URL"]
+BUCKET = os.environ["BUCKET"]
+if BUCKET.endswith("/"):
+    BUCKET = BUCKET.removesuffix("/")
+
+ARTIFACT_ROOT = f"{BUCKET}/artifacts"
+
 SS_REGISTERED_NAME = os.environ["SS_REGISTERED_NAME"]
 XGB_REGISTERED_NAME = os.environ["XGB_REGISTERED_NAME"]
 DLRM_REGISTERED_NAME = os.environ["DLRM_REGISTERED_NAME"]

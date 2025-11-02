@@ -47,20 +47,26 @@ export const editMovieReviewAndRating = action(
 export const getRecommendedMoviesForUser = action(
   "getRecommendedMoviesForUser",
 
-  async ({ count, userId, temp }: { count: number; userId: number, temp: number }) =>
-    handleBackendResponse(
-      await Backend.recommendMovies({ userId, count, temp }),
+  async ({ count, userId, temp }: { count: number; userId: number, temp: number }) => {
+    const userBestMovies = await movieDB.getUserBestMovies({ userId });
+    const userBestMovieIds = userBestMovies.map(m => m.tmdbId);
+    return handleBackendResponse(
+      await Backend.recommendMovies({ userId, count, temp, userBestMovies: userBestMovieIds }),
       userId
     )
+  }
 );
 
 export const getRecommendedGenreMovies = action(
   "getRecommendedGenreMovies",
-  async ({ genre, userId, temp }: { genre: MovieGenre; userId: number, temp: number }) =>
-    handleBackendResponse(
-      await Backend.recommendMovies({ userId, count: 10, genres: [genre], temp }),
+  async ({ genre, userId, temp }: { genre: MovieGenre; userId: number, temp: number }) => {
+    const userBestMovies = await movieDB.getUserBestMovies({ userId });
+    const userBestMovieIds = userBestMovies.map(m => m.tmdbId);
+    return handleBackendResponse(
+      await Backend.recommendMovies({ userId, count: 10, genres: [genre], temp, userBestMovies: userBestMovieIds }),
       userId
     )
+  }
 );
 
 export const getSimilarMovies = action(

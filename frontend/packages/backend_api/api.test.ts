@@ -22,6 +22,7 @@ describe("Backend Api", () => {
       userId,
       count,
       temp: 0,
+      userBestMovies: [1, 3]
     });
     checkPred(userId, predictions, count);
   });

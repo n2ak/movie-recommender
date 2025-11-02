@@ -9,3 +9,4 @@ mlartifacts
 lightning_logs
 lightning_runs
 *.pickle
+test.ipynb

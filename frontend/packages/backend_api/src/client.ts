@@ -58,7 +58,7 @@ const handleErrors = async (
 
 
 export const recommendMovies = async ({
-  userId, temp, count, genres
+  userId, temp, count, genres, userBestMovies
 }: Omit<RecomRequest, "type">) => {
   const data: Required<RecomRequest> = {
     userId,
@@ -66,6 +66,7 @@ export const recommendMovies = async ({
     temp: temp || 0,
     count: count || 10,
     genres: genres || [],
+    userBestMovies
   };
   const result = await handleErrors(
     apiClient.post("/dlrm", data)

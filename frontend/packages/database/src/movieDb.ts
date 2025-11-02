@@ -124,6 +124,28 @@ export async function getRatedMoviesForUser(params: {
   });
   return res.map((a) => a.movie);
 }
+
+export async function getUserBestMovies(params: { userId: number; count?: number }) {
+  const res = await prismaClient.userMovieRating.findMany({
+    where: {
+      userModelId: params.userId,
+    },
+    orderBy: {
+      rating: "desc",
+    },
+    take: params.count ?? 10,
+    select: {
+      movie: {
+        select: {
+          tmdbId: true
+        }
+      },
+      rating: true,
+    },
+  });
+  return res.map((a) => ({ tmdbId: a.movie.tmdbId, userRating: a.rating }));
+}
+
 export function getAllMovies(): Promise<MovieModel[]> {
   return prismaClient.movieModel.findMany();
 }

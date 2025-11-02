@@ -10,6 +10,7 @@ export type BaseRequest = {
 }
 export interface RecomRequest extends BaseRequest {
     genres?: MovieGenre[]
+    userBestMovies: number[]
 }
 export interface SimilarMoviesRequest extends BaseRequest {
     movieIds: number[]

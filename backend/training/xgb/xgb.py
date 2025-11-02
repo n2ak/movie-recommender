@@ -10,6 +10,7 @@ from movie_recommender.xgb.xgbmr import XGBMR
 from training.data import movie_cols, user_cols
 from training.train_utils import fix_split, mae, simple_split
 from movie_recommender.common.workflow import save_plots, StorageClient
+from movie_recommender.common.env import ARTIFACT_ROOT
 
 
 def split_genres(df):
@@ -342,7 +343,7 @@ if __name__ == "__main__":
     import sys
     import os
     arg = sys.argv[1]
-    bucket = os.environ["DB_MINIO_BUCKET"]
+    bucket = ARTIFACT_ROOT
 
     if arg == "train":
         ratings = StorageClient.get_instance().read_parquet_from_bucket(

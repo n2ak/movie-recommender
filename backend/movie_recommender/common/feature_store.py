@@ -1,13 +1,12 @@
 import os
 from movie_recommender.common.workflow import StorageClient
-from movie_recommender.common.utils import user_cols, movie_cols
+from movie_recommender.common.env import ARTIFACT_ROOT
 
 
 class _FeatureStore:
     def __init__(self):
-        bucket = os.environ["DB_MINIO_BUCKET"]
         users, movies = StorageClient.get_instance().download_parquet_from_bucket(
-            bucket, "users_features", "movies_features"
+            ARTIFACT_ROOT, "users_features", "movies_features"
         )
         self.users = users
         self.movies = movies

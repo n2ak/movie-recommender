@@ -5,6 +5,7 @@ from numpy.typing import NDArray
 
 from movie_recommender.simsearch.sim_search import SimilaritySearch
 from movie_recommender.common.feature_store import FeatureStore
+from movie_recommender.common.env import DATABASE_URL
 from dataclasses import dataclass, field
 
 
@@ -17,28 +18,25 @@ class PredictionRequest:
 
     genres: list[str] = field(default_factory=list)
     movieIds: list[int] = field(default_factory=list)
+    userBestMovies: list[int] = field(default_factory=list)
 
 
 class API(LitAPI):
     def setup(self, device):
-        self.simsearch = SimilaritySearch.load_from_disk()
+        self.simsearch = SimilaritySearch.load(DATABASE_URL, "movie")
         self.feature_store = FeatureStore
 
     def _suggest(self, request: PredictionRequest):
         type = request.type
         if type == "recommend":
-            movie_ids = self.simsearch.suggest(
-                request.userId,
-                n_neighbor_users=10,
-                n_neighbor_movies=10,
-                genres=tuple(request.genres),  # TODO
+            movie_ids = self.simsearch.suggest_similar_movies(
+                request.userBestMovies,
+                k=10,
             )
         elif type == "similar":
-            movie_ids = tuple(request.movieIds)
+            movie_ids = list(request.movieIds)
             movie_ids = self.simsearch.suggest_similar_movies(
-                request.userId,
                 movie_ids=movie_ids,
-                n_neighbor_movies=10,
             )
         else:
             raise Exception(f"Invalid request {type=}")

@@ -1,5 +1,6 @@
 import sys
 import os
+
 sys.path.append(os.path.abspath("."))
 if True:
     import pandas as pd
@@ -8,6 +9,7 @@ if True:
     from sklearn.decomposition import PCA
 
     from movie_recommender.common.logging import Logger
+    from movie_recommender.common.env import ARTIFACT_ROOT
     from movie_recommender.simsearch.sim_search import SimilaritySearch
     from training.data import process_data_for_simsearch
     from movie_recommender.common.workflow import MlflowClient, StorageClient
@@ -102,7 +104,7 @@ def test_movies(simsearch: SimilaritySearch, figures: dict[str, Figure]):
 
 
 if __name__ == "__main__":
-    bucket = os.environ["DB_MINIO_BUCKET"]
+    bucket = ARTIFACT_ROOT
 
     ratings, movies = StorageClient.get_instance().download_parquet_from_bucket(
         bucket, "ratings", "movies"

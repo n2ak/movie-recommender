@@ -14,6 +14,13 @@ def read_db(db_url, ratings_table: str, movies_table: str):
 
     movies = pd.read_sql_table(movies_table, engine, columns=[
                                "id", "title", "genres", "year"])
+
+    movies.year = movies.release_date.dt.year
+    movies.drop(columns=["release_date"], inplace=True)
+    movies.rename({
+        "tmdbId": "id"
+    }, inplace=True)
+
     movies.rename(
         columns={c: f"movie_{c}" for c in movies.columns}, inplace=True)
     return ratings, movies

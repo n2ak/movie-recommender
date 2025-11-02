@@ -13,6 +13,7 @@ if True:
     from training.train_utils import mae, rmse, get_env
     from movie_recommender.dlrm.dlrm import DLRM, TrainableModule, DLRMParams
     from movie_recommender.common.workflow import StorageClient
+    from movie_recommender.common.env import ARTIFACT_ROOT
 
 
 def create_data_sampler(y_train: np.ndarray):
@@ -228,7 +229,7 @@ if __name__ == "__main__":
     import sys
     import os
 
-    bucket = os.environ["DB_MINIO_BUCKET"]
+    bucket = ARTIFACT_ROOT
     task = os.environ["TASK"]
 
     if task == "train":
