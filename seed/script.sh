@@ -2,14 +2,14 @@
 set -e
 
 echo "Generating Prisma client..."
-npx prisma@5.17.0 generate
+python -m prisma generate
 
 echo "Pushing schema..."
-npx prisma@5.17.0 db push
+python -m prisma db push
 
 
 echo "Fetching data..."
 python get_ds.py
 
-echo "Starting main application..."
+echo "Seeding db..."
 python main.py

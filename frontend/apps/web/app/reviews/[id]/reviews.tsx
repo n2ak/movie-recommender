@@ -56,7 +56,7 @@ export default function MovieReviews({
       </h1>
       <div className="grid gap-6">
         {reviews.map((review) => (
-          <Review review={review} movieId={movie.id} key={review.id} />
+          <Review review={review} movieId={movie.tmdbId} key={review.id} />
         ))}
       </div>
       <div className="w-full text-center mt-2">
@@ -97,7 +97,7 @@ function Review({
     onSuccess: () => {
       qL.invalidateQueries({ queryKey: keys });
     },
-    onError: () => {},
+    onError: () => { },
   });
   if (!review) return null;
   const userRating = review.user.movieRatings[0]?.rating;
@@ -132,7 +132,7 @@ function Review({
           <Button
             variant={isLiked ? "default" : "outline"}
             onClick={async () => react.mutate("LIKE")}
-            // disabled={!userId}
+          // disabled={!userId}
           >
             {nLikes}
             <ThumbsUpIcon />
@@ -140,7 +140,7 @@ function Review({
           <Button
             variant={isDisLiked ? "default" : "outline"}
             onClick={async () => react.mutate("DISLIKE")}
-            // disabled={!userId}
+          // disabled={!userId}
           >
             {nDislikes}
             <ThumbsDownIcon />

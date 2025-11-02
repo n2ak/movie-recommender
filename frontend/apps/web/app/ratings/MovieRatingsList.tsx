@@ -60,7 +60,7 @@ export function RatingsTable({
           {movies.map((movie) => {
             return (
               <Table.Row
-                key={movie.id}
+                key={movie.tmdbId}
                 className="hover:bg-gray-100 group dark:hover:bg-gray-600"
               >
                 <TableRow movie={movie} setSelectedRating={setSelectedRating} />
@@ -150,7 +150,7 @@ function TableRow({
     <>
       <Table.Cell>
         <Link
-          href={`/movie/${movie.id}`}
+          href={`/movie/${movie.tmdbId}`}
           className="flex flex-row items-center gap-3"
         >
           <img
@@ -163,7 +163,7 @@ function TableRow({
           </div>
         </Link>
       </Table.Cell>
-      <Table.Cell>{userRating.timestamp.toDateString()}</Table.Cell>
+      <Table.Cell>{userRating.createdAt.toDateString()}</Table.Cell>
       <Table.Cell className="relative">
         {/* {userRating.rating} */}
         <FixedRating v={userRating.rating} showValue />

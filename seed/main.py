@@ -1,11 +1,21 @@
+import httpx
 import asyncio
 import random
-from datetime import datetime
 from lorem_text import lorem
 import pandas as pd
 from prisma import Prisma
+import os
 
 CHUNK_SIZE = 100_000
+GENRES_SPLIT_CHAR = "-"
+PROD_SPLIT_CHAR = "-"
+EMBEDDING_URL = os.environ["EMBEDDING_URL"]
+
+
+def try_split(a, c, default=""):
+    if a is None:
+        return []
+    return a.split(c)
 
 
 def random_string(min_words: int, max_words: int) -> str:
@@ -26,13 +36,7 @@ async def chunked_insert(data, fn):
     return total
 
 
-def parse_csv(path: str):
-    print(f"Parsing CSV file: {path}")
-    df = pd.read_csv(path)
-    return df
-
-
-async def create_users(data, db):
+async def create_users(data, db: Prisma):
     users = [
         {
             "id": int(row.user_id),
@@ -46,32 +50,65 @@ async def create_users(data, db):
     print(f"Created {n} users.")
 
 
-async def create_movies(data, db):
+async def create_movies(data, db: Prisma):
+    embeddings = await get_embeddings(EMBEDDING_URL, data.overview.tolist())
+    data["embeddings"] = embeddings
     movies = []
     for _, row in data.iterrows():
         movies.append({
-            "id": int(row.movie_id),
-            "imdbId": str(row.imdbId),
+            "tmdbId": row.tmdbId,
             "href": str(row.posters),
-            "avg_rating": float(row.movie_avg_rating),
-            "genres": row.genres.split("|"),
+            "genres": try_split(row.genres, GENRES_SPLIT_CHAR),
             "title": str(row.title),
-            "total_ratings": int(row.movie_total_rating),
-            "year": int(row.year),
-            "desc": random_string(50, 150),
-            "createdAt": datetime(int(row.year), 1, 1),
+            "release_date": row.release_date,
+
+            "production_companies": try_split(row.production_companies, PROD_SPLIT_CHAR),
+            "original_language": row.original_language,
+            "overview": row.overview,
+            "tagline": row.tagline,
+            "avg_rating": row.vote_average,
+            "total_ratings": int(row.vote_count),
+            "credits": try_split(row.credits, GENRES_SPLIT_CHAR),
+            "keywords": try_split(row.keywords, GENRES_SPLIT_CHAR),
+            "duration": float(row.runtime),
         })
     n = await chunked_insert(movies, db.moviemodel.create_many)
+    for _, row in data.iterrows():
+        await helper(row, db)
     print(f"Created {n} movies.")
 
 
-async def create_ratings(data, db):
+async def get_embeddings(url: str, datas: list):
+    async with httpx.AsyncClient() as client:
+        async def fetch(d):
+            response = await client.post(url, json=d)
+            return response.json()
+        tasks = [fetch(d) for d in datas]
+        responses = await asyncio.gather(*tasks)
+        return responses
+
+
+async def helper(movie, db: Prisma):
+    vector_text = "[" + \
+        ",".join(map(str, movie.embeddings)) + "]"
+
+    await db.execute_raw(
+        """
+    UPDATE movie
+    SET overview_encoded = $1::vector
+    WHERE "tmdbId" = $2
+    """,
+        vector_text,
+        movie.tmdbId
+    )
+
+
+async def create_ratings(data, db: Prisma):
     ratings = [
         {
-            "movieModelId": int(row.movie_id),
+            "tmdbId": int(row.tmdbId),
             "userModelId": int(row.user_id),
             "rating": float(row.rating),
-            "timestamp": datetime.utcnow(),
         }
         for _, row in data.iterrows()
     ]
@@ -79,14 +116,14 @@ async def create_ratings(data, db):
     print(f"Created {n} ratings.")
 
 
-async def create_reviews(data, db):
+async def create_reviews(data, db: Prisma):
     reviews = [
         {
             "title": random_string(5, 10),
             "text": random_string(20, 60),
             "nlikes": random.randint(0, 100),
             "ndislikes": random.randint(0, 100),
-            "movieModelId": int(row.movie_id),
+            "tmdbId": int(row.tmdbId),
             "userModelId": int(row.user_id),
         }
         for _, row in data.iterrows()
@@ -96,9 +133,9 @@ async def create_reviews(data, db):
 
 
 async def main():
-    users_csv = parse_csv("users.csv")
-    movies_csv = parse_csv("movies.csv")
-    ratings_csv = parse_csv("ratings.csv")
+    users_csv = pd.read_parquet("users.parquet")
+    movies_csv = pd.read_parquet("movies.parquet")
+    ratings_csv = pd.read_parquet("ratings.parquet")
 
     print("Connecting to database...")
     db = Prisma()

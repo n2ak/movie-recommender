@@ -25,6 +25,8 @@ export * as userDB from "./authDb";
 export * as movieDB from "./movieDb";
 export * as reviewsDB from "./reviewsDb";
 // export type RatingSortKey = "rating" | "timestamp" | "title" | "avg_rating";
+export { Prisma, type MovieModel } from "@prisma/client";
+export { prismaClient } from "./connect";
 export type { RatedMoviesRatingSortKey as RatingSortKey } from "./movieDb";
 
 export const {

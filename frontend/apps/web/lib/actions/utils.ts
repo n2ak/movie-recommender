@@ -40,6 +40,9 @@ async function handleErrors<T>(promise: Promise<T>): Promise<{
   }
 }
 
+/**
+ * Wrapper that handles errors and logging
+ */
 export function action<T extends object, B, I = Omit<T, "userId">>(
   key: string,
   func: (a: T & { userId: number }) => Promise<B>

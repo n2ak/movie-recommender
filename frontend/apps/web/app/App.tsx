@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { AgentPanel } from "@/components/AgentPanel";
 import NavBar from "@/components/Navbar";
 import Providers from "@/components/providers/Providers";
 import "@radix-ui/themes/styles.css";
@@ -13,6 +14,7 @@ export default async function App({ children }: PropsWithChildren) {
       <div className="min-h-screen w-full pt-25 mx-auto px-2 lg:px-20 bg-gray-200 dark:bg-black font-mono">
         {children}
       </div>
+      <AgentPanel />
     </Providers>
   );
 }

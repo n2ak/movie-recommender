@@ -1,11 +1,13 @@
-import { Prisma } from "@prisma/client";
+import type { MovieModel, Prisma } from "@prisma/client";
 import { prismaClient } from "./connect";
+import type {
+  MovieSortKey,
+  UserRatingSortKey
+} from "./selects/movie";
 import {
   findMovie,
   findMoviesInIds,
-  MovieSortKey,
-  userRatingInclude,
-  UserRatingSortKey,
+  userRatingInclude
 } from "./selects/movie";
 
 function counts(arr: string[]) {
@@ -64,7 +66,7 @@ export async function getMovies(movieIds: number[], userId: number) {
 export async function getMoviesGenres(movieIds: number[]) {
   return await prismaClient.movieModel.findMany({
     where: {
-      id: { in: movieIds }
+      tmdbId: { in: movieIds }
     },
     select: { genres: true }
   });
@@ -122,6 +124,8 @@ export async function getRatedMoviesForUser(params: {
   });
   return res.map((a) => a.movie);
 }
-
-const userRatingSsortKeys: UserRatingSortKey[] = ["rating", "timestamp"];
+export function getAllMovies(): Promise<MovieModel[]> {
+  return prismaClient.movieModel.findMany();
+}
+const userRatingSsortKeys: UserRatingSortKey[] = ["rating"];
 export type RatedMoviesRatingSortKey = UserRatingSortKey | MovieSortKey;

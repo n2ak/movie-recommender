@@ -93,7 +93,7 @@ function Logo() {
       <img
         src="/res/movies.png"
         className="h-15 w-15 -translate-y-3"
-        alt="Flowbite Logo"
+        alt="Logo"
       />
     </Link>
   );

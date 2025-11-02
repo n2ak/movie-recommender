@@ -72,10 +72,10 @@ export default function Search() {
               className="absolute top-[99%] w-full rounded-b-md shadow-md bg-white dark:bg-gray-600"
             >
               {movies.map((m) => (
-                <div key={m.id}>
+                <div key={m.tmdbId}>
                   <SearchItem
                     title={m.title}
-                    id={m.id}
+                    id={m.tmdbId}
                     href={m.href}
                     genres={m.genres}
                     clear={() => {

@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-py"
+  provider        = "prisma-client-py"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
 model UserModel {
@@ -25,15 +27,23 @@ model UserModel {
 }
 
 model MovieModel {
-  id            Int      @id @unique
-  imdbId        String   @unique
+  tmdbId        Int      @id @unique
   title         String
   genres        String[]
   avg_rating    Float
   href          String
   total_ratings Int
-  year          Int
-  desc          String
+
+  production_companies String[]
+  original_language    String
+  overview             String
+  tagline              String
+  credits              String[]
+  keywords             String[]
+  duration             Float
+  overview_encoded     Unsupported("vector(384)")?
+
+  release_date DateTime @db.Timestamptz(3)
 
   createdAt  DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime          @default(now()) @updatedAt
@@ -47,37 +57,35 @@ model UserMovieRating {
   id     Int   @id @default(autoincrement())
   rating Float
 
-  timestamp DateTime
-
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @default(now()) @updatedAt
 
-  movieModelId Int
-  userModelId  Int
+  tmdbId      Int
+  userModelId Int
 
-  movie MovieModel @relation(fields: [movieModelId], references: [id], onDelete: Cascade)
+  movie MovieModel @relation(fields: [tmdbId], references: [tmdbId], onDelete: Cascade)
   user  UserModel  @relation(fields: [userModelId], references: [id], onDelete: Cascade)
 
-  @@unique([movieModelId, userModelId])
+  @@unique([tmdbId, userModelId])
   @@map("movie_rating")
 }
 
 model MovieReview {
-  id           Int      @id @default(autoincrement())
-  movieModelId Int
-  userModelId  Int
-  title        String
-  text         String
-  createdAt    DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime @default(now()) @updatedAt
-  nlikes       Int
-  ndislikes    Int
+  id          Int      @id @default(autoincrement())
+  tmdbId      Int
+  userModelId Int
+  title       String
+  text        String
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt
+  nlikes      Int
+  ndislikes   Int
 
   reactions ReviewReaction[]
-  movie     MovieModel       @relation(fields: [movieModelId], references: [id], onDelete: Cascade)
+  movie     MovieModel       @relation(fields: [tmdbId], references: [tmdbId], onDelete: Cascade)
   user      UserModel        @relation(fields: [userModelId], references: [id], onDelete: Cascade)
 
-  @@unique([movieModelId, userModelId])
+  @@unique([tmdbId, userModelId])
 }
 
 model ReviewReaction {

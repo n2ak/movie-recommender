@@ -36,7 +36,7 @@ export default function EditMovieRatingAndReviewModal({
   onSave: () => void;
   onClose: () => void;
 }) {
-  const { review } = useMovieReview(movie?.id);
+  const { review } = useMovieReview(movie?.tmdbId);
   const [rating, setRating] = useState(0);
   const [text, setText] = useState("");
   const [title, setTitle] = useState("");
@@ -140,7 +140,7 @@ export default function EditMovieRatingAndReviewModal({
                     title,
                     rating,
                     reviewChanged,
-                    movieId: movie?.id || 0,
+                    movieId: movie?.tmdbId || 0,
                   });
                   if (!res.message) {
                     success("Movie rating edited");

@@ -243,11 +243,6 @@ class SimilaritySearch(mlflow.pyfunc.PythonModel):  # type: ignore
         return run_id
 
 
-class B:
-    def __init__(self):
-        self.a = 1
-
-
 def unique_keep_order(arr):
     unique_elements, first_occurrence_indices = np.unique(
         arr, return_index=True)

@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { prismaClient } from "./connect";
 import { userSelect } from "./selects/user";
 
@@ -9,7 +9,7 @@ function reviewInclude(movieId: number, userId: number) {
         ...userSelect,
         movieRatings: {
           where: {
-            movieModelId: movieId,
+            tmdbId: movieId,
           },
           take: 1,
         },
@@ -30,9 +30,9 @@ export const getMovieReview = async (params: {
 }) => {
   const review = await prismaClient.movieReview.findUnique({
     where: {
-      movieModelId_userModelId: {
+      tmdbId_userModelId: {
         userModelId: params.userId,
-        movieModelId: params.movieId,
+        tmdbId: params.movieId,
       },
     },
     include: reviewInclude(params.movieId, params.userId),
@@ -57,7 +57,7 @@ export async function getNumberOfMovieReviews(params: { movieId: number }) {
   return (
     await prismaClient.movieReview.aggregate({
       where: {
-        movieModelId: params.movieId,
+        tmdbId: params.movieId,
       },
       _count: true,
     })
@@ -79,15 +79,15 @@ export const reviewMovie = async ({
   title = title.trim();
   return await prismaClient.movieReview.upsert({
     where: {
-      movieModelId_userModelId: {
+      tmdbId_userModelId: {
         userModelId: userId,
-        movieModelId: movieId,
+        tmdbId: movieId,
       },
     },
     create: {
       title,
       text: text,
-      movieModelId: movieId,
+      tmdbId: movieId,
       userModelId: userId,
       ndislikes: 0,
       nlikes: 0,
@@ -167,7 +167,7 @@ export const getMovieReviews = async (params: {
 }) => {
   const res = await prismaClient.movieReview.findMany({
     where: {
-      movieModelId: params.movieId,
+      tmdbId: params.movieId,
     },
     include: reviewInclude(params.movieId, params.userId),
     skip: params.start,
@@ -193,16 +193,15 @@ export async function editMovieReviewAndRating({
   return await Promise.all([
     await prismaClient.userMovieRating.upsert({
       where: {
-        movieModelId_userModelId: {
-          movieModelId: movieId,
+        tmdbId_userModelId: {
+          tmdbId: movieId,
           userModelId: userId,
         },
       },
       create: {
-        movieModelId: movieId,
+        tmdbId: movieId,
         userModelId: userId,
-        rating: rating,
-        timestamp: new Date(),
+        rating: rating
       },
       update: {
         rating: rating,

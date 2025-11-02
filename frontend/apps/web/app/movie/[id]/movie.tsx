@@ -23,7 +23,7 @@ export function MoviePage({
   const qClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const { movie, queryKey } = useMovie({
-    movieId: initialMovie.id,
+    movieId: initialMovie.tmdbId,
     initialMovie,
   });
   if (!movie) return null;
@@ -42,12 +42,12 @@ export function MoviePage({
         <div className="flex-1 space-y-4">
           <h1 className="text-4xl font-bold">{movie.title}</h1>
           <p className="text-gray-500 text-lg">
-            {movie.year} • {movie.genres.join(", ")}
+            {movie.release_date.getFullYear()} • {movie.genres.join(", ")}
           </p>
           <div className="font-semibold flex gap-2">
             <FixedRating v={movie.avg_rating} />
             <span>({total_ratings} users)</span>
-            <Link className="underline" href={"/reviews/" + movie.id}>
+            <Link className="underline" href={"/reviews/" + movie.tmdbId}>
               ({total_reviews} reviews)
             </Link>
           </div>
@@ -70,7 +70,7 @@ export function MoviePage({
             }}
             movie={!open ? undefined : movie}
           />
-          <p className="">{movie.desc}</p>
+          <p className="">{movie.overview}</p>
         </div>
       </div>
 

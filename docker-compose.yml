@@ -2,14 +2,15 @@ name: "movie_recommendation_system"
 services:
   db:
     container_name: db
-    image: postgres
+    image: pgvector/pgvector:pg17
+    # image: postgres
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_DB}
       PGDATA: /data/postgres
       PGPORT: ${DB_PORT}
-
+ 
       # multi users
       DB_USERS: "${AF_PG_USER} ${MLFLOW_PG_USER}"
       DB_PASSWORDS: "${AF_PG_PASSWORD} ${MLFLOW_PG_PASSWORD}"
@@ -88,16 +89,16 @@ services:
     container_name: backend_api
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: docker/inference/Dockerfile
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
       db:
         condition: service_healthy
         restart: true
-      mlflow:
-        condition: service_healthy
-        restart: true
+      # mlflow:
+      #   condition: service_healthy
+      #   restart: true
     healthcheck:
       test:
         [
@@ -255,7 +256,7 @@ services:
     restart: "no"
     networks:
       - mlflow_net
-
+      
 networks:
   webappnet:
     driver: bridge
