@@ -68,7 +68,7 @@ export const recommendMovies = async ({
     genres: genres || [],
   };
   const result = await handleErrors(
-    apiClient.post("/predict", data)
+    apiClient.post("/dlrm", data)
   );
   return result;
 };
@@ -84,7 +84,7 @@ export const recommendSimilarMovies = async ({
     count: count || 10,
   };
   const result = await handleErrors(
-    apiClient.post("/predict", data)
+    apiClient.post("/dlrm", data)
   );
   return result;
 };
