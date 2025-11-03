@@ -16,7 +16,6 @@ COPY movie_recommender movie_recommender
 # for the loading/pickle to work
 COPY training training
 COPY api.py .
-COPY embedding_api.py .
 
 ENV CUDA_VISIBLE_DEVICES=0
 

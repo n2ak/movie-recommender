@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 
-class Embedding(LitAPI):
+class EmbeddingAPI(LitAPI):
     def setup(self, device):
         from sentence_transformers import SentenceTransformer
         self.model = SentenceTransformer("all-MiniLM-L6-v2")

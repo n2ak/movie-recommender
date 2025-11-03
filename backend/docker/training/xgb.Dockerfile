@@ -10,7 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir xgboost optuna
 
 COPY movie_recommender movie_recommender
-COPY training/xgb.py train_xgb.py
+COPY training training
 
 
 ENV CUDA_VISIBLE_DEVICES=0
+CMD ["python","training/xgb.py"]

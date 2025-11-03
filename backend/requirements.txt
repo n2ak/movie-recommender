@@ -7,3 +7,4 @@ mlflow
 psycopg2-binary
 sqlalchemy
 google-cloud-storage
+faiss-cpu

@@ -13,4 +13,4 @@ COPY training training
 
 ENV CUDA_VISIBLE_DEVICES=0
 
-CMD ["python","training/dlrm/dlrm.py"]
+CMD ["python","training/dlrm.py"]
