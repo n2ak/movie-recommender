@@ -233,8 +233,15 @@ if __name__ == "__main__":
     task = os.environ["TASK"]
 
     if task == "train":
-        train, test = StorageClient.get_instance().download_parquet_from_bucket(
-            bucket, "dlrm_train", "dlrm_test")
+        ratings, movies = StorageClient.get_instance().download_parquet_from_bucket(
+            bucket, "ratings", "movies")
+        train, test = preprocess_data(
+            ratings,
+            movies,
+            max_rating=int(os.environ["MAX_RATING"]),
+            train_size=float(os.environ["TRAIN_SIZE"]),
+        )
+        store_features(bucket)
 
         train_dlrm(
             train,
@@ -246,19 +253,6 @@ if __name__ == "__main__":
     elif task == "test":
         # test_dlrm_model()
         pass
-    elif task == "preprocess":
-        ratings, movies = StorageClient.get_instance().download_parquet_from_bucket(
-            bucket, "ratings", "movies")
-        train, test = preprocess_data(
-            ratings,
-            movies,
-            max_rating=int(os.environ["MAX_RATING"]),
-            train_size=float(os.environ["TRAIN_SIZE"]),
-        )
-        StorageClient.get_instance().upload_parquet_to_bucket(
-            bucket, dlrm_train=train, dlrm_test=test
-        )
-        store_features(bucket)
     else:
         Logger.error(f'Invalid {task=}')
         sys.exit(1)

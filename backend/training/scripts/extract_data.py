@@ -1,4 +1,5 @@
 import tempfile
+
 max_rating = 5
 
 
@@ -27,9 +28,6 @@ def read_db(db_url, ratings_table: str, movies_table: str):
 
 
 def extract_data(db_url: str):
-    # from sqlalchemy import create_engine
-    # conn = create_engine(Env.DB_URL)
-
     ratings, movies = read_db(db_url, "movie_rating", "movie")
     print("Done extracting data.")
     movies.drop(columns=["movie_title"], inplace=True)
@@ -43,3 +41,16 @@ def extract_data(db_url: str):
     ratings.to_parquet(ratings_path)
     movies.to_parquet(movies_path)
     return path
+
+
+def main():
+    from movie_recommender.common.logging import Logger
+    from movie_recommender.common.workflow import StorageClient
+    from movie_recommender.common.env import DATABASE_URL, ARTIFACT_ROOT
+    dir = extract_data(DATABASE_URL)
+    StorageClient.get_instance().upload_folder_to_bucket(dir, ARTIFACT_ROOT)
+    Logger.info("Data extraction is done.")
+
+
+if __name__ == "__main__":
+    main()
