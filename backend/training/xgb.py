@@ -10,7 +10,7 @@ from movie_recommender.xgb.xgbmr import XGBMR
 from training.data import movie_cols, user_cols
 from training.train_utils import fix_split, mae, simple_split
 from movie_recommender.common.workflow import save_plots, StorageClient
-from movie_recommender.common.env import ARTIFACT_ROOT
+from movie_recommender.common.env import ARTIFACT_ROOT, BUCKET
 
 
 def split_genres(df):
@@ -343,13 +343,13 @@ if __name__ == "__main__":
     import sys
     import os
     arg = sys.argv[1]
-    bucket = ARTIFACT_ROOT
 
     if arg == "train":
-        ratings = StorageClient.get_instance().read_parquet_from_bucket(
-            bucket, "ratings.parquet")
-        movies = StorageClient.get_instance().read_parquet_from_bucket(
-            bucket, "movies.parquet")
+        ratings, movies = StorageClient.get_instance().read_parquets_from_bucket(
+            BUCKET,
+            f"{ARTIFACT_ROOT}/ratings",
+            f"{ARTIFACT_ROOT}/movies",
+        )
         ratings = ratings.merge(movies, on="movie_id")
         ratings.rating *= 5
 

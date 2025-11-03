@@ -13,7 +13,7 @@ if True:
     from training.train_utils import mae, rmse, get_env
     from movie_recommender.dlrm.dlrm import DLRM, TrainableModule, DLRMParams
     from movie_recommender.common.workflow import StorageClient
-    from movie_recommender.common.env import ARTIFACT_ROOT
+    from movie_recommender.common.env import ARTIFACT_ROOT, BUCKET
 
 
 def create_data_sampler(y_train: np.ndarray):
@@ -206,7 +206,7 @@ def prepare(ds, cat_cols):
 #     )
 #     Logger.info("DLRM model test passed successfully")
 
-def store_features(bucket: str):
+def store_features():
     import pandas as pd
     from movie_recommender.common.utils import user_cols, movie_cols
 
@@ -219,7 +219,8 @@ def store_features(bucket: str):
 
     users_features, movies_features = split_(pd.concat([train, test], axis=0))
     StorageClient.get_instance().upload_parquet_to_bucket(
-        bucket,
+        BUCKET,
+        ARTIFACT_ROOT,
         users_features=users_features,
         movies_features=movies_features,
     )
@@ -229,19 +230,19 @@ if __name__ == "__main__":
     import sys
     import os
 
-    bucket = ARTIFACT_ROOT
     task = os.environ["TASK"]
 
     if task == "train":
-        ratings, movies = StorageClient.get_instance().download_parquet_from_bucket(
-            bucket, "ratings", "movies")
+        ratings, movies = StorageClient.get_instance().read_parquets_from_bucket(
+            BUCKET, f"{ARTIFACT_ROOT}/ratings", f"{ARTIFACT_ROOT}/movies"
+        )
         train, test = preprocess_data(
             ratings,
             movies,
             max_rating=int(os.environ["MAX_RATING"]),
             train_size=float(os.environ["TRAIN_SIZE"]),
         )
-        store_features(bucket)
+        store_features()
 
         train_dlrm(
             train,

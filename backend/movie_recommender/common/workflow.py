@@ -67,6 +67,7 @@ class StorageClient(Singleton):
             bucket = self.client.bucket(bucket_name)
             blob = bucket.blob(src_path)
             blob.download_to_filename(dest_path)
+        return dest_path
 
     def list_files(self, bucket_name, prefix=""):
         if self.provider in ("aws", "minio"):
@@ -105,49 +106,40 @@ class StorageClient(Singleton):
             raise ValueError("Unknown provider")
 
     def read_parquet_from_bucket(self, bucket: str, filepath: str):
-        df, = self.download_parquet_from_bucket(bucket, filepath)
+        df, = self.read_parquets_from_bucket(bucket, filepath)
         return df
 
-    def download_file_from_bucket(self, bucket, object_name, path):
-        self.download_file(bucket, object_name, path)
-        return path
-
-    def download_parquet_from_bucket(self, bucket: str, *filenames: str):
+    def read_parquets_from_bucket(self, bucket: str, *filenames: str):
         import tempfile
         with tempfile.TemporaryDirectory() as dir:
-            dfs = [pd.read_parquet(self.download_file_from_bucket(
-                bucket, f'{filename}.parquet', f"{dir}/{filename}.parquet")
-            ) for filename in filenames]
+            dfs = [
+                pd.read_parquet(self.download_file(
+                    bucket, f'{filename}.parquet', f"{dir}/{filename}.parquet")
+                ) for filename in filenames
+            ]
         return dfs
 
-    def upload_folder_to_bucket(self, dir: str, bucket):
+    def upload_folder_to_bucket(self, dir: str, bucket, root: str):
         import pathlib
         Logger.debug(f"Uploading {dir=} to s3 {bucket=}")
         for file in pathlib.Path(dir).glob("*"):
             filepath = str(file)
-            object_name = filepath.split("/")[-1]
+            object_name = root + "/" + filepath.split("/")[-1]
 
             Logger.debug(
-                f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
+                f"Uploading {object_name=} to s3 {bucket=} {filepath=}"
+            )
 
             self.upload_file(
                 bucket, filepath, object_name
             )
 
-    def upload_file_to_bucket(self, bucket: str, filepath: str):
-        object_name = filepath.split("/")[-1]
-
-        Logger.debug(f"Uploading {object_name=} to s3 {bucket=} {filepath=}")
-        self.upload_file(
-            bucket, filepath, object_name
-        )
-
-    def upload_parquet_to_bucket(self, bucket, **dfs: pd.DataFrame):
+    def upload_parquet_to_bucket(self, bucket, root: str, **dfs: pd.DataFrame):
         import tempfile
         with tempfile.TemporaryDirectory() as path:
             for name, df in dfs.items():
                 df.to_parquet(f"{path}/{name}.parquet")
-            self.upload_folder_to_bucket(path, bucket)
+            self.upload_folder_to_bucket(path, bucket, root=root)
 
 
 class MlflowClient(Singleton):

@@ -46,9 +46,10 @@ def extract_data(db_url: str):
 def main():
     from movie_recommender.common.logging import Logger
     from movie_recommender.common.workflow import StorageClient
-    from movie_recommender.common.env import DATABASE_URL, ARTIFACT_ROOT
+    from movie_recommender.common.env import DATABASE_URL, ARTIFACT_ROOT, BUCKET
     dir = extract_data(DATABASE_URL)
-    StorageClient.get_instance().upload_folder_to_bucket(dir, ARTIFACT_ROOT)
+    StorageClient.get_instance().upload_folder_to_bucket(
+        dir, bucket=BUCKET, root=ARTIFACT_ROOT)
     Logger.info("Data extraction is done.")
 
 

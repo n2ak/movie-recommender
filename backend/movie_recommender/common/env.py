@@ -7,9 +7,8 @@ BUCKET = os.environ["BUCKET"]
 if BUCKET.endswith("/"):
     BUCKET = BUCKET.removesuffix("/")
 
-ARTIFACT_ROOT = f"{BUCKET}/artifacts"
+ARTIFACT_ROOT = f"artifacts"
 
-SS_REGISTERED_NAME = os.environ["SS_REGISTERED_NAME"]
 XGB_REGISTERED_NAME = os.environ["XGB_REGISTERED_NAME"]
 DLRM_REGISTERED_NAME = os.environ["DLRM_REGISTERED_NAME"]
 
