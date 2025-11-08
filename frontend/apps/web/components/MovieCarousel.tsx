@@ -42,7 +42,7 @@ export function MovieCarousel({
           <Carousel.CarouselContent>
             {movies.map((movie) => (
               <Carousel.CarouselItem
-                key={movie.tmdbId}
+                key={movie.id}
                 className="xl:basis-1/5 sm:basis-1/3 md:basis-1/4"
               >
                 <div className="p-1 min-w-[200px] h-[300px]">
@@ -62,7 +62,7 @@ export function MovieCarousel({
 function MovieCard({ movie }: { movie: MovieWithPredictedRating }) {
   return (
     <Link
-      href={`/movie/${movie.tmdbId}`}
+      href={`/movie/${movie.id}`}
       style={{
         width: "100%",
       }}

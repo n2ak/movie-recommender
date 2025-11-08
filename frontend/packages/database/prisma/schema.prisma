@@ -27,7 +27,7 @@ model UserModel {
 }
 
 model MovieModel {
-  tmdbId        Int      @id @unique
+  id            Int      @id @unique
   title         String
   genres        String[]
   avg_rating    Float
@@ -60,19 +60,19 @@ model UserMovieRating {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @default(now()) @updatedAt
 
-  tmdbId      Int
+  movieId     Int
   userModelId Int
 
-  movie MovieModel @relation(fields: [tmdbId], references: [tmdbId], onDelete: Cascade)
+  movie MovieModel @relation(fields: [movieId], references: [id], onDelete: Cascade)
   user  UserModel  @relation(fields: [userModelId], references: [id], onDelete: Cascade)
 
-  @@unique([tmdbId, userModelId])
+  @@unique([movieId, userModelId])
   @@map("movie_rating")
 }
 
 model MovieReview {
   id          Int      @id @default(autoincrement())
-  tmdbId      Int
+  movieId     Int
   userModelId Int
   title       String
   text        String
@@ -82,10 +82,10 @@ model MovieReview {
   ndislikes   Int
 
   reactions ReviewReaction[]
-  movie     MovieModel       @relation(fields: [tmdbId], references: [tmdbId], onDelete: Cascade)
+  movie     MovieModel       @relation(fields: [movieId], references: [id], onDelete: Cascade)
   user      UserModel        @relation(fields: [userModelId], references: [id], onDelete: Cascade)
 
-  @@unique([tmdbId, userModelId])
+  @@unique([movieId, userModelId])
 }
 
 model ReviewReaction {

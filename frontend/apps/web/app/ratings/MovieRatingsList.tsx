@@ -60,7 +60,7 @@ export function RatingsTable({
           {movies.map((movie) => {
             return (
               <Table.Row
-                key={movie.tmdbId}
+                key={movie.id}
                 className="hover:bg-gray-100 group dark:hover:bg-gray-600"
               >
                 <TableRow movie={movie} setSelectedRating={setSelectedRating} />
@@ -150,7 +150,7 @@ function TableRow({
     <>
       <Table.Cell>
         <Link
-          href={`/movie/${movie.tmdbId}`}
+          href={`/movie/${movie.id}`}
           className="flex flex-row items-center gap-3"
         >
           <img

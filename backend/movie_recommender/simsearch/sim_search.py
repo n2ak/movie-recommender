@@ -34,9 +34,8 @@ class SimilaritySearch:
         from sqlalchemy import create_engine
         engine = create_engine(db_url)
         movies = pd.read_sql_table(movies_table, engine, columns=[
-                                   "tmdbId", "overview_encoded"])
+                                   "id", "overview_encoded"])
         movies.rename(columns={
-            "tmdbId": "id",
             "overview_encoded": "embeddings"
         }, inplace=True)
         import json

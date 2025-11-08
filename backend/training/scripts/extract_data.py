@@ -9,18 +9,15 @@ def read_db(db_url, ratings_table: str, movies_table: str):
     print(f"Reading db from: '{db_url}'")
     engine = create_engine(db_url)
     ratings = pd.read_sql_table(ratings_table, engine, columns=[
-                                "rating", "movieModelId", "userModelId"])
+                                "rating", "movieId", "userModelId"])
     ratings.rename(columns=dict(userModelId="user_id",
-                   movieModelId="movie_id"), inplace=True)
+                   movieId="movie_id"), inplace=True)
 
     movies = pd.read_sql_table(movies_table, engine, columns=[
-                               "id", "title", "genres", "year"])
+                               "id", "title", "genres", "release_date"])
 
-    movies.year = movies.release_date.dt.year
+    movies["year"] = movies.release_date.dt.year
     movies.drop(columns=["release_date"], inplace=True)
-    movies.rename({
-        "tmdbId": "id"
-    }, inplace=True)
 
     movies.rename(
         columns={c: f"movie_{c}" for c in movies.columns}, inplace=True)

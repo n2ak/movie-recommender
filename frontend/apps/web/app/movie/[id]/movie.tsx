@@ -23,7 +23,7 @@ export function MoviePage({
   const qClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const { movie, queryKey } = useMovie({
-    movieId: initialMovie.tmdbId,
+    movieId: initialMovie.id,
     initialMovie,
   });
   if (!movie) return null;
@@ -47,7 +47,7 @@ export function MoviePage({
           <div className="font-semibold flex gap-2">
             <FixedRating v={movie.avg_rating} />
             <span>({total_ratings} users)</span>
-            <Link className="underline" href={"/reviews/" + movie.tmdbId}>
+            <Link className="underline" href={"/reviews/" + movie.id}>
               ({total_reviews} reviews)
             </Link>
           </div>

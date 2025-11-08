@@ -66,7 +66,7 @@ export async function getMovies(movieIds: number[], userId: number) {
 export async function getMoviesGenres(movieIds: number[]) {
   return await prismaClient.movieModel.findMany({
     where: {
-      tmdbId: { in: movieIds }
+      id: { in: movieIds }
     },
     select: { genres: true }
   });
@@ -137,13 +137,13 @@ export async function getUserBestMovies(params: { userId: number; count?: number
     select: {
       movie: {
         select: {
-          tmdbId: true
+          id: true
         }
       },
       rating: true,
     },
   });
-  return res.map((a) => ({ tmdbId: a.movie.tmdbId, userRating: a.rating }));
+  return res.map((a) => ({ id: a.movie.id, userRating: a.rating }));
 }
 
 export function getAllMovies(): Promise<MovieModel[]> {

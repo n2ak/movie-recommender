@@ -56,7 +56,7 @@ export default function MovieReviews({
       </h1>
       <div className="grid gap-6">
         {reviews.map((review) => (
-          <Review review={review} movieId={movie.tmdbId} key={review.id} />
+          <Review review={review} movieId={movie.id} key={review.id} />
         ))}
       </div>
       <div className="w-full text-center mt-2">

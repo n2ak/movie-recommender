@@ -40,7 +40,7 @@ def get_cols(ratings: pd.DataFrame):
 
 def process_data(train: pd.DataFrame, test: pd.DataFrame):
     cat_cols, num_cols = get_cols(train)
-    unique = pd.concat([train, test], axis=0)[cat_cols].nunique()
+    unique = pd.concat([train, test], axis=0)[cat_cols].max()+1
     nmovies = unique[["movie_id"]].item()
     nusers = unique[["user_id"]].item()
     embds = np.ceil(np.array(unique) ** .5)
@@ -206,7 +206,7 @@ def prepare(ds, cat_cols):
 #     )
 #     Logger.info("DLRM model test passed successfully")
 
-def store_features():
+def store_features(train, test):
     import pandas as pd
     from movie_recommender.common.utils import user_cols, movie_cols
 
@@ -242,7 +242,7 @@ if __name__ == "__main__":
             max_rating=int(os.environ["MAX_RATING"]),
             train_size=float(os.environ["TRAIN_SIZE"]),
         )
-        store_features()
+        store_features(train, test)
 
         train_dlrm(
             train,

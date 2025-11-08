@@ -60,6 +60,7 @@ class StorageClient(Singleton):
             blob.upload_from_filename(file_path)
 
     def download_file(self, bucket_name, src_path, dest_path):
+        print("Download from", src_path, "to", dest_path)
         if self.provider in ("aws", "minio"):
             self.client.download_file(  # type: ignore
                 bucket_name, src_path, dest_path)
@@ -114,7 +115,7 @@ class StorageClient(Singleton):
         with tempfile.TemporaryDirectory() as dir:
             dfs = [
                 pd.read_parquet(self.download_file(
-                    bucket, f'{filename}.parquet', f"{dir}/{filename}.parquet")
+                    bucket, f'{filename}.parquet', f"{dir}/{filename_of(filename)}.parquet")
                 ) for filename in filenames
             ]
         return dfs
@@ -145,6 +146,7 @@ class StorageClient(Singleton):
 class MlflowClient(Singleton):
     def init(self):
         uri = MLFLOW_TRACKING_URI
+        print("Connecting mlflow to", uri)
         mlflow.set_tracking_uri(uri)
         self._mlflow_client = mlflow.MlflowClient(uri)
         mlflow.search_experiments()
@@ -289,3 +291,7 @@ def save_plots(
 def make_run_name(prefix: str):
     now = datetime.now().strftime('%Y_%m_%d_%Hh_%Mm_%Ss')
     return f"{prefix.lower()}_{now}"
+
+
+def filename_of(path: str):
+    return path.split("/")[-1]

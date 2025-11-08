@@ -24,7 +24,7 @@ export const userRatingInclude = (userId: number) =>
 export const findMovie = (userId: number, movieId: number) => {
   return Prisma.validator<Prisma.MovieModelFindFirstArgs>()({
     where: {
-      tmdbId: movieId,
+      id: movieId,
     },
     include: {
       ...userRatingInclude(userId),
@@ -44,7 +44,7 @@ export const findMoviesInIds = (
 ) => {
   return Prisma.validator<Prisma.MovieModelFindManyArgs>()({
     where: {
-      tmdbId: { in: ids },
+      id: { in: ids },
     },
     include: {
       ...userRatingInclude(userId),

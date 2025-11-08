@@ -9,7 +9,7 @@ function reviewInclude(movieId: number, userId: number) {
         ...userSelect,
         movieRatings: {
           where: {
-            tmdbId: movieId,
+            movieId: movieId,
           },
           take: 1,
         },
@@ -30,9 +30,9 @@ export const getMovieReview = async (params: {
 }) => {
   const review = await prismaClient.movieReview.findUnique({
     where: {
-      tmdbId_userModelId: {
+      movieId_userModelId: {
+        movieId: params.movieId,
         userModelId: params.userId,
-        tmdbId: params.movieId,
       },
     },
     include: reviewInclude(params.movieId, params.userId),
@@ -57,7 +57,7 @@ export async function getNumberOfMovieReviews(params: { movieId: number }) {
   return (
     await prismaClient.movieReview.aggregate({
       where: {
-        tmdbId: params.movieId,
+        movieId: params.movieId,
       },
       _count: true,
     })
@@ -79,15 +79,15 @@ export const reviewMovie = async ({
   title = title.trim();
   return await prismaClient.movieReview.upsert({
     where: {
-      tmdbId_userModelId: {
+      movieId_userModelId: {
+        movieId: movieId,
         userModelId: userId,
-        tmdbId: movieId,
       },
     },
     create: {
       title,
       text: text,
-      tmdbId: movieId,
+      movieId: movieId,
       userModelId: userId,
       ndislikes: 0,
       nlikes: 0,
@@ -167,7 +167,7 @@ export const getMovieReviews = async (params: {
 }) => {
   const res = await prismaClient.movieReview.findMany({
     where: {
-      tmdbId: params.movieId,
+      movieId: params.movieId,
     },
     include: reviewInclude(params.movieId, params.userId),
     skip: params.start,
@@ -193,13 +193,13 @@ export async function editMovieReviewAndRating({
   return await Promise.all([
     await prismaClient.userMovieRating.upsert({
       where: {
-        tmdbId_userModelId: {
-          tmdbId: movieId,
+        movieId_userModelId: {
+          movieId: movieId,
           userModelId: userId,
         },
       },
       create: {
-        tmdbId: movieId,
+        movieId: movieId,
         userModelId: userId,
         rating: rating
       },

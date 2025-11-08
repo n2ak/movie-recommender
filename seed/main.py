@@ -56,7 +56,7 @@ async def create_movies(data, db: Prisma):
     movies = []
     for _, row in data.iterrows():
         movies.append({
-            "tmdbId": row.tmdbId,
+            "id": row.movie_id,
             "href": str(row.posters),
             "genres": try_split(row.genres, GENRES_SPLIT_CHAR),
             "title": str(row.title),
@@ -96,17 +96,17 @@ async def helper(movie, db: Prisma):
         """
     UPDATE movie
     SET overview_encoded = $1::vector
-    WHERE "tmdbId" = $2
+    WHERE "id" = $2
     """,
         vector_text,
-        movie.tmdbId
+        movie.movie_id
     )
 
 
 async def create_ratings(data, db: Prisma):
     ratings = [
         {
-            "tmdbId": int(row.tmdbId),
+            "movieId": int(row.movie_id),
             "userModelId": int(row.user_id),
             "rating": float(row.rating),
         }
@@ -123,7 +123,7 @@ async def create_reviews(data, db: Prisma):
             "text": random_string(20, 60),
             "nlikes": random.randint(0, 100),
             "ndislikes": random.randint(0, 100),
-            "tmdbId": int(row.tmdbId),
+            "movieId": int(row.movie_id),
             "userModelId": int(row.user_id),
         }
         for _, row in data.iterrows()

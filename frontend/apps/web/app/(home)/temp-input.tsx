@@ -50,7 +50,7 @@ export function TemperatureInput() {
       onChange={(e) => setT(Number(e.target.value))}
     />
     <Button
-      onClick={(e) => tempStore.setTemp(clamp(t, 0, 1))}
+      onClick={() => tempStore.setTemp(clamp(t, 0, 1))}
       className="cursor-pointer"
     >
       Save
