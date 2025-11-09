@@ -5,3 +5,5 @@ fsspec
 huggingface_hub
 fastparquet
 pyarrow
+datasets
+scikit-learn

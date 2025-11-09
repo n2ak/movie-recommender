@@ -1,4 +1,7 @@
+import datetime
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from datasets import load_dataset, load_from_disk
 
 
 ds_path = "hf://datasets/ashraq/movielens_ratings/"
@@ -9,63 +12,64 @@ splits = {
 
 
 def read_ds(limit=None):
-    # df = pd.concat([
-    #     pd.read_parquet(ds_path + splits["train"]),
-    #     pd.read_parquet(ds_path + splits["val"]),
-    # ],
-    #     axis=0
-    # )
-    df = pd.read_parquet(ds_path + splits["val"])
-    if limit is not None:
-        df = df[:limit]
-    return df
+    ratings = pd.read_parquet(ds_path + splits["val"])[:limit]
+    movies = load_dataset("wykonos/movies", split="train").take(100)
+    movies = movies.filter(lambda m: m["overview"] and m["title"])
+
+    movies_df = movies.to_pandas().rename(columns={"id": "tmdbId"})
+    movies_df.drop_duplicates("tmdbId", inplace=True)
+    ratings["tmdbId"] = ratings["tmdbId"].apply(int)
+    ratings_cols = ["tmdbId", "user_id", "rating", "posters"]
+    ratings = ratings[ratings_cols]
+    movies_df["movie_id"] = LabelEncoder().fit_transform(movies_df.tmdbId)
+
+    ratings = ratings.merge(
+        movies_df[["movie_id", "tmdbId"]], on="tmdbId").drop(columns="tmdbId")
+    movies_df.drop(columns="tmdbId", inplace=True)
+    return ratings, movies
 
 
-def split_title(title):
-    title, year = title[:-7], title[-5:-1]
-    year = int(year) if year.isdigit() else -1
-    return title, year
-
-
-def process(df: pd.DataFrame):
-    df = df.drop_duplicates(["movie_id", "user_id"])
-    ratings = df.copy()
-    ratings = ratings[ratings.genres != "(no genres listed)"]
-    ratings = ratings.merge(ratings.groupby("movie_id").agg(
-        movie_avg_rating=("rating", "mean"),
-        movie_total_rating=("rating", "count"),
-    ), on="movie_id")
-    ratings[["title", "year"]] = ratings.title.apply(split_title).tolist()
-    ratings = ratings[ratings.year != -1]
+def process(ratings, movies):
+    ratings = ratings.copy()
+    ratings = ratings.drop_duplicates(["movie_id", "user_id"])
+    movies = movies.drop_duplicates(["movie_id"])
+    movies = movies.copy()
 
     ratings.user_id = ratings.user_id.astype("category").cat.codes
-    ratings.movie_id = ratings.movie_id.astype("category").cat.codes
-
-    movies = ratings[["imdbId", "tmdbId", "movie_id", "title", "genres", "posters",
-                      "movie_avg_rating", "movie_total_rating", "year"]].drop_duplicates("movie_id")
-    ratings = ratings[["user_id", "movie_id", "rating"]]
-    # movies.drop(columns=['imdbId', 'tmdbId'], inplace=True)
 
     ratings.sort_values("user_id", inplace=True)
     movies.sort_values("movie_id", inplace=True)
     ratings.reset_index(inplace=True, drop=True)
     movies.reset_index(inplace=True, drop=True)
-    users = ratings.user_id.drop_duplicates().sort_values().to_frame()
 
+    users = ratings.user_id.drop_duplicates().sort_values().to_frame()
     users["username"] = users["user_id"].apply(lambda id: f"user{id}")
 
+    movies.drop(columns=["poster_path", "backdrop_path", "recommendations",
+
+                         ], inplace=True)
+    movies = movies.merge(
+        ratings[["movie_id", "posters"]], on="movie_id", how="left")
+    movies.release_date = pd.to_datetime(movies.release_date)
+
+    cols = ["posters", "production_companies",
+            "tagline", "genres", "credits", "keywords"]
+    movies[cols] = movies[cols].fillna("")
+    movies.release_date = movies.release_date.fillna(datetime.datetime.now())
+    ratings = ratings[ratings.movie_id.isin(movies.movie_id)]
+    movies = movies.drop_duplicates("movie_id")
     return ratings, movies, users
 
 
 def save(**ds: pd.DataFrame):
     for name, d in ds.items():
-        p = f"{name}.csv"
-        d.to_csv(p, index=False)
+        p = f"{name}.parquet"
+        d.to_parquet(p)
 
 
 def main(limit):
-    df = read_ds(limit)
-    ratings, movies, users = process(df)
+    ratings, movies = read_ds(limit)
+    ratings, movies, users = process(ratings, movies)
     save(
         ratings=ratings,
         movies=movies,

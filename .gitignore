@@ -1,5 +1,6 @@
 *.env
-infra/
+infra/gcp
+infra/k8s
 *.tfvars
 *.tfstate
 .terraform*
