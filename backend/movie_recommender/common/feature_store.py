@@ -1,6 +1,7 @@
 import os
 from movie_recommender.common.workflow import StorageClient
 from movie_recommender.common.env import ARTIFACT_ROOT, BUCKET
+from movie_recommender.common.logging import Logger
 
 
 class _FeatureStore:
@@ -14,6 +15,10 @@ class _FeatureStore:
         self.movies = movies
 
     def get_movies_features(self, movie_ids: list[int]):
+        Logger.info(f'movies ids: {movie_ids}')
+        Logger.info(f'movies shape: {self.movies.shape}')
+        Logger.info(f'movies index: {self.movies.index.name}')
+        Logger.info(f'movies columns: {self.movies.columns}')
         return self.movies.iloc[movie_ids]
 
     def get_user_features(self, user_id: int):

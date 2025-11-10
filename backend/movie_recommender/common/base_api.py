@@ -6,6 +6,7 @@ from numpy.typing import NDArray
 from movie_recommender.simsearch.sim_search import SimilaritySearch
 from movie_recommender.common.feature_store import FeatureStore
 from movie_recommender.common.env import DATABASE_URL
+from movie_recommender.common.logging import Logger
 from dataclasses import dataclass, field
 
 
@@ -44,6 +45,7 @@ class API(LitAPI):
 
     def decode_request(self, request, context):
         request = PredictionRequest(**request)
+        Logger.info(f"PredictionRequest: {request}")
         movie_ids = self._suggest(request)
         context["meta"] = movie_ids, request
 
