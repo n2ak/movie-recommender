@@ -91,8 +91,9 @@ async def get_embeddings(url: str, datas: list):
 async def get_embeddings_chunked(url: str, datas: list):
     chunk_size = 100
     results = []
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=60) as client:
         for i in range(0, len(datas), chunk_size):
+            httpx.request
             chunk = datas[i:i + chunk_size]
             tasks = [client.post(url, json=d) for d in chunk]
             responses = await asyncio.gather(*tasks)
