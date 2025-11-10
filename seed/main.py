@@ -70,7 +70,7 @@ async def create_movies(data, db: Prisma):
             "total_ratings": int(row.vote_count),
             "credits": try_split(row.credits, GENRES_SPLIT_CHAR),
             "keywords": try_split(row.keywords, GENRES_SPLIT_CHAR),
-            "duration": float(row.runtime),
+            "duration": float(row.runtime) if row.runtime else -1,
         })
     n = await chunked_insert(movies, db.moviemodel.create_many)
     for _, row in data.iterrows():

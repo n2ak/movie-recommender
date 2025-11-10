@@ -13,12 +13,15 @@ splits = {
 
 def read_ds(n_ratings: int, n_movies: int):
     ratings = pd.read_parquet(ds_path + splits["val"])[:n_ratings]
-    movies = load_dataset(
-        "wykonos/movies", split="train").shuffle(seed=0).take(n_movies)
+    movies = load_dataset("wykonos/movies", split="train")
     movies = movies.filter(lambda m: m["overview"] and m["title"])
-
-    movies_df = movies.to_pandas().rename(columns={"id": "tmdbId"})
+    movies = movies.shuffle(seed=0).take(10_000)  # for mem
+    movies_df = movies.to_pandas()
+    del movies
+    movies_df.rename(columns={"id": "tmdbId"}, inplace=True)
     movies_df.drop_duplicates("tmdbId", inplace=True)
+    movies_df = movies_df[:n_movies]
+
     ratings.dropna(inplace=True)
     ratings["tmdbId"] = ratings["tmdbId"].apply(int)
     ratings_cols = ["tmdbId", "user_id", "rating", "posters"]
@@ -57,6 +60,8 @@ def process(ratings, movies):
     cols = ["posters", "production_companies",
             "tagline", "genres", "credits", "keywords"]
     movies[cols] = movies[cols].fillna("")
+    movies["runtime"] = movies["runtime"].fillna(0)
+
     movies.release_date = movies.release_date.fillna(datetime.datetime.now())
     ratings = ratings[ratings.movie_id.isin(movies.movie_id)]
     movies = movies.drop_duplicates("movie_id")
