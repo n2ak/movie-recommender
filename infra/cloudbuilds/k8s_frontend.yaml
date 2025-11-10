@@ -1,0 +1,26 @@
+substitutions:
+  _IMAGE_NAME: frontend-image
+
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build webapp"
+    args:
+      [
+        "build",
+        "-t",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest",
+        "./frontend",
+      ]
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "push to gcr"
+    args:
+      [
+        "push",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest",
+      ]
+
+images:
+  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_IMAGE_NAME:latest"
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
