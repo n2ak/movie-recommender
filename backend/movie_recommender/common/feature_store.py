@@ -11,6 +11,12 @@ class _FeatureStore:
             f"{ARTIFACT_ROOT}/users_features",
             f"{ARTIFACT_ROOT}/movies_features"
         )
+        if "movie_id" in movies.columns:
+            movies = movies.set_index("movie_id")
+
+        if "user_id" in users.columns:
+            users = users.set_index("user_id")
+
         self.users = users
         self.movies = movies
 
@@ -19,10 +25,10 @@ class _FeatureStore:
         Logger.info(f'movies shape: {self.movies.shape}')
         Logger.info(f'movies index: {self.movies.index.name}')
         Logger.info(f'movies columns: {self.movies.columns}')
-        return self.movies.iloc[movie_ids]
+        return self.movies.loc[movie_ids]
 
     def get_user_features(self, user_id: int):
-        return self.users.iloc[[user_id]]
+        return self.users.loc[[user_id]]
 
 
 FeatureStore = _FeatureStore()

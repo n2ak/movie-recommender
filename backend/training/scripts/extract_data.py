@@ -68,8 +68,8 @@ def extract_features(ratings: pd.DataFrame, movies: pd.DataFrame, users: pd.Data
     StorageClient.get_instance().upload_parquet_to_bucket(
         BUCKET,
         ARTIFACT_ROOT,
-        users_features=users_features,
-        movies_features=movie_features,
+        users_features=users_features.set_index("user_id"),
+        movies_features=movie_features.set_index("movie_id"),
     )
     return users_features, movie_features
 

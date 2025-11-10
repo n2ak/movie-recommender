@@ -110,7 +110,7 @@ class StorageClient(Singleton):
         df, = self.read_parquets_from_bucket(bucket, filepath)
         return df
 
-    def read_parquets_from_bucket(self, bucket: str, *filenames: str):
+    def read_parquets_from_bucket(self, bucket: str, *filenames: str) -> list[pd.DataFrame]:
         import tempfile
         with tempfile.TemporaryDirectory() as dir:
             dfs = [

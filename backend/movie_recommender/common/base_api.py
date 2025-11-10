@@ -41,7 +41,8 @@ class API(LitAPI):
             )
         else:
             raise Exception(f"Invalid request {type=}")
-        return list(movie_ids)
+        Logger.info(f"movie_ids.shape: {movie_ids.shape}")
+        return movie_ids.flatten().tolist()
 
     def decode_request(self, request, context):
         request = PredictionRequest(**request)
