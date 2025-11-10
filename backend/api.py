@@ -15,7 +15,7 @@ def load(api_name: str):
             raise Exception(f"XGB not available for now.")
         case "embedding":
             from movie_recommender.simsearch.embedding_api import EmbeddingAPI
-            return EmbeddingAPI(api_path="/embedding")
+            return EmbeddingAPI(max_batch_size=64, batch_timeout=1.0, api_path="/embedding")
         case _:
             raise Exception(f"Invalid model type: {api_name}")
 
