@@ -236,18 +236,20 @@ if __name__ == "__main__":
         if os.getenv("DO_EXTRACT", "false").lower() in ["true", "1"]:
             Logger.info("Extracting data...")
             from scripts.extract_data import main as extract
-            extract()
-
-        ratings, movies = StorageClient.get_instance().read_parquets_from_bucket(
-            BUCKET, f"{ARTIFACT_ROOT}/ratings", f"{ARTIFACT_ROOT}/movies"
-        )
+            ratings, users_features, movies_features = extract()
+        else:
+            ratings, users_features, movies_features = StorageClient.get_instance().read_parquets_from_bucket(
+                BUCKET,
+                f"{ARTIFACT_ROOT}/ratings",
+                f"{ARTIFACT_ROOT}/users_features",
+                f"{ARTIFACT_ROOT}/movies_features",
+            )
         train, test = preprocess_data(
             ratings,
-            movies,
-            max_rating=int(os.environ["MAX_RATING"]),
+            users_features,
+            movies_features,
             train_size=float(os.environ["TRAIN_SIZE"]),
         )
-        store_features(train, test)
 
         train_dlrm(
             train,
@@ -256,6 +258,7 @@ if __name__ == "__main__":
             exp_name=get_env("EXP_NAME", "movie_recom"),
             batch_size=get_env("BATCH_SIZE", 64 * 4)
         )
+        # TODO test
     elif task == "test":
         # test_dlrm_model()
         pass
