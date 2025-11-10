@@ -11,10 +11,10 @@ splits = {
 }
 
 
-def read_ds(limit=None):
-    ratings = pd.read_parquet(ds_path + splits["val"])[:limit]
+def read_ds(n_ratings: int, n_movies: int):
+    ratings = pd.read_parquet(ds_path + splits["val"])[:n_ratings]
     movies = load_dataset(
-        "wykonos/movies", split="train").shuffle(seed=0).take(1_000)
+        "wykonos/movies", split="train").shuffle(seed=0).take(n_movies)
     movies = movies.filter(lambda m: m["overview"] and m["title"])
 
     movies_df = movies.to_pandas().rename(columns={"id": "tmdbId"})
@@ -69,8 +69,8 @@ def save(**ds: pd.DataFrame):
         d.to_parquet(p)
 
 
-def main(limit):
-    ratings, movies = read_ds(limit)
+def main(n_ratings: int, n_movies: int):
+    ratings, movies = read_ds(n_ratings, n_movies)
     ratings, movies, users = process(ratings, movies)
     save(
         ratings=ratings,
@@ -80,6 +80,7 @@ def main(limit):
 
 
 if __name__ == "__main__":
-    import sys
-    limit = int(sys.argv[1]) if len(sys.argv) > 1 else 10_000
-    main(limit)
+    import os
+    n_movies = int(os.getenv("N_MOVIES", "1_000"))
+    n_ratings = int(os.getenv("N_RATINGS", "10_000"))
+    main(n_ratings, n_movies)

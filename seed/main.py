@@ -32,7 +32,7 @@ async def chunked_insert(data, fn):
         res = await fn(chunk, skip_duplicates=True)
         total += len(chunk)
         print("\t", "Created chunk of", len(chunk), "records")
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1)
     return total
 
 
@@ -51,7 +51,7 @@ async def create_users(data, db: Prisma):
 
 
 async def create_movies(data, db: Prisma):
-    embeddings = await get_embeddings(EMBEDDING_URL, data.overview.tolist())
+    embeddings = await get_embeddings_chunked(EMBEDDING_URL, data.overview.tolist())
     data["embeddings"] = embeddings
     movies = []
     for _, row in data.iterrows():
@@ -86,6 +86,19 @@ async def get_embeddings(url: str, datas: list):
         tasks = [fetch(d) for d in datas]
         responses = await asyncio.gather(*tasks)
         return responses
+
+
+async def get_embeddings_chunked(url: str, datas: list):
+    chunk_size = 100
+    results = []
+    async with httpx.AsyncClient() as client:
+        for i in range(0, len(datas), chunk_size):
+            chunk = datas[i:i + chunk_size]
+            tasks = [client.post(url, json=d) for d in chunk]
+            responses = await asyncio.gather(*tasks)
+            results.extend([r.json() for r in responses])
+            await asyncio.sleep(2)
+    return results
 
 
 async def helper(movie, db: Prisma):
@@ -143,8 +156,8 @@ async def main():
 
     print("Pushing to DB...")
     async with db.tx(timeout=5 * 60 * 1000) as tx:
-        await create_users(users_csv, tx)
         await create_movies(movies_csv, tx)
+        await create_users(users_csv, tx)
         await create_ratings(ratings_csv, tx)
         await create_reviews(ratings_csv, tx)
 
