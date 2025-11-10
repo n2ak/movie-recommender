@@ -233,6 +233,11 @@ if __name__ == "__main__":
     task = os.environ["TASK"]
 
     if task == "train":
+        if os.getenv("DO_EXTRACT", "false").lower() in ["true", "1"]:
+            Logger.info("Extracting data...")
+            from scripts.extract_data import main as extract
+            extract()
+
         ratings, movies = StorageClient.get_instance().read_parquets_from_bucket(
             BUCKET, f"{ARTIFACT_ROOT}/ratings", f"{ARTIFACT_ROOT}/movies"
         )
