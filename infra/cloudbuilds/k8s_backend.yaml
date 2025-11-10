@@ -15,17 +15,17 @@ steps:
         "./backend",
       ]
 
-  # - name: "gcr.io/cloud-builders/docker"
-  #   id: "Build dlrm training image"
-  #   args:
-  #     [
-  #       "build",
-  #       "-t",
-  #       "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_DLRM_TRAIN_IMG_NAME:latest",
-  #       "-f",
-  #       "./backend/docker/training/pytorch.Dockerfile",
-  #       "./backend",
-  #     ]
+  - name: "gcr.io/cloud-builders/docker"
+    id: "Build dlrm training image"
+    args:
+      [
+        "build",
+        "-t",
+        "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_DLRM_TRAIN_IMG_NAME:latest",
+        "-f",
+        "./backend/docker/training/pytorch.Dockerfile",
+        "./backend",
+      ]
 
   - name: "gcr.io/cloud-builders/docker"
     entrypoint: bash
@@ -34,11 +34,11 @@ steps:
       - "-c"
       - |
         docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_BE_IMG_NAME:latest
-        # docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_DLRM_TRAIN_IMG_NAME:latest
+        docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_DLRM_TRAIN_IMG_NAME:latest
 
 images:
   - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_BE_IMG_NAME:latest"
-  # - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_DLRM_TRAIN_IMG_NAME:latest"
+  - "$LOCATION-docker.pkg.dev/$PROJECT_ID/$_GCR_REPO/$_DLRM_TRAIN_IMG_NAME:latest"
 
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
