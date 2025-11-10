@@ -26,7 +26,7 @@ def read_ds(limit=None):
     ratings = ratings.merge(
         movies_df[["movie_id", "tmdbId"]], on="tmdbId").drop(columns="tmdbId")
     movies_df.drop(columns="tmdbId", inplace=True)
-    return ratings, movies
+    return ratings, movies_df
 
 
 def process(ratings, movies):
