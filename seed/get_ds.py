@@ -13,11 +13,13 @@ splits = {
 
 def read_ds(limit=None):
     ratings = pd.read_parquet(ds_path + splits["val"])[:limit]
-    movies = load_dataset("wykonos/movies", split="train").take(100)
+    movies = load_dataset(
+        "wykonos/movies", split="train").shuffle(seed=0).take(1_000)
     movies = movies.filter(lambda m: m["overview"] and m["title"])
 
     movies_df = movies.to_pandas().rename(columns={"id": "tmdbId"})
     movies_df.drop_duplicates("tmdbId", inplace=True)
+    ratings.dropna(inplace=True)
     ratings["tmdbId"] = ratings["tmdbId"].apply(int)
     ratings_cols = ["tmdbId", "user_id", "rating", "posters"]
     ratings = ratings[ratings_cols]
@@ -79,5 +81,5 @@ def main(limit):
 
 if __name__ == "__main__":
     import sys
-    limit = int(sys.argv[1]) if len(sys.argv) > 1 else 1000
+    limit = int(sys.argv[1]) if len(sys.argv) > 1 else 10_000
     main(limit)
