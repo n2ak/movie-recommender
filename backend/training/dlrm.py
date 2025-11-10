@@ -9,7 +9,7 @@ if True:
     import torch.nn.functional as F
 
     from movie_recommender.common.logging import Logger
-    from training.data import preprocess_data
+    from training.data import preprocess_data, get_cols
     from training.train_utils import mae, rmse, get_env
     from movie_recommender.dlrm.dlrm import DLRM, TrainableModule, DLRMParams
     from movie_recommender.common.workflow import StorageClient
@@ -27,26 +27,19 @@ def create_data_sampler(y_train: np.ndarray):
     return sampler
 
 
-def get_cols(ratings: pd.DataFrame):
-    cat_cols = ratings.iloc[:1].select_dtypes(
-        ["int", "bool", "category"]).columns.to_list()
-    num_cols = ratings.iloc[:1].select_dtypes("float").columns.to_list()
-    if "rating" in num_cols:
-        num_cols.remove("rating")
-    ratings[cat_cols] = ratings[cat_cols]
-    ratings[num_cols] = ratings[num_cols].astype("float32")
-    return cat_cols, num_cols
-
-
-def process_data(train: pd.DataFrame, test: pd.DataFrame):
+def process_data(
+    train: pd.DataFrame, test: pd.DataFrame, unique
+):
     cat_cols, num_cols = get_cols(train)
-    unique = pd.concat([train, test], axis=0)[cat_cols].max()+1
+    unique = unique[cat_cols]
+
     nmovies = unique[["movie_id"]].item()
     nusers = unique[["user_id"]].item()
+
     embds = np.ceil(np.array(unique) ** .5)
     embds = np.clip(np.exp2(np.ceil(np.log2(embds))),
                     2, 64).astype(int).tolist()
-    return unique, cat_cols, num_cols, embds, nmovies, nusers
+    return cat_cols, num_cols, embds, nmovies, nusers, unique
 
 
 def create_data_loaders(
@@ -150,6 +143,7 @@ def create_model(
 def train_dlrm(
     train: pd.DataFrame,
     test: pd.DataFrame,
+    unique,
     epochs: int,
     exp_name: str,
     batch_size: int,
@@ -160,8 +154,8 @@ def train_dlrm(
     Logger.info("Epochs: %s", epochs)
     Logger.info("Batch size: %s", batch_size)
 
-    unique, cat_cols, num_cols, embds, nmovies, nusers = process_data(
-        train, test
+    cat_cols, num_cols, embds, nmovies, nusers, unique = process_data(
+        train, test, unique
     )
     train_dl, valid_dl, train_ds, test_ds = create_data_loaders(
         train, test, cat_cols, num_cols, unique,
@@ -244,16 +238,18 @@ if __name__ == "__main__":
                 f"{ARTIFACT_ROOT}/users_features",
                 f"{ARTIFACT_ROOT}/movies_features",
             )
-        train, test = preprocess_data(
+        train, test, unique = preprocess_data(
             ratings,
             users_features,
             movies_features,
             train_size=float(os.environ["TRAIN_SIZE"]),
         )
+        Logger.info(f"Category cols max: {unique}")
 
         train_dlrm(
             train,
             test,
+            unique,
             epochs=get_env("EPOCHS", 2),
             exp_name=get_env("EXP_NAME", "movie_recom"),
             batch_size=get_env("BATCH_SIZE", 64 * 4)
